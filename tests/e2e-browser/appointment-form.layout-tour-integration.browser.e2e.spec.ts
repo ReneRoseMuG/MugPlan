@@ -648,11 +648,11 @@ test("marks conflicting week employees as non-selectable for new appointments", 
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Mitarbeiter aus der Tour/KW-Planung sind am Zieldatum wegen doppelter Planung nicht verfügbar.");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Überschneidung mit bestehendem Termin",
+    "Kann nicht übernommen werden",
   );
-  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).not.toBeChecked();
-  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeDisabled();
+  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toHaveCount(0);
 });
 
 test("uses the already confirmed preview decision when an existing appointment changes to another tour with week planning", async ({ page }) => {
@@ -694,7 +694,7 @@ test("uses the already confirmed preview decision when an existing appointment c
     "Wird vom Termin entfernt",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung übernommen werden",
+    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
   );
   await expect(immediateDialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
   await expect(immediateDialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
@@ -753,12 +753,12 @@ test("rechecks week planning when the start date moves into another ISO week on 
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
+  await expect(dialog).toContainText("Mitarbeiter aus der Wochenplanung am Zieltermin können übernommen werden.");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
     "Wird vom Termin entfernt",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung übernommen werden",
+    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
   );
   await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
   await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
@@ -816,7 +816,7 @@ test("keeps the additive or replace decision when an existing appointment stays 
     "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung übernommen werden",
+    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
   );
   await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toBeVisible();
   await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toBeVisible();
@@ -873,8 +873,9 @@ test("shows a resource conflict dialog before saving a pure date move in the sam
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("Überschneidung im Zielzeitraum");
-  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).not.toBeChecked();
+  await expect(dialog).toContainText("Mitarbeiter wegen doppelter Planung nicht verfügbar.");
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("Wird beim Speichern vom Termin entfernt.");
+  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).toHaveCount(0);
   await dialog.getByTestId("button-appointment-save-review-next").click();
   await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
   await confirmAppointmentSaveReviewIfVisible(page);

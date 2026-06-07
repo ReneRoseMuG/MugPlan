@@ -3609,7 +3609,7 @@ export function CalendarWeekView({
           });
         }}
         onClose={() => setAppointmentEmployeeDialog(null)}
-        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Entscheidung bestätigen" : "Zuweisen"}
+        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Bestätigen" : "Zuweisen"}
       />
       <WorkflowNoteRemovalDialog
         open={noteRemovalDialog !== null}

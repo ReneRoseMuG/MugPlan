@@ -3,7 +3,8 @@
  *
  * Abgedeckte Regeln:
  * - Week-Plan-Vorschläge werden standardmäßig vorausgewählt.
- * - Aktuelle Mitarbeiter mit Zielkonflikt bleiben abwählbar und werden bei additiver Übernahme entfernt, wenn sie nicht bestätigt werden.
+ * - Aktuelle Mitarbeiter mit Zielkonflikt werden bei additiver Übernahme zwingend entfernt.
+ * - Blockierte Tour/KW-Mitarbeiter können nicht über selectedIds erzwungen werden.
  * - Der Preview-Entscheidungsmarker erkennt reine aktuelle Mitarbeiterkonflikte auch ohne Tour-KW-Planung.
  */
 import { describe, expect, it } from "vitest";
@@ -33,7 +34,7 @@ describe("resource planning preview helpers", () => {
     expect(getDefaultResourcePreviewSelection(preview)).toEqual([2]);
   });
 
-  it("removes unconfirmed current conflicts from additive employee resolution", () => {
+  it("removes current overlap conflicts from additive employee resolution even when selected", () => {
     const preview: AppointmentResourcePreviewResponse = {
       isoYear: 2099,
       isoWeek: 10,
@@ -46,7 +47,25 @@ describe("resource planning preview helpers", () => {
     };
 
     expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [], "additive")).toEqual([2]);
-    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [1], "additive")).toEqual([1, 2]);
+    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [1], "additive")).toEqual([2]);
+    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [1], "replace")).toEqual([]);
+  });
+
+  it("does not allow blocked week-plan overlap candidates through selected ids", () => {
+    const preview: AppointmentResourcePreviewResponse = {
+      isoYear: 2099,
+      isoWeek: 10,
+      hasWeekPlan: true,
+      currentEmployeeIds: [],
+      items: [
+        { employeeId: 3, employeeName: "Blockiert", status: "conflict", selectable: true, conflictReason: "EMPLOYEE_OVERLAP", source: "week_plan" },
+        { employeeId: 4, employeeName: "Plan", status: "will_add", selectable: true, conflictReason: null, source: "week_plan" },
+      ],
+    };
+
+    expect(getDefaultResourcePreviewSelection(preview)).toEqual([4]);
+    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [3, 4], "additive")).toEqual([4]);
+    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [3, 4], "replace")).toEqual([4]);
   });
 
   it("keeps replace mode limited to already-present week employees and selected rows", () => {

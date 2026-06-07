@@ -54,6 +54,12 @@ vi.mock("@/components/ui/checkbox", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ fullName, testId }: { fullName?: string; testId?: string }) => (
+    <span data-testid={testId}>{fullName}</span>
+  ),
+}));
+
 vi.mock("@/components/NotesSection", () => ({
   NotesSection: ({
     notes,
@@ -136,7 +142,7 @@ describe("AppointmentSaveReviewDialog", () => {
                 employeeName: "Konflikt Mitarbeiter",
                 status: "conflict",
                 selectable: false,
-                conflictReason: "Überschneidung",
+                conflictReason: "EMPLOYEE_OVERLAP",
                 source: "current",
               },
             ],
@@ -149,9 +155,96 @@ describe("AppointmentSaveReviewDialog", () => {
     );
 
     expect(html).toContain("appointment-save-review-step-resources");
+    expect(html).toContain("Konfliktprüfung");
+    expect(html).toContain("Mitarbeiter wegen doppelter Planung nicht verfügbar.");
+    expect(html).toContain("Zwingend zu entfernen");
     expect(html).toContain("Konflikt Mitarbeiter");
+    expect(html).toContain("Wird beim Speichern vom Termin entfernt.");
     expect(html).toContain("appointment-week-preview-status-10");
+    expect(html).not.toContain("Bereits direkt am Termin");
+    expect(html).not.toContain("appointment-week-preview-checkbox-10");
     expect(html).not.toContain("appointment-week-resolution-mode");
+  });
+
+  it("renders blocked week-plan employees as not transferable without a checkbox", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentSaveReviewDialog
+        open
+        currentEmployeeIds={[]}
+        resourceRequest={{
+          resolutionKey: "tour:1|date:2099-01-01",
+          selectedIds: [11],
+          resolutionMode: "additive",
+          preview: {
+            isoYear: 2099,
+            isoWeek: 1,
+            hasWeekPlan: true,
+            currentEmployeeIds: [],
+            items: [
+              {
+                employeeId: 11,
+                employeeName: "Blockierter KW Mitarbeiter",
+                status: "conflict",
+                selectable: true,
+                conflictReason: "EMPLOYEE_OVERLAP",
+                source: "week_plan",
+              },
+            ],
+          },
+        }}
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+        onOpenChange={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Konfliktprüfung");
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.");
+    expect(html).not.toContain("Tour/KW-Planung");
+    expect(html).toContain("Blockierter KW Mitarbeiter");
+    expect(html).toContain('data-testid="badge-appointment-save-review-employee-11"');
+    expect(html).toContain("Am Zieltermin besteht bereits eine ganztägige Planung.");
+    expect(html).not.toContain("Kann nicht übernommen werden");
+    expect(html).not.toContain("appointment-week-preview-checkbox-11");
+    expect(html).not.toContain("TOUR-KW-MITARBEITER");
+  });
+
+  it("renders selected week-plan additions with target-date copy", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentSaveReviewDialog
+        open
+        currentEmployeeIds={[]}
+        resourceRequest={{
+          resolutionKey: "tour:1|date:2099-01-01",
+          selectedIds: [12],
+          resolutionMode: "additive",
+          preview: {
+            isoYear: 2099,
+            isoWeek: 1,
+            hasWeekPlan: true,
+            currentEmployeeIds: [],
+            items: [
+              {
+                employeeId: 12,
+                employeeName: "KW Ziel Mitarbeiter",
+                status: "will_add",
+                selectable: true,
+                conflictReason: null,
+                source: "week_plan",
+              },
+            ],
+          },
+        }}
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+        onOpenChange={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.");
+    expect(html).not.toContain("Übernehmbar aus Wochenplanung am Zieltermin");
+    expect(html).toContain("Kann dem Termin zugewiesen werden.");
+    expect(html).toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-12")(?=[^>]*checked)/);
   });
 
   it("renders the resource mode selector only for explicit same-week decisions", () => {

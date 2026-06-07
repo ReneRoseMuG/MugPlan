@@ -42,8 +42,9 @@ const appointmentFormStateHook = {
   templateNoteCardColor: 26,
   templateNotePrint: 27,
   templateNoteCardColorLocked: 28,
-  draftAppointmentNotes: 40,
-  userRole: 43,
+  draftAppointmentNotes: 42,
+  draftAppointmentAttachments: 43,
+  userRole: 45,
 } as const;
 
 function resetStateHooks(overrides: Record<number, unknown> = {}) {
@@ -429,6 +430,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     resetStateHooks({
+      [appointmentFormStateHook.draftAppointmentAttachments]: [],
       [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
     mutationOptions.length = 0;
@@ -552,6 +554,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
   it("sets openEditorOnSuccess only for the template suggestion confirm flow", async () => {
     resetStateHooks({
       [appointmentFormStateHook.noteSuggestionDialog]: { templateTitle: "Reklamation", appointmentId: 77 },
+      [appointmentFormStateHook.draftAppointmentAttachments]: [],
       [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
 
@@ -630,6 +633,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
   it("closes the suggestion dialog on skip and closes the template editor on cancel", () => {
     resetStateHooks({
       [appointmentFormStateHook.noteSuggestionDialog]: { templateTitle: "Reklamation", appointmentId: 77 },
+      [appointmentFormStateHook.draftAppointmentAttachments]: [],
       [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
 

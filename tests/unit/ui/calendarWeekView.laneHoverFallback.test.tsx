@@ -11,6 +11,10 @@
  *
  * Ziel:
  * Den Fallback-Preview für leere Tour-Tage in der Wochenansicht absichern.
+ *
+ * Hinweis:
+ * - Die leere Lane-Hover-Preview ist fachlich stillgelegt, weil sie zu oft im Weg war.
+ * - Der Test bleibt als dokumentierte Alt-Erwartung übersprungen.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -151,7 +155,7 @@ describe("CalendarWeekView - lane hover fallback", () => {
     });
   });
 
-  it("renders the empty lane day preview for a tour without appointments and without week assignments", () => {
+  it.skip("renders the empty lane day preview for a tour without appointments and without week assignments - skipped because the empty lane hover preview was intentionally disabled", () => {
     const html = renderToStaticMarkup(
       <CalendarWeekView currentDate={new Date("2026-03-30T00:00:00Z")} />,
     );

@@ -25,7 +25,11 @@ import {
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { NotesSection } from "@/components/NotesSection";
 import type { AppointmentResourcePreviewResponse, AppointmentResourcePreviewItem } from "@/lib/resource-planning";
-import { hasCurrentEmployeeRemovals } from "@/lib/resource-planning";
+import {
+  hasCurrentEmployeeRemovals,
+  isBlockedWeekPlanOverlap,
+  isCurrentEmployeeOverlapRemoval,
+} from "@/lib/resource-planning";
 import type { AppointmentSaveReviewNoteReview } from "@/components/AppointmentSaveReviewDialog";
 
 export type AppointmentMoveDialogContext = {
@@ -36,6 +40,12 @@ export type AppointmentMoveDialogContext = {
 };
 
 type MoveStep = "warn" | "select" | "notes";
+type SelectionGroupKey = "week_plan_conflict" | "week_plan" | "available";
+type SelectionGroup = {
+  key: SelectionGroupKey;
+  title: string | null;
+  items: AppointmentResourcePreviewItem[];
+};
 
 const stepTitles: Record<MoveStep, string> = {
   warn: "Mitarbeiter",
@@ -69,13 +79,37 @@ function buildConfirmLabel(): string {
 }
 
 function resolveItemStatusLabel(item: AppointmentResourcePreviewItem): string | null {
+  if (isCurrentEmployeeOverlapRemoval(item)) return "Wird beim Speichern vom Termin entfernt.";
+  if (isBlockedWeekPlanOverlap(item)) return "Am Zieltermin besteht bereits eine ganztägige Planung.";
   if (item.status === "will_remove" || item.conflictReason === "WILL_REMOVE") return "Wird vom Termin entfernt";
   if (item.status === "conflict" && item.source === "current") return "Überschneidung im Zielzeitraum";
   if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
   if (item.status === "current_only") return "Bleibt nur durch bestehende Terminzuweisung erhalten";
   if (item.status === "will_add" && item.source === "available") return "Konfliktfrei zuweisbar";
-  if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
+  if (item.status === "will_add") return "Kann dem Termin zugewiesen werden.";
+  return null;
+}
+
+function selectionGroupTitle(groupKey: SelectionGroupKey, hasWeekPlanItems: boolean): string | null {
+  if (groupKey === "week_plan_conflict") return null;
+  if (groupKey === "week_plan") return null;
+  return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
+}
+
+function selectionInfoMessage(items: AppointmentResourcePreviewItem[]): { title: string; tone: "info" | "warning" } | null {
+  if (items.some(isBlockedWeekPlanOverlap)) {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.",
+      tone: "warning",
+    };
+  }
+  if (items.some((item) => (item.source ?? "week_plan") === "week_plan" && item.status === "will_add")) {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.",
+      tone: "info",
+    };
+  }
   return null;
 }
 
@@ -136,6 +170,8 @@ export function AppointmentMoveDialog({
   const hasRemovals = preview !== null && hasCurrentEmployeeRemovals(preview);
   const hasWeekPlanStep = weekPlanItems.length > 0 || availableItems.length > 0;
   const hasNotesStep = Boolean(noteReview && noteReview.notes.length > 0);
+  const hasBlockedWeekPlanItems = weekPlanItems.some(isBlockedWeekPlanOverlap);
+  const selectStepInfo = selectionInfoMessage(items);
 
   const stepIds = useMemo<MoveStep[]>(() => {
     const ids: MoveStep[] = [];
@@ -148,14 +184,28 @@ export function AppointmentMoveDialog({
   const currentStep = stepIds[stepIndex] ?? "warn";
   const isLastStep = stepIndex >= stepIds.length - 1;
 
-  const selectionGroups: Array<{ key: string; title: string; items: AppointmentResourcePreviewItem[] }> = [];
-  if (weekPlanItems.length > 0) {
-    selectionGroups.push({ key: "week_plan", title: "Tour-KW-Mitarbeiter", items: weekPlanItems });
+  const selectionGroups: SelectionGroup[] = [];
+  const blockedWeekPlanItems = weekPlanItems.filter(isBlockedWeekPlanOverlap);
+  const selectableWeekPlanItems = weekPlanItems.filter((item) => !isBlockedWeekPlanOverlap(item));
+  const hasWeekPlanItems = weekPlanItems.length > 0;
+  if (blockedWeekPlanItems.length > 0) {
+    selectionGroups.push({
+      key: "week_plan_conflict",
+      title: selectionGroupTitle("week_plan_conflict", hasWeekPlanItems),
+      items: blockedWeekPlanItems,
+    });
+  }
+  if (selectableWeekPlanItems.length > 0) {
+    selectionGroups.push({
+      key: "week_plan",
+      title: selectionGroupTitle("week_plan", hasWeekPlanItems),
+      items: selectableWeekPlanItems,
+    });
   }
   if (availableItems.length > 0) {
     selectionGroups.push({
       key: "available",
-      title: weekPlanItems.length > 0 ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter",
+      title: selectionGroupTitle("available", hasWeekPlanItems),
       items: availableItems,
     });
   }
@@ -163,7 +213,7 @@ export function AppointmentMoveDialog({
   const steps: DialogBaseStep[] | undefined = stepIds.length > 1
     ? stepIds.map((id, index) => ({
         id,
-        title: stepTitles[id],
+        title: id === "select" && hasBlockedWeekPlanItems ? "Konfliktprüfung" : stepTitles[id],
         state: index < stepIndex ? "complete" : index === stepIndex ? "active" : "pending",
       }))
     : undefined;
@@ -243,76 +293,111 @@ export function AppointmentMoveDialog({
         ) : null}
 
         {currentStep === "select" ? (
-          <div
-            className="max-h-[60vh] overflow-auto rounded-md border"
-            data-testid="appointment-move-selection-list"
-          >
-            {selectionGroups.length === 0 ? (
-              <div className="p-4 text-sm text-slate-500">
-                Keine Mitarbeiter aus der Wochenplanung verfügbar.
-              </div>
-            ) : (
-              <div>
-                {selectionGroups.map((group) => (
-                  <section
-                    key={group.key}
-                    className="border-b last:border-b-0"
-                    data-testid={`appointment-move-preview-group-${group.key}`}
-                  >
-                    <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
-                      {group.title}
-                    </div>
-                    <div className="divide-y">
-                      {group.items.map((item) => {
-                        const checked = selectedIds.includes(item.employeeId);
-                        const statusLabel = resolveItemStatusLabel(item);
-                        const StatusIcon = item.status === "conflict"
-                          ? TriangleAlert
-                          : item.status === "already_present"
-                            ? CheckCircle2
-                            : null;
-                        return (
-                          <label
-                            key={item.employeeId}
-                            className={`flex items-start gap-3 p-4 ${item.selectable ? "cursor-pointer" : "opacity-70"}`}
-                            data-testid={`appointment-move-preview-row-${item.employeeId}`}
-                          >
-                            <Checkbox
-                              checked={checked}
-                              disabled={!item.selectable || isSubmitting}
-                              onCheckedChange={(nextChecked) => {
-                                if (!item.selectable) return;
-                                if (nextChecked) {
-                                  onSelectedIdsChange([...selectedIds, item.employeeId]);
-                                  return;
-                                }
-                                onSelectedIdsChange(selectedIds.filter((id) => id !== item.employeeId));
-                              }}
-                              data-testid={`appointment-move-preview-checkbox-${item.employeeId}`}
-                            />
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="font-medium text-slate-900">{item.employeeName}</div>
-                              {statusLabel ? (
-                                <div
-                                  className={item.status === "conflict"
-                                    ? "flex items-center gap-1 text-sm text-red-600"
-                                    : "flex items-center gap-1 text-sm text-slate-600"}
-                                  data-testid={`appointment-move-preview-status-${item.employeeId}`}
-                                >
-                                  {StatusIcon ? <StatusIcon className="h-3.5 w-3.5" /> : null}
-                                  {statusLabel}
-                                </div>
+          <>
+            {selectStepInfo ? (
+              <DialogBaseInlineMessage
+                tone={selectStepInfo.tone}
+                title={selectStepInfo.title}
+              />
+            ) : null}
+            <div
+              className="max-h-[60vh] overflow-auto rounded-md border"
+              data-testid="appointment-move-selection-list"
+            >
+              {selectionGroups.length === 0 ? (
+                <div className="p-4 text-sm text-slate-500">
+                  Keine Mitarbeiter aus der Wochenplanung verfügbar.
+                </div>
+              ) : (
+                <div>
+                  {selectionGroups.map((group) => (
+                    <section
+                      key={group.key}
+                      className="border-b last:border-b-0"
+                      data-testid={`appointment-move-preview-group-${group.key}`}
+                    >
+                      {group.title ? (
+                        <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+                          {group.title}
+                        </div>
+                      ) : null}
+                      <div className="divide-y">
+                        {group.items.map((item) => {
+                          const checked = selectedIds.includes(item.employeeId);
+                          const statusLabel = resolveItemStatusLabel(item);
+                          const StatusIcon = item.status === "conflict"
+                            ? TriangleAlert
+                            : item.status === "already_present"
+                              ? CheckCircle2
+                              : null;
+                          const showCheckbox = !isBlockedWeekPlanOverlap(item);
+                          const rowClassName = `flex items-start gap-3 p-4 ${showCheckbox && item.selectable ? "cursor-pointer" : "opacity-70"}`;
+                          const rowContent = (
+                            <>
+                              {showCheckbox ? (
+                                <Checkbox
+                                  checked={checked}
+                                  disabled={!item.selectable || isSubmitting}
+                                  onCheckedChange={(nextChecked) => {
+                                    if (!item.selectable) return;
+                                    if (nextChecked) {
+                                      onSelectedIdsChange([...selectedIds, item.employeeId]);
+                                      return;
+                                    }
+                                    onSelectedIdsChange(selectedIds.filter((id) => id !== item.employeeId));
+                                  }}
+                                  data-testid={`appointment-move-preview-checkbox-${item.employeeId}`}
+                                />
                               ) : null}
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <EmployeeInfoBadge
+                                  id={item.employeeId}
+                                  fullName={item.employeeName}
+                                  size="sm"
+                                  fullWidth
+                                  renderMode="detail"
+                                  showPreview={false}
+                                  testId={`badge-appointment-move-preview-${item.employeeId}`}
+                                />
+                                {statusLabel ? (
+                                  <div
+                                    className={item.status === "conflict"
+                                      ? "flex items-center gap-1 text-sm text-red-600"
+                                      : "flex items-center gap-1 text-sm text-slate-600"}
+                                    data-testid={`appointment-move-preview-status-${item.employeeId}`}
+                                  >
+                                    {StatusIcon ? <StatusIcon className="h-3.5 w-3.5" /> : null}
+                                    {statusLabel}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </>
+                          );
+                          return showCheckbox ? (
+                            <label
+                              key={item.employeeId}
+                              className={rowClassName}
+                              data-testid={`appointment-move-preview-row-${item.employeeId}`}
+                            >
+                              {rowContent}
+                            </label>
+                          ) : (
+                            <div
+                              key={item.employeeId}
+                              className={rowClassName}
+                              data-testid={`appointment-move-preview-row-${item.employeeId}`}
+                            >
+                              {rowContent}
                             </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            )}
-          </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         ) : null}
 
         {currentStep === "notes" && noteReview ? (

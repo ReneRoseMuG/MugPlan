@@ -281,10 +281,37 @@ describe("AppointmentMoveDialog single-step: week plan only (no removals)", () =
     );
     expect(html).not.toContain("appointment-move-removal-warning");
     expect(html).toContain("appointment-move-selection-list");
-    expect(html).toContain("Tour-KW-Mitarbeiter");
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.");
+    expect(html).not.toContain("Übernehmbar aus Wochenplanung am Zieltermin");
     expect(html).toContain("Clara Neu");
+    expect(html).toContain("Kann dem Termin zugewiesen werden.");
     expect(html).toContain("Weitere konfliktfreie Mitarbeiter");
     expect(html).toContain("David Frei");
+  });
+
+  it("shows blocked week-plan employees as conflict checks without checkbox", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentMoveDialog
+        {...defaultProps}
+        selectedIds={[23]}
+        preview={makePreview({
+          hasWeekPlan: true,
+          currentEmployeeIds: [],
+          items: [
+            { employeeId: 23, employeeName: "Emil Blockiert", status: "conflict", selectable: true, conflictReason: "EMPLOYEE_OVERLAP", source: "week_plan" },
+          ],
+        })}
+        moveContext={{ tourChanged: true, weekChanged: true, isCalendarMove: false }}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.");
+    expect(html).not.toContain("Tour/KW-Planung");
+    expect(html).toContain("Emil Blockiert");
+    expect(html).toContain('data-testid="badge-appointment-move-preview-23"');
+    expect(html).toContain("Am Zieltermin besteht bereits eine ganztägige Planung.");
+    expect(html).not.toContain("Kann nicht übernommen werden");
+    expect(html).not.toContain("appointment-move-preview-checkbox-23");
   });
 
   it("shows the confirm button directly without a 'Weiter' step", () => {

@@ -39,6 +39,18 @@ export function getDefaultResourcePreviewSelection(
     .map((item) => item.employeeId);
 }
 
+export function isCurrentEmployeeOverlapRemoval(item: AppointmentResourcePreviewItem): boolean {
+  return item.source === "current"
+    && item.status === "conflict"
+    && item.conflictReason === "EMPLOYEE_OVERLAP";
+}
+
+export function isBlockedWeekPlanOverlap(item: AppointmentResourcePreviewItem): boolean {
+  return (item.source ?? "week_plan") === "week_plan"
+    && item.status === "conflict"
+    && item.conflictReason === "EMPLOYEE_OVERLAP";
+}
+
 export function hasCurrentEmployeeRemovals(preview: AppointmentResourcePreviewResponse): boolean {
   return preview.items.some((item) =>
     item.source === "current"
@@ -99,17 +111,36 @@ export function buildEmployeeIdsFromResourcePreviewSelection(
   selectedIds: number[],
   resolutionMode: AppointmentResourceResolutionMode,
 ): number[] {
-  const selectedSet = new Set(selectedIds);
+  const blockedSelectionEmployeeIds = new Set(
+    preview.items
+      .filter((item) =>
+        isCurrentEmployeeOverlapRemoval(item)
+        || isBlockedWeekPlanOverlap(item)
+        || (item.source === "current" && (item.status === "will_remove" || item.conflictReason === "WILL_REMOVE")),
+      )
+      .map((item) => item.employeeId),
+  );
+  const selectedEmployeeIds = selectedIds.filter((employeeId) => !blockedSelectionEmployeeIds.has(employeeId));
+  const selectedSet = new Set(selectedEmployeeIds);
   const removableConflictEmployeeIds = new Set(
     preview.items
-      .filter((item) => item.status === "conflict" && item.source === "current" && item.selectable)
+      .filter((item) =>
+        item.status === "conflict"
+        && item.source === "current"
+        && item.selectable
+        && !isCurrentEmployeeOverlapRemoval(item),
+      )
       .map((item) => item.employeeId),
   );
   const forcedRemovalEmployeeIds = new Set(
     preview.items
       .filter((item) =>
         item.source === "current"
-        && (item.status === "will_remove" || item.conflictReason === "WILL_REMOVE"),
+        && (
+          item.status === "will_remove"
+          || item.conflictReason === "WILL_REMOVE"
+          || isCurrentEmployeeOverlapRemoval(item)
+        ),
       )
       .map((item) => item.employeeId),
   );
@@ -121,15 +152,18 @@ export function buildEmployeeIdsFromResourcePreviewSelection(
         if (!removableConflictEmployeeIds.has(employeeId)) return true;
         return selectedSet.has(employeeId);
       }),
-      ...selectedIds,
+      ...selectedEmployeeIds,
     ]));
   }
 
   return Array.from(new Set(
     preview.items
       .filter((item) =>
-        item.status === "already_present"
-        || selectedSet.has(item.employeeId),
+        !blockedSelectionEmployeeIds.has(item.employeeId)
+        && (
+          item.status === "already_present"
+          || selectedSet.has(item.employeeId)
+        ),
       )
       .map((item) => item.employeeId),
   ));

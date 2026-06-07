@@ -10,6 +10,10 @@ import {
   MutationPreviewDialogBase,
 } from "@/components/ui/dialog-base";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
+import {
+  isBlockedWeekPlanOverlap,
+  isCurrentEmployeeOverlapRemoval,
+} from "@/lib/resource-planning";
 
 export type WeekResourcePreviewItem = {
   appointmentId: number;
@@ -37,6 +41,12 @@ export type AppointmentResourceDialogPreviewItem = {
 };
 
 type ResourcePlanningDialogVariant = "week" | "appointment";
+type AppointmentGroupKey = "week_plan_conflict" | "week_plan" | "available" | "current_conflict" | "current";
+type AppointmentGroup = {
+  key: AppointmentGroupKey;
+  title: string | null;
+  items: AppointmentResourceDialogPreviewItem[];
+};
 
 interface ResourcePlanningDialogProps {
   open: boolean;
@@ -115,25 +125,48 @@ function weekStatusLabel(item: WeekResourcePreviewItem): string | null {
 }
 
 function appointmentStatusLabel(item: AppointmentResourceDialogPreviewItem): string | null {
+  if (isCurrentEmployeeOverlapRemoval(item)) return "Wird beim Speichern vom Termin entfernt.";
+  if (isBlockedWeekPlanOverlap(item)) return "Am Zieltermin besteht bereits eine ganztägige Planung.";
   if (item.status === "will_remove") return "Wird vom Termin entfernt";
   if (item.conflictReason === "WILL_REMOVE") return "Wird vom Termin entfernt";
   if (item.status === "conflict" && item.source === "current") {
-    return "Überschneidung im Zielzeitraum. Abwählen entfernt den Mitarbeiter beim Speichern.";
+    return "Überschneidung im Zielzeitraum.";
   }
   if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
   if (item.status === "current_only") return "Bleibt nur durch bestehende Terminzuweisung erhalten";
   if (item.status === "will_add" && item.source === "available") return "Konfliktfrei zuweisbar";
-  if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
+  if (item.status === "will_add") return "Kann dem Termin zugewiesen werden.";
   return null;
 }
 
-function appointmentGroupTitle(source: AppointmentResourceDialogPreviewItem["source"], hasWeekPlanItems: boolean): string {
-  if (source === "available") {
+function appointmentGroupTitle(groupKey: AppointmentGroupKey, hasWeekPlanItems: boolean): string | null {
+  if (groupKey === "week_plan_conflict") return null;
+  if (groupKey === "week_plan") return null;
+  if (groupKey === "current_conflict") return "Zwingend zu entfernen";
+  if (groupKey === "available") {
     return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
   }
-  if (source === "current") return "Bereits direkt am Termin";
-  return "Tour-KW-Mitarbeiter";
+  return "Bereits direkt am Termin";
+}
+
+function appointmentInfoMessage(items: AppointmentResourceDialogPreviewItem[]): { title: string; tone: "info" | "warning" } | null {
+  if (items.some(isCurrentEmployeeOverlapRemoval)) {
+    return { title: "Mitarbeiter wegen doppelter Planung nicht verfügbar.", tone: "warning" };
+  }
+  if (items.some(isBlockedWeekPlanOverlap)) {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.",
+      tone: "warning",
+    };
+  }
+  if (items.some((item) => (item.source ?? "week_plan") === "week_plan" && item.status === "will_add")) {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.",
+      tone: "info",
+    };
+  }
+  return null;
 }
 
 export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
@@ -150,17 +183,27 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
     [props.previewItems, variant],
   );
   const appointmentGroups = useMemo(() => {
-    const groups: Array<{ key: "week_plan" | "available" | "current"; title: string; items: AppointmentResourceDialogPreviewItem[] }> = [];
-    const weekPlanItems = appointmentPreviewItems.filter((item) => (item.source ?? "week_plan") === "week_plan");
+    const groups: AppointmentGroup[] = [];
+    const weekPlanConflictItems = appointmentPreviewItems.filter(isBlockedWeekPlanOverlap);
+    const weekPlanItems = appointmentPreviewItems.filter((item) =>
+      (item.source ?? "week_plan") === "week_plan" && !isBlockedWeekPlanOverlap(item),
+    );
     const availableItems = appointmentPreviewItems.filter((item) => item.source === "available");
-    const currentItems = appointmentPreviewItems.filter((item) => item.source === "current");
-    const hasWeekPlanItems = weekPlanItems.length > 0;
+    const currentConflictItems = appointmentPreviewItems.filter(isCurrentEmployeeOverlapRemoval);
+    const currentItems = appointmentPreviewItems.filter((item) => item.source === "current" && !isCurrentEmployeeOverlapRemoval(item));
+    const hasWeekPlanItems = weekPlanConflictItems.length > 0 || weekPlanItems.length > 0;
 
+    if (weekPlanConflictItems.length > 0) {
+      groups.push({ key: "week_plan_conflict", title: appointmentGroupTitle("week_plan_conflict", hasWeekPlanItems), items: weekPlanConflictItems });
+    }
     if (weekPlanItems.length > 0) {
       groups.push({ key: "week_plan", title: appointmentGroupTitle("week_plan", hasWeekPlanItems), items: weekPlanItems });
     }
     if (availableItems.length > 0) {
       groups.push({ key: "available", title: appointmentGroupTitle("available", hasWeekPlanItems), items: availableItems });
+    }
+    if (currentConflictItems.length > 0) {
+      groups.push({ key: "current_conflict", title: appointmentGroupTitle("current_conflict", hasWeekPlanItems), items: currentConflictItems });
     }
     if (currentItems.length > 0) {
       groups.push({ key: "current", title: appointmentGroupTitle("current", hasWeekPlanItems), items: currentItems });
@@ -168,67 +211,9 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
 
     return groups;
   }, [appointmentPreviewItems]);
-
-  const allSelectableIds = useMemo(() => {
-    if (variant === "week") {
-      return weekPreviewItems
-        .filter((item) => item.selectable ?? item.eligible ?? false)
-        .map((item) => item.appointmentId);
-    }
-    return appointmentPreviewItems
-      .filter((item) => item.selectable)
-      .map((item) => item.employeeId);
-  }, [appointmentPreviewItems, variant, weekPreviewItems]);
-  const selectableIdSet = useMemo(() => new Set(allSelectableIds), [allSelectableIds]);
-  const selectedSelectableCount = useMemo(
-    () => selectedIds.filter((id) => selectableIdSet.has(id)).length,
-    [selectableIdSet, selectedIds],
-  );
-  const appointmentSelectionSummary = allSelectableIds.length === 0
-    ? "Keine auswählbaren Mitarbeiter"
-    : selectedSelectableCount === 0
-      ? `${allSelectableIds.length} verfügbar, keine ausgewählt`
-      : `${selectedSelectableCount} von ${allSelectableIds.length} ausgewählt`;
-
+  const appointmentInfo = variant === "appointment" ? appointmentInfoMessage(appointmentPreviewItems) : null;
   const weekOperationCount = variant === "week" ? getWeekOperationCount(props) : 1;
   const activeWeekOperationIndex = variant === "week" ? getActiveWeekOperationIndex(props.steps) : 0;
-  const appointmentSelectionSummaryBlock = variant === "appointment" ? (
-    <div className="rounded-md border bg-slate-50 p-3" data-testid="appointment-week-selection-summary-panel">
-      <div className="text-sm font-medium text-slate-900">Mitarbeiterauswahl</div>
-      <div className="text-sm text-slate-600" data-testid="appointment-week-selection-summary">
-        {appointmentSelectionSummary}
-      </div>
-    </div>
-  ) : null;
-  const selectionControls = (
-    <div
-      className={
-        variant === "appointment"
-          ? "flex flex-wrap items-center gap-2 sm:justify-end"
-          : "flex flex-wrap items-center gap-2"
-      }
-      data-testid={variant === "appointment" ? "appointment-week-selection-toolbar" : undefined}
-    >
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setSelectedIds(allSelectableIds)}
-        disabled={props.isSubmitting || (variant === "appointment" && allSelectableIds.length === 0)}
-        data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
-      >
-        Alle wählen
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setSelectedIds([])}
-        disabled={props.isSubmitting || (variant === "appointment" && selectedIds.length === 0)}
-        data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
-      >
-        Alle abwählen
-      </Button>
-    </div>
-  );
   const weekHeaderContent = variant === "week" && weekOperationCount > 1 ? (
     <div className="flex min-w-0 items-center justify-center gap-2" data-testid="header-tour-employee-cascade-employee">
       <span
@@ -241,7 +226,8 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
   ) : undefined;
   const primaryConfirmLabel = variant === "week"
     ? buildWeekConfirmLabel(props)
-    : props.confirmLabel ?? "Auswahl übernehmen";
+    : props.confirmLabel ?? "Bestätigen";
+  const dialogSize = variant === "appointment" && props.infoText ? "md" : "xl";
   const footer = (
     <DialogBaseFooter
       secondaryAction={{
@@ -268,7 +254,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       closeDisabled={props.isSubmitting}
       title={variant === "week" ? buildWeekTitle(props) : props.title}
       headerContent={weekHeaderContent}
-      size="xl"
+      size={dialogSize}
       steps={variant === "week" ? undefined : props.steps}
       summary={variant === "week" ? undefined : props.summary}
       error={props.error}
@@ -305,6 +291,13 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
           />
         ) : null}
 
+        {variant === "appointment" && !props.infoText && appointmentInfo ? (
+          <DialogBaseInlineMessage
+            tone={appointmentInfo.tone}
+            title={appointmentInfo.title}
+          />
+        ) : null}
+
         {variant === "appointment" && props.showResolutionMode ? (
           <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="appointment-week-resolution-mode">
             <span className="text-sm font-medium text-slate-700">Übernahme:</span>
@@ -338,8 +331,6 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             description={props.resolutionNotice}
           />
         ) : null}
-
-        {props.infoText ? null : appointmentSelectionSummaryBlock}
 
         {props.infoText ? null : <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {variant === "week" ? (
@@ -408,9 +399,11 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             <div>
               {appointmentGroups.map((group) => (
                 <section key={group.key} className="border-b last:border-b-0" data-testid={`appointment-week-preview-group-${group.key}`}>
-                  <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
-                    {group.title}
-                  </div>
+                  {group.title ? (
+                    <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+                      {group.title}
+                    </div>
+                  ) : null}
                   <div className="divide-y">
                     {group.items.map((item) => {
                       const checked = selectedIds.includes(item.employeeId);
@@ -420,27 +413,35 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
                         : item.status === "already_present"
                           ? CheckCircle2
                           : null;
-                      return (
-                        <label
-                          key={item.employeeId}
-                          className={`flex items-start gap-3 p-4 ${item.selectable ? "cursor-pointer" : "opacity-70"}`}
-                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
-                        >
-                          <Checkbox
-                            checked={checked}
-                            disabled={!item.selectable || props.isSubmitting}
-                            onCheckedChange={(nextChecked) => {
-                              if (!item.selectable) return;
-                              if (nextChecked) {
-                                setSelectedIds([...selectedIds, item.employeeId]);
-                                return;
-                              }
-                              setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
-                            }}
-                            data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
-                          />
+                      const showCheckbox = !isCurrentEmployeeOverlapRemoval(item) && !isBlockedWeekPlanOverlap(item);
+                      const rowClassName = `flex items-start gap-3 p-4 ${showCheckbox && item.selectable ? "cursor-pointer" : "opacity-70"}`;
+                      const rowContent = (
+                        <>
+                          {showCheckbox ? (
+                            <Checkbox
+                              checked={checked}
+                              disabled={!item.selectable || props.isSubmitting}
+                              onCheckedChange={(nextChecked) => {
+                                if (!item.selectable) return;
+                                if (nextChecked) {
+                                  setSelectedIds([...selectedIds, item.employeeId]);
+                                  return;
+                                }
+                                setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
+                              }}
+                              data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
+                            />
+                          ) : null}
                           <div className="min-w-0 flex-1 space-y-1">
-                            <div className="font-medium text-slate-900">{item.employeeName}</div>
+                            <EmployeeInfoBadge
+                              id={item.employeeId}
+                              fullName={item.employeeName}
+                              size="sm"
+                              fullWidth
+                              renderMode="detail"
+                              showPreview={false}
+                              testId={`badge-appointment-week-preview-${item.employeeId}`}
+                            />
                             {statusLabel ? (
                               <div
                                 className={item.status === "conflict" ? "flex items-center gap-1 text-sm text-red-600" : "flex items-center gap-1 text-sm text-slate-600"}
@@ -451,7 +452,24 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
                               </div>
                             ) : null}
                           </div>
+                        </>
+                      );
+                      return showCheckbox ? (
+                        <label
+                          key={item.employeeId}
+                          className={rowClassName}
+                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
+                        >
+                          {rowContent}
                         </label>
+                      ) : (
+                        <div
+                          key={item.employeeId}
+                          className={rowClassName}
+                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
+                        >
+                          {rowContent}
+                        </div>
                       );
                     })}
                   </div>
@@ -460,8 +478,6 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             </div>
           )}
         </div>}
-
-        {variant === "appointment" && !props.infoText ? selectionControls : null}
 
         {props.isSubmitting ? (
           <div className="flex items-center gap-2 text-sm text-slate-600">

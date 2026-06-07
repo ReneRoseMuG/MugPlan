@@ -273,26 +273,98 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Tour-KW-Mitarbeiter");
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.");
+    expect(html).not.toContain("Übernehmbar aus Wochenplanung am Zieltermin");
     expect(html).toContain("Weitere konfliktfreie Mitarbeiter");
-    expect(html).toContain("appointment-week-selection-toolbar");
-    expect(html).toContain("Mitarbeiterauswahl");
-    expect(html).toContain("1 von 2 ausgewählt");
-    expect(html).toContain("Auswahl übernehmen");
+    expect(html).not.toContain("appointment-week-selection-toolbar");
+    expect(html).not.toContain("Mitarbeiterauswahl");
+    expect(html).not.toContain("1 von 2 ausgewählt");
+    expect(html).toContain("Bestätigen");
+    expect(html).not.toContain("Auswahl übernehmen");
     expect(html).toContain("Mia Woche");
     expect(html).toContain("Mia Frei");
+    expect(html).toContain('data-testid="badge-appointment-week-preview-11"');
+    expect(html).toContain('data-testid="badge-appointment-week-preview-12"');
+    expect(html).toContain("Kann dem Termin zugewiesen werden.");
     expect(html).toContain("Konfliktfrei zuweisbar");
     expect(html).toContain("appointment-week-preview-group-week_plan");
     expect(html).toContain("appointment-week-preview-group-available");
     expect(html).toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-11")(?=[^>]*checked)/);
     expect(html).not.toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-12")(?=[^>]*checked)/);
-    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
-      html.indexOf("button-appointment-week-select-all"),
-    );
-    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
-      html.indexOf("button-appointment-week-deselect-all"),
-    );
+    expect(html).not.toContain("button-appointment-week-select-all");
+    expect(html).not.toContain("button-appointment-week-deselect-all");
     expect(html).not.toContain("Mitarbeiter auswählen");
+  });
+
+  it("renders blocked week-plan employees as conflict notice without selection controls", () => {
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        variant="appointment"
+        title="Wochenplanung für Termin übernehmen"
+        description="Mitarbeiter prüfen"
+        previewItems={[
+          {
+            employeeId: 13,
+            employeeName: "Manuel Dreyer",
+            status: "conflict",
+            selectable: false,
+            conflictReason: "EMPLOYEE_OVERLAP",
+            source: "week_plan",
+          },
+        ]}
+        selectedIds={[]}
+        isSubmitting={false}
+        onSelectedIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Wochenplanung für Termin übernehmen");
+    expect(html).toContain("Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.");
+    expect(html).not.toContain("Tour/KW-Planung");
+    expect(html).toContain("Manuel Dreyer");
+    expect(html).toContain('data-testid="badge-appointment-week-preview-13"');
+    expect(html).toContain("Am Zieltermin besteht bereits eine ganztägige Planung.");
+    expect(html).toContain("Bestätigen");
+    expect(html).not.toContain("Kann nicht übernommen werden");
+    expect(html).not.toContain("Mitarbeiterauswahl");
+    expect(html).not.toContain("appointment-week-selection-toolbar");
+    expect(html).not.toContain("button-appointment-week-select-all");
+    expect(html).not.toContain("button-appointment-week-deselect-all");
+    expect(html).not.toContain("appointment-week-preview-checkbox-13");
+  });
+
+  it("renders appointment employee removal as a compact confirmation dialog", () => {
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        variant="appointment"
+        title="Mitarbeiter entfernen"
+        description=""
+        previewItems={[]}
+        selectedIds={[]}
+        employeeId={14}
+        employeeName="Bernd Fischer"
+        infoText="wird vom Termin entfernt"
+        confirmLabel="Bestätigen"
+        isSubmitting={false}
+        onSelectedIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter entfernen");
+    expect(html).toContain('data-testid="badge-tour-employee-cascade-employee"');
+    expect(html).toContain("Bernd Fischer");
+    expect(html).toContain("wird vom Termin entfernt");
+    expect(html).toContain("Bestätigen");
+    expect(html).not.toContain("Entscheidung bestätigen");
+    expect(html).toContain("sm:max-w-lg");
+    expect(html).not.toContain("sm:max-w-4xl");
+    expect(html).not.toContain("list-tour-employee-cascade-preview");
   });
 
   it("renders a fixed replacement notice without additive/replace controls", () => {
@@ -324,18 +396,15 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     );
 
     expect(html).toContain("Mitarbeiter werden ersetzt");
-    expect(html).toContain("appointment-week-selection-toolbar");
-    expect(html).toContain("Keine auswählbaren Mitarbeiter");
-    expect(html).toContain("Auswahl übernehmen");
+    expect(html).not.toContain("appointment-week-selection-toolbar");
+    expect(html).not.toContain("Keine auswählbaren Mitarbeiter");
+    expect(html).toContain("Bestätigen");
     expect(html).toContain("Wird vom Termin entfernt");
+    expect(html).toContain('data-testid="badge-appointment-week-preview-11"');
     expect(html).not.toContain("button-appointment-week-mode-additive");
     expect(html).not.toContain("button-appointment-week-mode-replace");
-    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
-      html.indexOf("button-appointment-week-select-all"),
-    );
-    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
-      html.indexOf("button-appointment-week-deselect-all"),
-    );
+    expect(html).not.toContain("button-appointment-week-select-all");
+    expect(html).not.toContain("button-appointment-week-deselect-all");
     expect(html).not.toContain("Mitarbeiter prüfen");
   });
 });

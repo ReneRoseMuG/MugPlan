@@ -5,6 +5,7 @@ import { Save, TriangleAlert } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { NotesSection } from "@/components/NotesSection";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import {
   DialogBaseFooter,
   DialogBaseInlineMessage,
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/dialog-base";
 import {
   buildEmployeeIdsFromResourcePreviewSelection,
+  isBlockedWeekPlanOverlap,
+  isCurrentEmployeeOverlapRemoval,
   type AppointmentResourcePreviewResponse,
   type AppointmentResourceResolutionMode,
 } from "@/lib/resource-planning";
@@ -59,6 +62,14 @@ type AppointmentSaveReviewDialogProps = {
   onConfirm: (result: AppointmentSaveReviewResult) => void;
 };
 
+type ResourceReviewKind = "current_conflict" | "week_plan_conflict" | "target_week_plan" | "default";
+type ResourceGroupKey = "week_plan_conflict" | "week_plan" | "available" | "current_conflict" | "current";
+type ResourceGroup = {
+  key: ResourceGroupKey;
+  title: string | null;
+  items: AppointmentResourcePreviewResponse["items"];
+};
+
 const stepTitles: Record<AppointmentSaveReviewStepId, string> = {
   resources: "Mitarbeiter",
   notes: "Notizen",
@@ -85,25 +96,61 @@ function formatReviewRange(startDate: string, endDate: string | null, startTime:
 }
 
 function resourceStatusLabel(item: AppointmentResourcePreviewResponse["items"][number]): string | null {
+  if (isCurrentEmployeeOverlapRemoval(item)) return "Wird beim Speichern vom Termin entfernt.";
+  if (isBlockedWeekPlanOverlap(item)) return "Am Zieltermin besteht bereits eine ganztägige Planung.";
   if (item.status === "will_remove") return "Wird vom Termin entfernt";
   if (item.conflictReason === "WILL_REMOVE") return "Wird vom Termin entfernt";
   if (item.status === "conflict" && item.source === "current") {
-    return "Überschneidung im Zielzeitraum. Abwählen entfernt den Mitarbeiter beim Speichern.";
+    return "Überschneidung im Zielzeitraum.";
   }
   if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
   if (item.status === "current_only") return "Bleibt nur durch bestehende Terminzuweisung erhalten";
   if (item.status === "will_add" && item.source === "available") return "Konfliktfrei zuweisbar";
-  if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
+  if (item.status === "will_add") return "Kann dem Termin zugewiesen werden.";
   return null;
 }
 
-function groupTitle(source: AppointmentResourcePreviewResponse["items"][number]["source"], hasWeekPlanItems: boolean): string {
-  if (source === "available") {
+function groupTitle(groupKey: ResourceGroupKey, hasWeekPlanItems: boolean): string | null {
+  if (groupKey === "week_plan_conflict") return null;
+  if (groupKey === "week_plan") return null;
+  if (groupKey === "current_conflict") return "Zwingend zu entfernen";
+  if (groupKey === "available") {
     return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
   }
-  if (source === "current") return "Bereits direkt am Termin";
-  return "Tour-KW-Mitarbeiter";
+  return "Bereits direkt am Termin";
+}
+
+function getResourceReviewKind(items: AppointmentResourcePreviewResponse["items"]): ResourceReviewKind {
+  if (items.some(isCurrentEmployeeOverlapRemoval)) return "current_conflict";
+  if (items.some(isBlockedWeekPlanOverlap)) return "week_plan_conflict";
+  if (items.some((item) => (item.source ?? "week_plan") === "week_plan" && item.status === "will_add")) {
+    return "target_week_plan";
+  }
+  return "default";
+}
+
+function resourceInfoMessage(kind: ResourceReviewKind): { title: string; description?: string; tone: "info" | "warning" } {
+  if (kind === "current_conflict") {
+    return { title: "Mitarbeiter wegen doppelter Planung nicht verfügbar.", tone: "warning" };
+  }
+  if (kind === "week_plan_conflict") {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.",
+      tone: "warning",
+    };
+  }
+  if (kind === "target_week_plan") {
+    return {
+      title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.",
+      tone: "info",
+    };
+  }
+  return {
+    title: "Wochenplanung vor dem Speichern prüfen",
+    description: "Prüfen Sie, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.",
+    tone: "info",
+  };
 }
 
 export function AppointmentSaveReviewDialog({
@@ -150,23 +197,33 @@ export function AppointmentSaveReviewDialog({
   const isLastStep = activeStepIndex >= stepIds.length - 1;
   const dialogTitle = activeStepId === "employees" ? "Termin hat keine Mitarbeiter" : "Termin speichern";
   const dialogSize = stepIds.length === 1 && activeStepId === "employees" ? "md" : "xl";
+  const resourceReviewKind = getResourceReviewKind(resourceRequest?.preview.items ?? []);
+  const resourceMessage = resourceInfoMessage(resourceReviewKind);
   const steps = stepIds.map<DialogBaseStep>((stepId, index) => ({
     id: stepId,
-    title: stepTitles[stepId],
+    title: stepId === "resources" && (resourceReviewKind === "current_conflict" || resourceReviewKind === "week_plan_conflict")
+      ? "Konfliktprüfung"
+      : stepTitles[stepId],
     state: index < activeStepIndex ? "complete" : index === activeStepIndex ? "active" : "pending",
   }));
 
   const groupedItems = useMemo(() => {
     const items = resourceRequest?.preview.items ?? [];
-    const weekPlanItems = items.filter((item) => (item.source ?? "week_plan") === "week_plan");
+    const weekPlanConflictItems = items.filter(isBlockedWeekPlanOverlap);
+    const weekPlanItems = items.filter((item) =>
+      (item.source ?? "week_plan") === "week_plan" && !isBlockedWeekPlanOverlap(item),
+    );
     const availableItems = items.filter((item) => item.source === "available");
-    const currentItems = items.filter((item) => item.source === "current");
-    const hasWeekPlanItems = weekPlanItems.length > 0;
+    const currentConflictItems = items.filter(isCurrentEmployeeOverlapRemoval);
+    const currentItems = items.filter((item) => item.source === "current" && !isCurrentEmployeeOverlapRemoval(item));
+    const hasWeekPlanItems = weekPlanConflictItems.length > 0 || weekPlanItems.length > 0;
     return [
+      { key: "week_plan_conflict" as const, title: groupTitle("week_plan_conflict", hasWeekPlanItems), items: weekPlanConflictItems },
       { key: "week_plan" as const, title: groupTitle("week_plan", hasWeekPlanItems), items: weekPlanItems },
       { key: "available" as const, title: groupTitle("available", hasWeekPlanItems), items: availableItems },
+      { key: "current_conflict" as const, title: groupTitle("current_conflict", hasWeekPlanItems), items: currentConflictItems },
       { key: "current" as const, title: groupTitle("current", hasWeekPlanItems), items: currentItems },
-    ].filter((group) => group.items.length > 0);
+    ].filter((group): group is ResourceGroup => group.items.length > 0);
   }, [resourceRequest]);
 
   const handlePrimaryAction = () => {
@@ -225,9 +282,9 @@ export function AppointmentSaveReviewDialog({
         {activeStepId === "resources" && resourceRequest ? (
           <section className="space-y-4" data-testid="appointment-save-review-step-resources">
             <DialogBaseInlineMessage
-              tone="info"
-              title="Wochenplanung vor dem Speichern prüfen"
-              description="Prüfen Sie, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen."
+              tone={resourceMessage.tone}
+              title={resourceMessage.title}
+              description={resourceMessage.description}
             />
             {resourceRequest.showResolutionMode ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="appointment-week-resolution-mode">
@@ -264,34 +321,44 @@ export function AppointmentSaveReviewDialog({
             <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-appointment-save-review-preview">
               {groupedItems.map((group) => (
                 <section key={group.key} className="border-b last:border-b-0" data-testid={`appointment-week-preview-group-${group.key}`}>
-                  <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
-                    {group.title}
-                  </div>
+                  {group.title ? (
+                    <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+                      {group.title}
+                    </div>
+                  ) : null}
                   <div className="divide-y">
                     {group.items.map((item) => {
                       const checked = selectedIds.includes(item.employeeId);
                       const statusLabel = resourceStatusLabel(item);
-                      return (
-                        <label
-                          key={item.employeeId}
-                          className={`flex items-start gap-3 p-4 ${item.selectable ? "cursor-pointer" : "opacity-70"}`}
-                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
-                        >
-                          <Checkbox
-                            checked={checked}
-                            disabled={!item.selectable || isBusy}
-                            onCheckedChange={(nextChecked) => {
-                              if (!item.selectable) return;
-                              if (nextChecked) {
-                                setSelectedIds([...selectedIds, item.employeeId]);
-                                return;
-                              }
-                              setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
-                            }}
-                            data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
-                          />
+                      const showCheckbox = !isCurrentEmployeeOverlapRemoval(item) && !isBlockedWeekPlanOverlap(item);
+                      const rowClassName = `flex items-start gap-3 p-4 ${showCheckbox && item.selectable ? "cursor-pointer" : "opacity-70"}`;
+                      const rowContent = (
+                        <>
+                          {showCheckbox ? (
+                            <Checkbox
+                              checked={checked}
+                              disabled={!item.selectable || isBusy}
+                              onCheckedChange={(nextChecked) => {
+                                if (!item.selectable) return;
+                                if (nextChecked) {
+                                  setSelectedIds([...selectedIds, item.employeeId]);
+                                  return;
+                                }
+                                setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
+                              }}
+                              data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
+                            />
+                          ) : null}
                           <div className="min-w-0 flex-1 space-y-1">
-                            <div className="font-medium text-slate-900">{item.employeeName}</div>
+                            <EmployeeInfoBadge
+                              id={item.employeeId}
+                              fullName={item.employeeName}
+                              size="sm"
+                              fullWidth
+                              renderMode="detail"
+                              showPreview={false}
+                              testId={`badge-appointment-save-review-employee-${item.employeeId}`}
+                            />
                             {statusLabel ? (
                               <div
                                 className={item.status === "conflict" ? "flex items-center gap-1 text-sm text-red-600" : "flex items-center gap-1 text-sm text-slate-600"}
@@ -302,7 +369,24 @@ export function AppointmentSaveReviewDialog({
                               </div>
                             ) : null}
                           </div>
+                        </>
+                      );
+                      return showCheckbox ? (
+                        <label
+                          key={item.employeeId}
+                          className={rowClassName}
+                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
+                        >
+                          {rowContent}
                         </label>
+                      ) : (
+                        <div
+                          key={item.employeeId}
+                          className={rowClassName}
+                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
+                        >
+                          {rowContent}
+                        </div>
                       );
                     })}
                   </div>
