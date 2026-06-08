@@ -116,14 +116,14 @@ test("keeps same-day appointments aligned to the same visible day in week and mo
   const earlyPanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayEarlyA.id}`).first();
   const latePanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayLateA.id}`).first();
   const noonPanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayNoonB.id}`).first();
-  const laneADayCell = page.getByTestId(`week-day-${sameDayDate}-lane-tour-${fixture.tourA.id}`).first();
+  const dayHeader = page.getByTestId(`week-day-header-${sameDayDate}`).first();
 
   await expect(earlyPanel).toBeVisible();
   await expect(latePanel).toBeVisible();
   await expect(noonPanel).toBeVisible();
-  await expect(laneADayCell).toBeVisible();
-  await expectHorizontalOverlap(earlyPanel, laneADayCell);
-  await expectHorizontalOverlap(latePanel, laneADayCell);
+  await expect(dayHeader).toBeVisible();
+  await expectHorizontalOverlap(earlyPanel, dayHeader);
+  await expectHorizontalOverlap(latePanel, dayHeader);
   const [earlyWeekCenter, lateWeekCenter] = await Promise.all([
     getCenterX(earlyPanel),
     getCenterX(latePanel),

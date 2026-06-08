@@ -230,7 +230,7 @@ test("appointments table preview uses the detail week card and stays inside the 
 test("tour form jumps to the page of the next upcoming appointment and highlights it", async ({ page }) => {
   const tour = await createTourFixture("#1769aa");
   const historicProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-HIST", name: "Tour Focus Historic" });
-  const futureProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-FUT", name: "Tour Focus Future" });
+  const futureProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-FUT", name: "Tour-Focus-Fut" });
 
   for (let index = 0; index < 25; index += 1) {
     await createRawAppointmentFixture({

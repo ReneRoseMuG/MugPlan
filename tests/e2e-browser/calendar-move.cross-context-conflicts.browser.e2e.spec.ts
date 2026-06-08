@@ -77,6 +77,7 @@ test("CC-01: D&D zu anderer Tour ohne Mitarbeiter und Zielplanung – kein Dialo
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 1);
+  await expect(page.getByTestId(`week-appointment-panel-${appointment.id}`)).toBeVisible();
 
   const patchResponsePromise = page.waitForResponse(
     (response) =>

@@ -69,6 +69,7 @@ test("SC-01: D&D auf freien Zielzeitpunkt in selber Tour/KW – Mitarbeiter blei
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 1);
+  await expect(page.getByTestId(`week-appointment-panel-${appointment.id}`)).toBeVisible();
 
   const patchResponsePromise = page.waitForResponse(
     (response) => response.url().includes(`/api/appointments/${appointment.id}`) && response.request().method() === "PATCH",
@@ -83,7 +84,7 @@ test("SC-01: D&D auf freien Zielzeitpunkt in selber Tour/KW – Mitarbeiter blei
 
   // DB-Prüfung: Termin auf neuem Datum
   const [updated] = await db.select({ startDate: appointments.startDate }).from(appointments).where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekSecondDate);
+  expect(String(updated.startDate).slice(0, 10)).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

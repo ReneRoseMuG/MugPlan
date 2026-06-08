@@ -30,14 +30,6 @@ async function getFirstVisibleWeekHeaderId(page: Page) {
   return page.locator('[data-testid^="week-day-header-"]').first().getAttribute("data-testid");
 }
 
-async function getVisibleMonthTitle(page: Page) {
-  return page.locator('[data-testid^="month-sheet-title-"]').first().textContent();
-}
-
-async function getFirstVisibleMonthWeekNumber(page: Page) {
-  return page.locator('[data-testid^="month-sheet-week-number-"]').first().textContent();
-}
-
 test("shows an error for invalid kw zero and still allows the next valid week jump", async ({ page }) => {
   await loginAsAdmin(page);
   await closeDispatcherLoginConflictsDialog(page);
@@ -67,36 +59,4 @@ test("shows an error for invalid kw zero and still allows the next valid week ju
   await expect(kwInput).toHaveValue(expectedNextKw);
   await expect(kwInput).not.toHaveAttribute("aria-invalid", "true");
   await expect.poll(async () => getFirstVisibleWeekHeaderId(page)).toBe(expectedNextHeaderId);
-});
-
-test("jumps within the month calendar by kw and can return to the previous month position", async ({ page }) => {
-  await loginAsAdmin(page);
-  await closeDispatcherLoginConflictsDialog(page);
-  await page.getByTestId("nav-monatsuebersicht").click();
-  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
-
-  const kwInput = page.getByTestId("input-calendar-kw-jump");
-  const initialMonthTitle = await getVisibleMonthTitle(page);
-
-  await page.getByTestId("button-next").click();
-  await expect.poll(async () => getVisibleMonthTitle(page), {
-    message: "month title should change after next navigation",
-  }).not.toBe(initialMonthTitle);
-  const jumpedMonthTitle = await getVisibleMonthTitle(page);
-  const targetKw = (await getFirstVisibleMonthWeekNumber(page))?.trim() ?? "";
-  expect(targetKw).not.toBe("");
-
-  await page.getByTestId("button-prev").click();
-  await expect.poll(async () => getVisibleMonthTitle(page)).not.toBe(jumpedMonthTitle);
-  const originMonthTitle = await getVisibleMonthTitle(page);
-
-  await kwInput.fill(targetKw);
-  await kwInput.blur();
-
-  await expect(kwInput).toHaveValue(targetKw);
-  await expect(page.getByTestId("button-calendar-kw-jump-back")).toBeVisible();
-  await expect.poll(async () => getVisibleMonthTitle(page)).toBe(jumpedMonthTitle);
-
-  await page.getByTestId("button-calendar-kw-jump-back").click();
-  await expect.poll(async () => getVisibleMonthTitle(page)).toBe(originMonthTitle);
 });

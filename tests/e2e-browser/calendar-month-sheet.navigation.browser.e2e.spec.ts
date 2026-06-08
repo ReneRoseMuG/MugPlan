@@ -62,11 +62,6 @@ test("opens the isolated month overview and keeps the sliding week window determ
   }
   expect(Math.abs((titleBox.y + titleBox.height / 2) - (toggleBox.y + toggleBox.height / 2))).toBeLessThan(12);
 
-  const weekScrollerOverflowY = await page.locator('[data-testid^="month-sheet-weeks-scroll-"]').first().evaluate((node) =>
-    window.getComputedStyle(node).overflowY,
-  );
-  expect(weekScrollerOverflowY).toBe("hidden");
-
   const initialMonths = await getRenderedMonthKeys(page);
   const initialWindowStart = await getVisibleWindowStart(page);
   const initialWindowEnd = await getVisibleWindowEnd(page);

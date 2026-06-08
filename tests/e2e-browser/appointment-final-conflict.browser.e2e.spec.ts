@@ -30,6 +30,7 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
+  addEmployeeViaPickerDialog,
   cutAndPasteAppointment,
   dismissFinalConflictDialog,
   dispatchWeekViewDrop,
@@ -80,10 +81,8 @@ test("FC-01: Finaler Konfliktdialog erscheint beim Formularspeichern – betroff
   // Datum auf den konfliktbehafteten Tag verschieben
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
-  // Mitarbeiter manuell hinzufügen
-  const employeePickerInput = page.getByTestId("employee-picker-input");
-  await employeePickerInput.fill(employee.lastName ?? "");
-  await page.getByTestId(`employee-picker-option-${employee.id}`).click();
+  // Mitarbeiter über den Picker-Dialog hinzufügen
+  await addEmployeeViaPickerDialog(page, employee.id);
 
   await page.getByTestId("button-save-appointment").click();
 

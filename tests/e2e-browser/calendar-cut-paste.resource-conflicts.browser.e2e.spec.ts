@@ -73,6 +73,7 @@ test("CP-01: Cut & Paste auf freien Zielzeitpunkt in selber Tour – Termin vers
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 1);
+  await expect(page.getByTestId(`week-appointment-menu-trigger-${appointment.id}`)).toBeVisible();
 
   const patchResponsePromise = page.waitForResponse(
     (response) =>
@@ -90,7 +91,7 @@ test("CP-01: Cut & Paste auf freien Zielzeitpunkt in selber Tour – Termin vers
     .select({ startDate: appointments.startDate })
     .from(appointments)
     .where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekSecondDate);
+  expect(String(updated.startDate).slice(0, 10)).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

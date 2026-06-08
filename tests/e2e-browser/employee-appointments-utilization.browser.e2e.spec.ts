@@ -61,7 +61,9 @@ test("employee form switches from appointments list to utilization view and show
   await expect(page.getByTestId("month-sheet-container")).toBeVisible();
   const appointmentCard = page.getByTestId(`month-compact-bar-${appointment.id}`);
   await expect(appointmentCard).toBeVisible();
-  await appointmentCard.hover();
+  const appointmentBar = page.getByTestId(`appointment-bar-${appointment.id}`).first();
+  await expect(appointmentBar).toBeVisible();
+  await appointmentBar.hover();
   const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(previewPanel).toBeVisible();
 

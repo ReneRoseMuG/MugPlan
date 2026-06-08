@@ -39,6 +39,10 @@ function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName
   return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
 }
 
+function getDetailEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  return [employee.firstName?.trim(), employee.lastName?.trim()].filter(Boolean).join(" ");
+}
+
 function resolveTargetWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
   const weekStart = startOfISOWeek(addWeeks(today, 3));
@@ -350,7 +354,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await originalAppointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("badge-tour")).toContainText(scenario.tour.name);
-  await expect(page.getByTestId("slot-appointment-employees")).toContainText(getCompactEmployeeLabel(scenario.employee));
+  await expect(page.getByTestId("slot-appointment-employees")).toContainText(getDetailEmployeeLabel(scenario.employee));
   await expect(page.getByTestId("appointment-tag-picker-assigned-list")).not.toContainText("Geparkt");
   await page.getByTestId("button-close-appointment").click();
   await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
@@ -379,7 +383,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("badge-tour")).toContainText("Parkplatz");
   await expect(page.getByTestId("slot-appointment-employees")).toContainText("Keine Mitarbeiter zugewiesen");
-  await expect(page.getByTestId("slot-appointment-employees")).not.toContainText(getCompactEmployeeLabel(scenario.employee));
+  await expect(page.getByTestId("slot-appointment-employees")).not.toContainText(getDetailEmployeeLabel(scenario.employee));
   const geparktTagId = await getAppointmentTagIdByName(page, scenario.appointmentId, "Geparkt");
   await expect(page.getByTestId(`appointment-tag-picker-tag-${geparktTagId}`)).toBeVisible();
   await expect(page.getByTestId("appointment-tag-picker-assigned-list")).toContainText("Gepa");

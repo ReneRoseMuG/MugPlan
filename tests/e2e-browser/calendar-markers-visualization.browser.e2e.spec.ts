@@ -136,7 +136,7 @@ test("Admin bearbeitet, deaktiviert und reaktiviert gesiedete Feiertage mit Kale
   const monthMarker = page.getByTestId("calendar-marker-header-2026-05-01");
   await expect.poll(async () => monthMarker.getAttribute("data-marker-header-variant")).toBe("ft");
   await monthMarker.hover();
-  await expect(page.getByText("Maifeiertag Browser", { exact: true }).last()).toBeVisible();
+  await expect(page.getByRole("dialog").last()).toContainText("Maifeiertag Browser");
 });
 
 test("Visualisierungs-Toggle steuert globale Hintergrundintensität", async ({ page }) => {

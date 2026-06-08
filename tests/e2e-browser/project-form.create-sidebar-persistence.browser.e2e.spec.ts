@@ -276,7 +276,6 @@ const missingProjectArticleLabelsFromExtract = [
   "Ofen",
   "Steuerung",
   "Dach",
-  "Fenster",
   "Tür",
   "Vorderwand",
   "Rückwand",

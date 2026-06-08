@@ -32,6 +32,7 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
+  dispatchMonthViewDrop,
   dispatchWeekViewDrop,
   insertTourWeekEmployee,
   navigateToWeekView,
@@ -214,8 +215,6 @@ test("BWK-03: Monatskalender Cross-KW-D&D – gesperrter Wochenplan-Mitarbeiter 
 
   const appointmentBar = page.getByTestId(`appointment-bar-${sourceAppointment.id}`).first();
   // Ziel: KW2-Montag – selbe Tour, andere KW → Preview wird geladen, blockedEmployee gesperrt
-  const targetCalendarDay = page.getByTestId(`month-sheet-day-${week2.weekStartDate}`).first();
-
   await expect(appointmentBar).toBeVisible();
 
   const patchResponsePromise = page.waitForResponse(
@@ -223,7 +222,7 @@ test("BWK-03: Monatskalender Cross-KW-D&D – gesperrter Wochenplan-Mitarbeiter 
     { timeout: 15_000 },
   );
 
-  await appointmentBar.dragTo(targetCalendarDay);
+  await dispatchMonthViewDrop(page, sourceAppointment.id, week2.weekStartDate);
 
   const dialog = page.getByTestId("dialog-appointment-move");
   await expect(dialog).toBeVisible();

@@ -217,7 +217,8 @@ test("TC-05: Tourwechsel-Dialog abbrechen – Tour und Mitarbeiter im Formular u
   await getMoveDialog(page);
   await cancelMoveDialog(page);
 
-  // Formular: sourceTour-Badge noch vorhanden, Mitarbeiter-Badge noch vorhanden
-  await expect(page.getByTestId(`badge-tour-${sourceTour.id}`)).toBeVisible();
+  // Formular: sourceTour-Badge noch vorhanden (statische testId "badge-tour"), Mitarbeiter-Badge noch vorhanden
+  await expect(page.getByTestId("badge-tour")).toBeVisible();
+  await expect(page.getByTestId("badge-tour")).toContainText(sourceTour.name);
   await expect(page.getByTestId(`badge-appointment-employee-${employee.id}`)).toBeVisible();
 });

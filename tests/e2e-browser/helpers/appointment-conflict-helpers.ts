@@ -205,6 +205,42 @@ export async function dispatchWeekViewDrop(
   );
 }
 
+export async function dispatchMonthViewDrop(
+  page: Page,
+  appointmentId: number,
+  targetDate: string,
+): Promise<boolean> {
+  return page.evaluate(
+    async ({ id, sourceTestId, dayTestId }) => {
+      const source = document.querySelector(`[data-testid="${sourceTestId}"]`);
+      if (!(source instanceof HTMLElement)) return false;
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData("text/plain", String(id));
+
+      source.dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+      const target = document.querySelector(`[data-testid="${dayTestId}"]`);
+      if (!(target instanceof HTMLElement)) {
+        source.dispatchEvent(new DragEvent("dragend", { bubbles: true, cancelable: true, dataTransfer }));
+        return false;
+      }
+
+      let dropped = false;
+      target.addEventListener("drop", () => { dropped = true; }, { once: true });
+      target.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }));
+      source.dispatchEvent(new DragEvent("dragend", { bubbles: true, cancelable: true, dataTransfer }));
+      return dropped;
+    },
+    {
+      id: appointmentId,
+      sourceTestId: `appointment-bar-${appointmentId}`,
+      dayTestId: `month-sheet-day-${targetDate}`,
+    },
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Cut & Paste
 // ─────────────────────────────────────────────────────────────────────────────
@@ -289,17 +325,33 @@ export async function cancelMoveDialog(page: Page): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Employee-Picker-Dialog
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Öffnet den Employee-Picker-Dialog, wechselt in die Listenansicht und
+ * wählt den Mitarbeiter mit der angegebenen ID aus. Schließt den Dialog
+ * durch Bestätigung. Deterministisch unabhängig vom gespeicherten View-Mode.
+ */
+export async function addEmployeeViaPickerDialog(page: Page, employeeId: number): Promise<void> {
+  await page.getByTestId("button-add-employee").click();
+  await page.getByTestId("toggle-employee-picker-list").click();
+  await expect(page.getByTestId(`employee-picker-list-row-${employeeId}`)).toBeVisible();
+  await page.getByTestId(`employee-picker-list-row-${employeeId}`).click();
+  await page.getByTestId("button-confirm-employee-picker-selection").click();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Save-Review-Dialog (Terminformular Speichern)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Durchläuft alle Schritte des Save-Review-Dialogs durch wiederholtes Klicken auf
- * "Weiter" und abschließend "Bestätigen". Gibt true zurück wenn erfolgreich.
+ * "Weiter" und abschließend "Bestätigen". Schlägt fehl wenn der Dialog nicht erscheint.
  */
-export async function confirmSaveReviewDialog(page: Page): Promise<boolean> {
+export async function confirmSaveReviewDialog(page: Page): Promise<void> {
   const dialog = page.getByTestId("dialog-appointment-save-review");
-  await dialog.waitFor({ state: "visible", timeout: 3_000 }).catch(() => undefined);
-  if (!(await dialog.isVisible().catch(() => false))) return false;
+  await expect(dialog).toBeVisible();
 
   for (let step = 0; step < 5; step += 1) {
     const nextButton = dialog.getByTestId("button-appointment-save-review-next");
@@ -313,7 +365,7 @@ export async function confirmSaveReviewDialog(page: Page): Promise<boolean> {
     if (await confirmButton.isVisible().catch(() => false)) {
       await expect(confirmButton).toBeEnabled();
       await confirmButton.click();
-      return true;
+      return;
     }
   }
 

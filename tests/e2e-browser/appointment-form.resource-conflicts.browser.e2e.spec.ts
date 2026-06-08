@@ -39,6 +39,7 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
+  addEmployeeViaPickerDialog,
   cancelSaveReviewDialog,
   confirmSaveReviewDialog,
   createAppointmentNoteFixture,
@@ -59,10 +60,10 @@ test.beforeAll(async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-01: Termin ohne Mitarbeiter speichern → kein Ressourcendialog
+// AF-01: Termin ohne Mitarbeiter speichern → Save-Review-Dialog mit 'Keine Mitarbeiter'-Schritt
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-01: Termin ohne Mitarbeiter speichern – kein Save-Review-Dialog, direktes Speichern", async ({ page }) => {
+test("AF-01: Termin ohne Mitarbeiter speichern – Save-Review-Dialog zeigt 'Keine Mitarbeiter'-Schritt, nach Bestätigung gespeichert", async ({ page }) => {
   const week = resolveWeek(1);
   const project = await createProjectFixture({ prefix: "AF-01" });
   const tour = await createTourFixture("#11aa77");
@@ -76,8 +77,6 @@ test("AF-01: Termin ohne Mitarbeiter speichern – kein Save-Review-Dialog, dire
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 1);
 
-  // Kleines Änderungsfeld, das keinen Einfluss auf Mitarbeiter hat
-  // (Notizfeld ist nicht zwingend vorhanden; wir speichern ohne Änderung)
   const patchResponsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(`/api/appointments/${appointment.id}`) &&
@@ -87,9 +86,13 @@ test("AF-01: Termin ohne Mitarbeiter speichern – kein Save-Review-Dialog, dire
 
   await page.getByTestId("button-save-appointment").click();
 
-  // Kein Save-Review-Dialog
-  await expect(page.getByTestId("dialog-appointment-save-review")).toHaveCount(0);
+  // Save-Review-Dialog erscheint mit 'Keine Mitarbeiter'-Schritt
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
 
+  // Bestätigen → Termin wird ohne Mitarbeiter gespeichert
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
 });
@@ -113,14 +116,11 @@ test("AF-02: Neuer Mitarbeiter ohne Terminkonflikt im Formular – Save-Review-D
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 2);
 
-  const employeePickerInput = page.getByTestId("employee-picker-input");
-  await employeePickerInput.fill(employee.lastName ?? "AF-02");
-  await page.getByTestId(`employee-picker-option-${employee.id}`).click();
+  await addEmployeeViaPickerDialog(page, employee.id);
 
   await page.getByTestId("button-save-appointment").click();
 
-  const confirmed = await confirmSaveReviewDialog(page);
-  expect(confirmed).toBe(true);
+  await confirmSaveReviewDialog(page);
 
   const [updated] = await db
     .select({ startDate: appointments.startDate })
@@ -162,23 +162,14 @@ test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdial
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
   // Mitarbeiter hinzufügen
-  const employeePickerInput = page.getByTestId("employee-picker-input");
-  await employeePickerInput.fill(employee.lastName ?? "AF-03");
-  await page.getByTestId(`employee-picker-option-${employee.id}`).click();
+  await addEmployeeViaPickerDialog(page, employee.id);
 
   await page.getByTestId("button-save-appointment").click();
 
-  // Save-Review-Dialog durchlaufen
-  const confirmed = await confirmSaveReviewDialog(page);
-  if (confirmed) {
-    // Finaler Konfliktdialog erscheint
-    await expectFinalConflictDialog(page, [employee.id]);
-    await dismissFinalConflictDialog(page);
-  } else {
-    // Direkt finaler Konfliktdialog (ohne Save-Review-Schritt)
-    await expectFinalConflictDialog(page, [employee.id]);
-    await dismissFinalConflictDialog(page);
-  }
+  // Save-Review-Dialog durchlaufen, danach folgt immer der finale Konfliktdialog
+  await confirmSaveReviewDialog(page);
+  await expectFinalConflictDialog(page, [employee.id]);
+  await dismissFinalConflictDialog(page);
 
   await expectAppointmentUnchanged(targetAppointment.id, before);
 });
@@ -213,12 +204,8 @@ test("AF-04: Zwei Mitarbeiter hinzufügen, einer mit Konflikt – Finaler Dialog
 
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
-  const pickerInput = page.getByTestId("employee-picker-input");
-  await pickerInput.fill(freeEmployee.lastName ?? "AF-04-FREE");
-  await page.getByTestId(`employee-picker-option-${freeEmployee.id}`).click();
-
-  await pickerInput.fill(conflictEmployee.lastName ?? "AF-04-CONFLICT");
-  await page.getByTestId(`employee-picker-option-${conflictEmployee.id}`).click();
+  await addEmployeeViaPickerDialog(page, freeEmployee.id);
+  await addEmployeeViaPickerDialog(page, conflictEmployee.id);
 
   await page.getByTestId("button-save-appointment").click();
 
@@ -394,15 +381,12 @@ test("AF-09: Save-Review-Dialog mit mehreren Schritten – vollständiger Durchl
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 9);
 
-  // Zweiten Mitarbeiter hinzufügen und Datum wechseln → mehrere Review-Schritte
-  const pickerInput = page.getByTestId("employee-picker-input");
-  await pickerInput.fill(employeeB.lastName ?? "AF-09-EMP-B");
-  await page.getByTestId(`employee-picker-option-${employeeB.id}`).click();
+  // Zweiten Mitarbeiter hinzufügen → mehrere Review-Schritte
+  await addEmployeeViaPickerDialog(page, employeeB.id);
 
   await page.getByTestId("button-save-appointment").click();
 
-  const confirmed = await confirmSaveReviewDialog(page);
-  expect(confirmed).toBe(true);
+  await confirmSaveReviewDialog(page);
 
   // Kein Konfliktdialog
   await expect(page.getByTestId("dialog-appointment-final-conflict")).toHaveCount(0);
@@ -502,9 +486,7 @@ test("AF-12: Finaler Konfliktdialog im Formular – kein 'trotzdem speichern', n
 
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
-  const pickerInput = page.getByTestId("employee-picker-input");
-  await pickerInput.fill(employee.lastName ?? "AF-12");
-  await page.getByTestId(`employee-picker-option-${employee.id}`).click();
+  await addEmployeeViaPickerDialog(page, employee.id);
 
   await page.getByTestId("button-save-appointment").click();
   await confirmSaveReviewDialog(page);

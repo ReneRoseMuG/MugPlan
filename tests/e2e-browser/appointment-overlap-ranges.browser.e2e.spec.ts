@@ -72,6 +72,7 @@ test("OR-01: Zwei ganztägige Termine selber Tag selber Mitarbeiter – Konflikt
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 1);
+  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
 
   await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 

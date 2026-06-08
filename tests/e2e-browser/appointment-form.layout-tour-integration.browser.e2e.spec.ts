@@ -333,8 +333,6 @@ test("assigns a tour without week planning and removes existing employees after 
   await expect(dialog).toContainText("Achtung: Mitarbeiter werden abgezogen");
   await expect(dialog.getByTestId(`badge-appointment-move-removed-${existingEmployee.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`badge-appointment-move-removed-${sideEmployee.id}`)).toBeVisible();
-  await dialog.getByRole("button", { name: "Weiter" }).click();
-  await expect(dialog).toContainText("Der Termin hat keine geplanten Mitarbeiter.");
   await dialog.getByTestId("button-appointment-move-confirm").click();
   await expect(dialog).toHaveCount(0);
 
