@@ -14,12 +14,14 @@
  * - Mehrere Schritte im Save-Review-Dialog: alle Schritte durchlaufen.
  * - Mitarbeiter beim Tour-Wechsel übernehmen, dann Konflikt: finaler Dialog blockiert.
  * - Neuer Termin (kein bestehender) mit konfliktbehaftetem Mitarbeiter: Konflikt beim ersten Speichern.
+ * - Neuer Termin ohne Mitarbeiter und ohne Wochenplanung: Save-Review-Dialog mit no-employees-Schritt erscheint, hat Inhalt, ist bestätigbar.
  *
  * Fehlerfälle:
  * - Termin wird trotz Konflikt gespeichert.
  * - Save-Review-Dialog erscheint nicht bei neuem Mitarbeiter.
  * - Abbruch mutiert den Termin.
  * - Konflikter Mitarbeiter im finalen Dialog nicht namentlich aufgeführt.
+ * - Save-Review-Dialog öffnet sich ohne Inhalt und mit deaktiviertem Speichern-Button (no-employees-Fall).
  *
  * Ziel:
  * Das Terminformular-Speichern mit Ressourcenprüfung über alle Einstiegspfade absichern.
@@ -43,6 +45,8 @@ import {
   dismissFinalConflictDialog,
   expectAppointmentUnchanged,
   expectFinalConflictDialog,
+  navigateToWeekView,
+  navigateWeekOffset,
   openAppointmentFormInWeekView,
   resolveWeek,
   snapshotAppointment,
@@ -513,4 +517,65 @@ test("AF-12: Finaler Konfliktdialog im Formular – kein 'trotzdem speichern', n
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
 
   await dismissFinalConflictDialog(page);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AF-13: Neuer Termin ohne Mitarbeiter – no-employees-Schritt, Inhalt, bestätigbar
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("AF-13: Neuer Termin ohne Mitarbeiter und ohne Wochenplanung – Save-Review-Dialog zeigt Inhalt und lässt sich bestätigen", async ({ page }) => {
+  const week = resolveWeek(13);
+  const project = await createProjectFixture({ prefix: "AF-13" });
+  const tour = await createTourFixture("#ee55bb");
+
+  await loginAsAdmin(page);
+  await navigateToWeekView(page);
+  await navigateWeekOffset(page, 13);
+
+  const newButton = page.getByTestId(`button-new-appointment-week-${week.weekStartDate}-lane-tour-${tour.id}`);
+  await expect(newButton).toBeVisible();
+  await newButton.click();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+
+  // Projekt auswählen (fachlich erforderlich: Projekt oder Kunde)
+  await page.getByTestId("button-select-project").click();
+  const table = page.getByTestId("table-projects");
+  await expect(table).toBeVisible();
+  await page.locator("#project-filter-order-number").fill(project.orderNumber ?? "");
+  await page.locator("#project-filter-title").fill(project.name);
+  const row = table.locator("tbody tr").filter({ hasText: project.name }).first();
+  await expect(row).toBeVisible();
+  await row.dblclick();
+  await expect(page.getByTestId("badge-project")).toBeVisible();
+
+  // Keine Mitarbeiter hinzufügen — Standardzustand des neuen Termins
+
+  const postResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/appointments",
+    { timeout: 10_000 },
+  );
+
+  await page.getByTestId("button-save-appointment").click();
+
+  // Save-Review-Dialog erscheint mit no-employees-Schritt als einzigem Schritt
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
+  await expect(dialog).toContainText("Termin hat keine Mitarbeiter");
+  await expect(dialog).toContainText("Soll er trotzdem gespeichert werden?");
+
+  // "Trotzdem speichern" Button ist sichtbar und aktiv
+  const confirmButton = dialog.getByTestId("button-appointment-save-review-confirm");
+  await expect(confirmButton).toBeVisible();
+  await expect(confirmButton).toBeEnabled();
+  await expect(confirmButton).toContainText("Trotzdem speichern");
+
+  // Bestätigung → Termin wird ohne Mitarbeiter angelegt
+  await confirmButton.click();
+  const postResponse = await postResponsePromise;
+  expect(postResponse.status()).toBe(201);
+
+  await expect(dialog).toBeHidden();
 });

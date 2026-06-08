@@ -255,9 +255,9 @@ export function AppointmentSaveReviewDialog({
             variant: "outline",
           }}
           primaryAction={{
-            disabled: isBusy || stepIds.length === 0,
+            disabled: isBusy,
             isPending: isBusy,
-            label: isLastStep ? "Termin speichern" : "Weiter",
+            label: stepIds.length === 0 ? "Trotzdem speichern" : isLastStep ? "Termin speichern" : "Weiter",
             onClick: handlePrimaryAction,
             pendingLabel: "Speichern...",
             testId: isLastStep ? "button-appointment-save-review-confirm" : "button-appointment-save-review-next",
@@ -275,7 +275,7 @@ export function AppointmentSaveReviewDialog({
       title="Termin speichern"
     >
       <div className="space-y-5">
-        {steps.length > 1 ? <DialogBaseStepper steps={steps} /> : null}
+        {steps.length >= 1 ? <DialogBaseStepper steps={steps} /> : null}
 
         {activeStepId === "resources" && resourceRequest ? (
           <section className="space-y-4" data-testid="appointment-save-review-step-resources">
@@ -397,6 +397,16 @@ export function AppointmentSaveReviewDialog({
                 </section>
               ))}
             </div>
+          </section>
+        ) : null}
+
+        {stepIds.length === 0 ? (
+          <section className="space-y-4" data-testid="appointment-save-review-step-no-employees">
+            <DialogBaseInlineMessage
+              tone="warning"
+              title="Termin hat keine Mitarbeiter"
+              description="Der Termin hat keine geplanten Mitarbeiter. Soll er trotzdem gespeichert werden?"
+            />
           </section>
         ) : null}
 
