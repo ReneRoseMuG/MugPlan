@@ -41,7 +41,7 @@ export type AppointmentMoveDialogContext = {
   isCalendarMove: boolean;
 };
 
-type MoveStep = "warn" | "select" | "notes" | "employees";
+type MoveStep = "warn" | "select" | "notes";
 type SelectionGroupKey = "week_plan_conflict" | "week_plan" | "available";
 type SelectionGroup = {
   key: SelectionGroupKey;
@@ -53,7 +53,6 @@ const stepTitles: Record<MoveStep, string> = {
   warn: "Mitarbeiter",
   select: "Wochenplanung",
   notes: "Notizen",
-  employees: "Keine Mitarbeiter",
 };
 
 interface AppointmentMoveDialogProps {
@@ -101,7 +100,9 @@ function selectionGroupTitle(groupKey: SelectionGroupKey, hasWeekPlanItems: bool
   return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
 }
 
-function selectionInfoMessage(items: AppointmentResourcePreviewItem[]): { title: string; tone: "info" | "warning" } | null {
+function selectionInfoMessage(
+  items: AppointmentResourcePreviewItem[],
+): { title: string; tone: "info" | "warning" } | null {
   if (items.some(isBlockedWeekPlanOverlap)) {
     return {
       title: "Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.",
@@ -176,7 +177,6 @@ export function AppointmentMoveDialog({
   const hasWeekPlanStep = weekPlanItems.length > 0 || availableItems.length > 0;
   const hasNotesStep = Boolean(noteReview && noteReview.notes.length > 0);
   const hasBlockedWeekPlanItems = weekPlanItems.some(isBlockedWeekPlanOverlap);
-  const selectStepInfo = selectionInfoMessage(items);
 
   const resolvedEmployeeIds = useMemo(
     () => preview
@@ -184,16 +184,15 @@ export function AppointmentMoveDialog({
       : baseEmployeeIds,
     [preview, baseEmployeeIds, selectedIds],
   );
-  const hasEmployeesStep = resolvedEmployeeIds.length === 0;
+  const selectStepInfo = selectionInfoMessage(items);
 
   const stepIds = useMemo<MoveStep[]>(() => {
     const ids: MoveStep[] = [];
     if (hasRemovals) ids.push("warn");
     if (hasWeekPlanStep) ids.push("select");
     if (hasNotesStep) ids.push("notes");
-    if (hasEmployeesStep) ids.push("employees");
     return ids;
-  }, [hasRemovals, hasWeekPlanStep, hasNotesStep, hasEmployeesStep]);
+  }, [hasRemovals, hasWeekPlanStep, hasNotesStep]);
 
   const currentStep = stepIds[stepIndex] ?? "warn";
   const isLastStep = stepIndex >= stepIds.length - 1;
@@ -248,7 +247,7 @@ export function AppointmentMoveDialog({
         !isLastStep
           ? { label: "Weiter", onClick: () => setStepIndex((i) => i + 1) }
           : {
-              label: currentStep === "employees" ? "Trotzdem verschieben" : buildConfirmLabel(),
+              label: buildConfirmLabel(),
               pendingLabel: "Speichern...",
               onClick: onConfirm,
               isPending: isSubmitting,
@@ -312,6 +311,12 @@ export function AppointmentMoveDialog({
               <DialogBaseInlineMessage
                 tone={selectStepInfo.tone}
                 title={selectStepInfo.title}
+              />
+            ) : null}
+            {resolvedEmployeeIds.length === 0 ? (
+              <DialogBaseInlineMessage
+                tone="warning"
+                title="Der Termin wird ohne Mitarbeiter verschoben."
               />
             ) : null}
             <div
@@ -412,16 +417,6 @@ export function AppointmentMoveDialog({
               )}
             </div>
           </>
-        ) : null}
-
-        {currentStep === "employees" ? (
-          <section data-testid="appointment-move-step-no-employees">
-            <DialogBaseInlineMessage
-              tone="warning"
-              title="Der Termin hat keine geplanten Mitarbeiter."
-              description="Soll er trotzdem verschoben werden?"
-            />
-          </section>
         ) : null}
 
         {currentStep === "notes" && noteReview ? (

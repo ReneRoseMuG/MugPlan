@@ -22,7 +22,7 @@ import {
 } from "@/lib/resource-planning";
 import type { Note } from "@shared/schema";
 
-type AppointmentSaveReviewStepId = "resources" | "notes" | "employees";
+type AppointmentSaveReviewStepId = "resources" | "notes";
 
 export type AppointmentSaveReviewResult = {
   employeeIds: number[];
@@ -73,7 +73,6 @@ type ResourceGroup = {
 const stepTitles: Record<AppointmentSaveReviewStepId, string> = {
   resources: "Mitarbeiter",
   notes: "Notizen",
-  employees: "Ohne Mitarbeiter",
 };
 
 function formatReviewDate(value: string | null): string {
@@ -130,7 +129,9 @@ function getResourceReviewKind(items: AppointmentResourcePreviewResponse["items"
   return "default";
 }
 
-function resourceInfoMessage(kind: ResourceReviewKind): { title: string; description?: string; tone: "info" | "warning" } {
+function resourceInfoMessage(
+  kind: ResourceReviewKind,
+): { title: string; description?: string; tone: "info" | "warning" } {
   if (kind === "current_conflict") {
     return { title: "Mitarbeiter wegen doppelter Planung nicht verfügbar.", tone: "warning" };
   }
@@ -183,9 +184,8 @@ export function AppointmentSaveReviewDialog({
     const ids: AppointmentSaveReviewStepId[] = [];
     if (resourceRequest) ids.push("resources");
     if (noteReview && noteReview.notes.length > 0) ids.push("notes");
-    if (resolvedEmployeeIds.length === 0) ids.push("employees");
     return ids;
-  }, [noteReview, resolvedEmployeeIds.length, resourceRequest]);
+  }, [noteReview, resourceRequest]);
 
   useEffect(() => {
     if (activeStepIndex >= stepIds.length) {
@@ -195,8 +195,6 @@ export function AppointmentSaveReviewDialog({
 
   const activeStepId = stepIds[activeStepIndex];
   const isLastStep = activeStepIndex >= stepIds.length - 1;
-  const dialogTitle = activeStepId === "employees" ? "Termin hat keine Mitarbeiter" : "Termin speichern";
-  const dialogSize = stepIds.length === 1 && activeStepId === "employees" ? "md" : "xl";
   const resourceReviewKind = getResourceReviewKind(resourceRequest?.preview.items ?? []);
   const resourceMessage = resourceInfoMessage(resourceReviewKind);
   const steps = stepIds.map<DialogBaseStep>((stepId, index) => ({
@@ -259,7 +257,7 @@ export function AppointmentSaveReviewDialog({
           primaryAction={{
             disabled: isBusy || stepIds.length === 0,
             isPending: isBusy,
-            label: activeStepId === "employees" ? "Trotzdem speichern" : isLastStep ? "Termin speichern" : "Weiter",
+            label: isLastStep ? "Termin speichern" : "Weiter",
             onClick: handlePrimaryAction,
             pendingLabel: "Speichern...",
             testId: isLastStep ? "button-appointment-save-review-confirm" : "button-appointment-save-review-next",
@@ -272,9 +270,9 @@ export function AppointmentSaveReviewDialog({
         onOpenChange(nextOpen);
       }}
       open={open}
-      size={dialogSize}
+      size="xl"
       testId="dialog-appointment-save-review"
-      title={dialogTitle}
+      title="Termin speichern"
     >
       <div className="space-y-5">
         {steps.length > 1 ? <DialogBaseStepper steps={steps} /> : null}
@@ -286,6 +284,12 @@ export function AppointmentSaveReviewDialog({
               title={resourceMessage.title}
               description={resourceMessage.description}
             />
+            {resolvedEmployeeIds.length === 0 ? (
+              <DialogBaseInlineMessage
+                tone="warning"
+                title="Der Termin wird ohne Mitarbeiter gespeichert."
+              />
+            ) : null}
             {resourceRequest.showResolutionMode ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="appointment-week-resolution-mode">
               <span className="text-sm font-medium text-slate-700">Übernahme:</span>
@@ -437,15 +441,6 @@ export function AppointmentSaveReviewDialog({
           </section>
         ) : null}
 
-        {activeStepId === "employees" ? (
-          <section data-testid="appointment-save-review-step-no-employees">
-            <DialogBaseInlineMessage
-              tone="warning"
-              title="Der Termin hat keine geplanten Mitarbeiter."
-              description="Soll er trotzdem gespeichert werden?"
-            />
-          </section>
-        ) : null}
       </div>
     </DialogBaseShell>
   );
