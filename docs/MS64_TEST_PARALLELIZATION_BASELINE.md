@@ -74,20 +74,20 @@ Noch offen. Voraussetzung: Worker-DB-Lifecycle (AP03) und erweiterte Safety-Guar
 
 ### E2E Vitest (haengt am Integration-Setup, mit AP10)
 
-Blockiert (siehe Migrations-Blocker unten).
+Noch offen (AP10).
 
 ### Browser/E2E (AP01-Baseline + AP05-AP09)
 
-Blockiert (siehe Migrations-Blocker unten). Spaeter zusaetzlich zu erfassen: Liste der
-langsamsten Browser-Spezifikationen (Top-Zeitfresser) und die Dauer-Verteilung ueber alle
-Browser-Dateien (Median vs. Maximum), um zu beurteilen, ob einzelne lange Dateien den
-kritischen Pfad deckeln (Reorg-Potenzial).
+Noch offen (AP05-AP09). Spaeter zusaetzlich zu erfassen: Liste der langsamsten Browser-
+Spezifikationen (Top-Zeitfresser) und die Dauer-Verteilung ueber alle Browser-Dateien
+(Median vs. Maximum), um zu beurteilen, ob einzelne lange Dateien den kritischen Pfad
+deckeln (Reorg-Potenzial).
 
-## HARTER BLOCKER: Migrationskette baut kein Schema von Grund auf (AP03/AP05/AP10)
+## Migrations-Befund und gewaehlte Loesung fuer den Worker-DB-Aufbau (AP03)
 
-Status: **blockiert** — betrifft AP03 (Worker-DB-Lifecycle) und davon abhaengig AP05
-(Worker-Server) und AP10 (Integration worker-parallel). AP11 (Unit) und AP04 (Guards) sind
-davon **nicht** betroffen und bleiben gueltig.
+Status: **geloest fuer die Parallelisierung** ueber Schema-Klon; das zugrundeliegende
+Migrations-Defizit bleibt als separater Folgeauftrag offen. AP11 (Unit) und AP04 (Guards)
+sind davon nicht betroffen.
 
 Befund (verifiziert):
 - `npm run db:migration-status:test` meldet fuer `mugplan_test`: 29 Repository-Migrationen,
@@ -104,18 +104,20 @@ Befund (verifiziert):
   alle Statements in Dateireihenfolge und brechen mit `Failed to open the referenced table
   'project'` (MySQL 1824) ab.
 
-Konsequenz fuer AP03: Eine frische Worker-DB kann ueber `db:migrate:test` derzeit nicht
-aufgebaut werden. Die in AP03 geforderte Akzeptanz ("vollstaendig migriert, Historie ohne
-pending/unexpected") ist damit ohne vorgelagerte Korrektur nicht erreichbar. Gemaess CLAUDE.md
-Abschnitt 16 ist dies als harter Abschluss-Blocker zu behandeln; AP03 gilt als blockiert, nicht
-als umgesetzt.
+Konsequenz: Eine frische Worker-DB kann ueber `db:migrate:test` nicht aufgebaut werden. Da das
+AP03-Ziel der per-Worker-DB-Aufbau ist (nicht die Reparatur der Migrationskette), wird das
+Schema jeder Worker-DB aus der bereits korrekten Basis-Test-DB `mugplan_test` geklont:
+`SHOW CREATE TABLE`/`SHOW CREATE VIEW` inkl. Fremdschluessel, bei deaktivierten
+Foreign-Key-Checks waehrend des Aufbaus. Umgesetzt in `tests/helpers/workerDatabase.ts`,
+abgesichert durch `tests/integration/infra/workerDatabaseLifecycle.test.ts` (gleiche
+Tabellenanzahl wie die Quelle, Kerntabellen und Fremdschluessel vorhanden, rueckstandsfreie
+Bereinigung). Die Worker-DB-Namen unterliegen weiterhin den AP04-Guards.
 
-Optionen (Entscheidung erforderlich, jeweils ausserhalb des bisherigen AP03-Scopes):
-1. Konsolidiertes Baseline-Migrationsskript erstellen, das das aktuelle Gesamtschema von Grund
-   auf erzeugt (sauberster, produktionsnaher Weg; eigener, sensibler Migrationsauftrag mit
-   Dev/Test-Verifikation nach CLAUDE.md 16).
-2. Worker-DB-Schema per Klon der bestehenden `mugplan_test` aufbauen (mysqldump --no-data oder
-   `CREATE TABLE LIKE`) statt Migration; entkoppelt die Parallelisierung von der
-   Migrationsdrift, weicht aber vom AP03-Ziel "produktionsnaher Migrationspfad" ab.
-3. DB-gebundene Parallelisierung (AP03/AP05/AP10) zurueckstellen; nur den bereits erzielten
-   Unit-Gewinn (AP11) behalten.
+Begruendung der Wahl: Der Klon nutzt das real funktionierende Schema als Quelle, fasst die
+sensible Produktiv-Migrationskette nicht an (CLAUDE.md 6/16) und bleibt vollstaendig in der
+Test-Infrastruktur. Die Abweichung vom Wortlaut "produktionsnaher Migrationspfad" ist bewusst.
+
+Offener Folgeauftrag (ausserhalb MS-64): Es fehlt ein konsolidiertes Baseline-Migrationsskript,
+das das Gesamtschema von Grund auf erzeugt. Das ist ein latentes Risiko auch fuer frische
+Dev-/Prod-Aufbauten und sollte als eigener, sensibler Migrationsauftrag mit Dev/Test-
+Verifikation (CLAUDE.md 16) bearbeitet werden.
