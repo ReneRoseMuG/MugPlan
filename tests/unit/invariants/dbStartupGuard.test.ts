@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Der DB-Startup akzeptiert nur Ziele, die in den mode-spezifischen Allowlists liegen.
+ * - Im Testmodus akzeptiert der Startup zusaetzlich verankerte Worker-DBs (AP04).
  * - Nicht erlaubte Datenbankziele brechen den Startup fail-fast vor createPool ab.
  * - Nicht erlaubte Hostziele brechen den Startup fail-fast vor createPool ab.
  *
@@ -68,6 +69,21 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
 
     expect(createPoolMock).toHaveBeenCalledTimes(1);
     expect(createPoolMock).toHaveBeenCalledWith("mysql://u:p@localhost:3306/tenant_01_test");
+  });
+
+  it("accepts a worker test database via the anchored pattern even if not exactly allowlisted (AP04)", async () => {
+    installBaseMocks({
+      mode: "test",
+      envSource: "test_file",
+      mysqlDatabaseUrl: "mysql://u:p@localhost:3306/mugplan_w2_test",
+      allowedDatabases: ["mugplan_test"],
+      allowedHosts: ["localhost"],
+    });
+
+    await import("../../../server/db");
+
+    expect(createPoolMock).toHaveBeenCalledTimes(1);
+    expect(createPoolMock).toHaveBeenCalledWith("mysql://u:p@localhost:3306/mugplan_w2_test");
   });
 
   it("fails fast when database is outside allowlist", async () => {

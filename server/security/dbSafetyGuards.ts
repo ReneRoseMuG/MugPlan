@@ -72,21 +72,40 @@ export function assertTestMode(mode: RuntimeMode, mugplanModeRaw = process.env.M
   }
 }
 
+/**
+ * AP04 (MS-64): Eng verankertes Muster fuer temporaere Worker-Testdatenbanken.
+ * Erlaubt im Testmodus zusaetzlich zur exakten Allowlist Namen der Form
+ * `mugplan_w<index>_test` (z. B. mugplan_w0_test). Bewusst hart:
+ * - Praefix `mugplan_w` und numerischer Worker-Index sind fix.
+ * - Das Muster ist mit ^...$ vollstaendig verankert (keine Teiltreffer).
+ * - Host-Allowlist und das `_test`-Suffix werden zusaetzlich weiterhin erzwungen.
+ * Dieses Muster wird ausschliesslich im test-spezifischen Write-Pfad konsultiert,
+ * niemals im Dev-/Prod-Pfad (assertSafeDatabaseTargetForMode bleibt unveraendert).
+ * Das Namensschema muss mit dem Worker-DB-Lifecycle (AP03) konsistent bleiben.
+ */
+export const TEST_WORKER_DATABASE_PATTERN = /^mugplan_w\d+_test$/;
+
 export function assertSafeWriteTargetForTestMode(
   databaseUrl: string,
   allowedDatabases: string[],
   allowedHosts: string[],
 ): { dbName: string; host: string; port: number } {
-  const target = assertSafeDatabaseTargetForMode(
-    databaseUrl,
-    "test",
-    allowedDatabases,
-    allowedHosts,
-  );
-  if (!target.dbName.endsWith("_test")) {
-    throw new Error(`Unsafe test database name: '${target.dbName}'. Expected '*_test' suffix.`);
+  const dbName = parseDatabaseName(databaseUrl);
+  const host = parseHostName(databaseUrl);
+  const port = parsePort(databaseUrl);
+
+  const isExactlyAllowed = allowedDatabases.includes(dbName);
+  const isAllowedWorkerDatabase = TEST_WORKER_DATABASE_PATTERN.test(dbName);
+  if (!isExactlyAllowed && !isAllowedWorkerDatabase) {
+    throw new Error(`Unsafe database target for mode 'test': db='${dbName}', host='${host || "unknown"}'.`);
   }
-  return target;
+  if (!allowedHosts.includes(host)) {
+    throw new Error(`Unsafe host target for mode 'test': db='${dbName}', host='${host || "unknown"}'.`);
+  }
+  if (!dbName.endsWith("_test")) {
+    throw new Error(`Unsafe test database name: '${dbName}'. Expected '*_test' suffix.`);
+  }
+  return { dbName, host, port };
 }
 
 export function assertSafeDestructiveOperationTarget(params: {

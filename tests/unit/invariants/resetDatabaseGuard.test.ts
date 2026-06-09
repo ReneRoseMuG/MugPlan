@@ -7,6 +7,8 @@
  * Abgedeckte Regeln:
  * - Runtime-Mode-Guard akzeptiert nur den erwarteten Zielmodus.
  * - DB-/Host-Guard akzeptiert nur explizit erlaubte Zielwerte aus den Allowlists.
+ * - Test-Write-Guard akzeptiert zusaetzlich verankerte Worker-DBs (AP04), erzwingt
+ *   aber weiterhin Host-Allowlist und _test-Suffix; Fast-Treffer werden abgelehnt.
  * - SQL-Identity-Guard akzeptiert nur die erwartete aktive Datenbank.
  *
  * Fehlerfaelle:
@@ -81,6 +83,50 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
           ["localhost"],
         ),
     ).toThrow("Expected '*_test' suffix");
+  });
+
+  it("accepts worker test databases via the anchored worker pattern (AP04)", () => {
+    for (const workerDb of ["mugplan_w0_test", "mugplan_w3_test", "mugplan_w15_test"]) {
+      expect(
+        assertSafeWriteTargetForTestMode(
+          `mysql://u:p@localhost:3306/${workerDb}`,
+          ["mugplan_test"],
+          ["localhost"],
+        ),
+      ).toEqual({ dbName: workerDb, host: "localhost", port: 3306 });
+    }
+  });
+
+  it("rejects a worker-like database on a non-allowlisted host (AP04)", () => {
+    expect(
+      () =>
+        assertSafeWriteTargetForTestMode(
+          "mysql://u:p@db.example.com:3306/mugplan_w1_test",
+          ["mugplan_test"],
+          ["localhost"],
+        ),
+    ).toThrow("Unsafe host target");
+  });
+
+  it("rejects names that only resemble the worker pattern (AP04)", () => {
+    for (const badDb of [
+      "mugplan_w1", // fehlendes _test-Suffix -> kein Mustertreffer
+      "mugplan_wx_test", // nicht-numerischer Index
+      "tenant_w1_test", // falscher Praefix
+      "evil_mugplan_w1_test", // nicht verankert vorne
+      "mugplan_w1_test_evil", // nicht verankert hinten
+      "mugplan_prod", // Produktionsname
+    ]) {
+      expect(
+        () =>
+          assertSafeWriteTargetForTestMode(
+            `mysql://u:p@localhost:3306/${badDb}`,
+            ["mugplan_test"],
+            ["localhost"],
+          ),
+        `expected '${badDb}' to be rejected`,
+      ).toThrow("Unsafe database target");
+    }
   });
 
   it("checks destructive targets with combined mode and target guards", () => {
