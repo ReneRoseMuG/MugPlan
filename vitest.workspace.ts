@@ -23,6 +23,14 @@ export default mergeConfig(
             ],
             exclude: ["tests/integration/**", "tests/e2e/**", "tests/e2e-browser/**"],
             setupFiles: ["./tests/setup.unit.ts"],
+            // AP11 (MS-64): Unit-Tests nutzen keine DB, kein echtes Dateisystem und keinen
+            // Browser; sie sind prozessisoliert (forks-Pool) und koennen datei-parallel laufen.
+            // fileParallelism ist in dieser Vitest-Version eine Root-Option und laesst sich NICHT
+            // pro Projekt ueberschreiben (empirisch belegt: per-Projekt-Wert wird ignoriert).
+            // Die Unit-Parallelitaet wird daher in der eigenstaendigen test:unit-Invocation per
+            // CLI-Flag --fileParallelism auf Root-Ebene erzwungen (package.json). Integration/E2E
+            // laufen als separate Invocations weiter seriell (Basis-Config fileParallelism=false).
+            // Tests innerhalb einer Datei bleiben seriell (sequence.concurrent=false).
           },
         }),
         defineProject({
