@@ -12,6 +12,7 @@ Ziel: Vollstaendiges Inventar aller Pfade mit destruktivem Potenzial und Nachwei
 | Pfad | Trigger | Art | DB-Connect-Pfad | Soll-Guard-Entry | Status |
 |---|---|---|---|---|---|
 | `tests/helpers/resetDatabase.ts` | Integration setup | reset + truncate | `mysql.createConnection(...)` | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` | secured |
+| `tests/helpers/workerDatabase.ts` | MS-64 Worker-DB-Lifecycle (AP03/AP10/Browser) | `CREATE DATABASE` + `DROP DATABASE` + Schema-Klon je Worker | `mysql.createConnection(baseUrl...)` (Verbindung zur Basis-Test-DB; CREATE/DROP zielen auf Worker-DB-Namen) | `assertSafeWriteTargetForTestMode` + `assertSafeDestructiveOperationTarget` (Testmodus + Host-Allowlist + `_test`-Suffix + verankertes Worker-Muster `^mugplan_w\d+_test$`) | secured |
 | `script/reset-test-db.ts` | manuell / script | reset + truncate | `mysql.createConnection(...)` | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` | secured |
 | `script/delete-dev-customer.ts` | manuell / `npm run "lösche Kunde:"` | gezielter Kunden-Kaskaden-Delete in Dev | `mysql.createConnection(...)` | `assertSafeAdminDestructiveOperationTarget` + `assertSqlDatabaseIdentity` + `--confirm` | secured |
 | `server/controllers/adminController.ts` | API `/admin/reset-database` controller entry | destructive trigger (delegation) | delegiert an `adminService.resetDatabase` | indirekt via `adminService`-Guard-Kette | secured |

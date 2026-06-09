@@ -73,14 +73,14 @@ export function assertTestMode(mode: RuntimeMode, mugplanModeRaw = process.env.M
 }
 
 /**
- * AP04 (MS-64): Eng verankertes Muster fuer temporaere Worker-Testdatenbanken.
- * Erlaubt im Testmodus zusaetzlich zur exakten Allowlist Namen der Form
+ * AP04 (MS-64): Eng verankertes Muster für temporäre Worker-Testdatenbanken.
+ * Erlaubt im Testmodus zusätzlich zur exakten Allowlist Namen der Form
  * `mugplan_w<index>_test` (z. B. mugplan_w0_test). Bewusst hart:
- * - Praefix `mugplan_w` und numerischer Worker-Index sind fix.
- * - Das Muster ist mit ^...$ vollstaendig verankert (keine Teiltreffer).
- * - Host-Allowlist und das `_test`-Suffix werden zusaetzlich weiterhin erzwungen.
- * Dieses Muster wird ausschliesslich im test-spezifischen Write-Pfad konsultiert,
- * niemals im Dev-/Prod-Pfad (assertSafeDatabaseTargetForMode bleibt unveraendert).
+ * - Präfix `mugplan_w` und numerischer Worker-Index sind fix.
+ * - Das Muster ist mit ^...$ vollständig verankert (keine Teiltreffer).
+ * - Host-Allowlist und das `_test`-Suffix werden zusätzlich weiterhin erzwungen.
+ * Dieses Muster wird ausschließlich im test-spezifischen Write-Pfad konsultiert,
+ * niemals im Dev-/Prod-Pfad (assertSafeDatabaseTargetForMode bleibt unverändert).
  * Das Namensschema muss mit dem Worker-DB-Lifecycle (AP03) konsistent bleiben.
  */
 export const TEST_WORKER_DATABASE_PATTERN = /^mugplan_w\d+_test$/;
