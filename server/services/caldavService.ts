@@ -16,6 +16,10 @@ function loadConfig(): CaldavConfig | null {
   return { baseUrl: baseUrl.replace(/\/+$/, ""), username, password };
 }
 
+export function isCaldavConfigured(): boolean {
+  return loadConfig() !== null;
+}
+
 function buildUid(appointmentId: number): string {
   return `mugplan-appointment-${appointmentId}@mugplan.local`;
 }

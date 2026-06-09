@@ -847,7 +847,7 @@ export function CalendarWeekSpanningTile({
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
-                {headerDay.isFirst ? <span className="truncate">K: {resolvedCustomerNumber}</span> : <span />}
+                {headerDay.isFirst ? <span className="truncate text-[13px]">K: {resolvedCustomerNumber}</span> : <span />}
                 {headerDay.isLast ? (
                   <span className={WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME} data-role="postal-code-highlight">
                     PLZ: {resolvedPostalCode}

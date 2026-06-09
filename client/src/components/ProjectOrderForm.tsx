@@ -218,21 +218,32 @@ export function ProjectProductFields({
       >
         <Label htmlFor={`project-product-${field.key}`}>{field.label}</Label>
         <div className="flex items-center gap-2">
-          <select
-            id={`project-product-${field.key}`}
-            value={currentValue}
-            onChange={(e) => {
-              onSelectField(field.key, e.target.value);
-            }}
-            disabled={readOnly || isWindowField}
-            className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
-            data-testid={`select-project-product-${field.key}`}
-          >
-            <option value="">— nicht ausgewählt —</option>
-            {items.map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
+          <div className="relative min-w-0 flex-1">
+            <select
+              id={`project-product-${field.key}`}
+              value={currentValue}
+              onChange={(e) => {
+                onSelectField(field.key, e.target.value);
+              }}
+              disabled={readOnly || isWindowField}
+              className="h-10 w-full min-w-0 rounded border border-slate-300 bg-white px-2 text-sm"
+              data-testid={`select-project-product-${field.key}`}
+            >
+              <option value="">— nicht ausgewählt —</option>
+              {items.map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
+              ))}
+            </select>
+            {isWindowField ? (
+              <div
+                className="absolute inset-0 flex items-center rounded border border-slate-300 bg-slate-100 px-2 text-sm text-slate-400 select-none"
+                aria-hidden
+                data-testid={`overlay-project-product-${field.key}`}
+              >
+                — deaktiviert —
+              </div>
+            ) : null}
+          </div>
           {isAdmin && !readOnly && !isWindowField ? (
             <Button
               type="button"

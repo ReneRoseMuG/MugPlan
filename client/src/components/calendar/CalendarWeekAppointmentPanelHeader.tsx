@@ -99,7 +99,7 @@ export function CalendarWeekAppointmentPanelHeader({
           )}
         </div>
         <div className="flex min-w-0 items-center justify-between gap-2 border-t border-white/20 pt-1 whitespace-nowrap">
-          <span className="min-w-0 truncate">K: {resolvedCustomerNumber}</span>
+          <span className="min-w-0 truncate text-[13px]">K: {resolvedCustomerNumber}</span>
           <span className={WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME} data-role="postal-code-highlight">
             PLZ: {resolvedPostalCode}
           </span>

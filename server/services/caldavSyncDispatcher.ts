@@ -1,4 +1,4 @@
-import { deleteAppointmentInCaldav, upsertAppointmentInCaldav } from "./caldavService";
+import { deleteAppointmentInCaldav, isCaldavConfigured, upsertAppointmentInCaldav } from "./caldavService";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as calendarSyncRepository from "../repositories/calendarSyncRepository";
 import { logWarn } from "../lib/logger";
@@ -17,6 +17,7 @@ function enqueue(task: () => Promise<void>): void {
 }
 
 export function dispatchCalDavUpsert(appointmentId: number): void {
+  if (!isCaldavConfigured()) return;
   enqueue(async () => {
     try {
       const result = await upsertAppointmentInCaldav(appointmentId);
@@ -49,6 +50,7 @@ export function dispatchCalDavUpsert(appointmentId: number): void {
 }
 
 export function dispatchCalDavDelete(appointmentId: number, externalEventId?: string | null): void {
+  if (!isCaldavConfigured()) return;
   enqueue(async () => {
     try {
       const result = await deleteAppointmentInCaldav(appointmentId, externalEventId);
