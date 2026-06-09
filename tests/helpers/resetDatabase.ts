@@ -5,7 +5,6 @@ import {
   assertSqlDatabaseIdentity,
 } from "../../server/security/dbSafetyGuards";
 
-const RESET_DB_LOCK_NAME = "mugplan_test_reset_database_lock";
 const RESET_DB_LOCK_TIMEOUT_SECONDS = 60;
 
 initializeRuntimeEnv();
@@ -17,6 +16,11 @@ const expectedTarget = assertSafeDestructiveOperationTarget({
   allowedDatabases: runtimeConfig.allowedDatabases,
   allowedHosts: runtimeConfig.allowedHosts,
 });
+
+// AP06 (MS-64): DB-spezifischer Lock-Name, damit parallele Worker-DBs sich nicht ueber einen
+// serverweiten GET_LOCK gegenseitig serialisieren. Fuer mugplan_test (serieller Modus) bleibt
+// der Name unveraendert ("mugplan_test_reset_database_lock").
+const RESET_DB_LOCK_NAME = `${expectedTarget.dbName}_reset_database_lock`;
 
 export async function resetDatabase() {
   const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);

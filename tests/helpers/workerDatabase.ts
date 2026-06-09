@@ -7,7 +7,7 @@ import {
 } from "../../server/security/dbSafetyGuards";
 
 /**
- * AP03 (MS-64): Worker-Datenbank-Lifecycle.
+ * AP03/AP10 (MS-64): Worker-Datenbank-Lifecycle.
  *
  * Pro Test-Worker eine eigene temporaere Testdatenbank deterministisch anlegen, ihr Schema
  * aufbauen und nach dem Lauf rueckstandsfrei bereinigen. Wiederverwendbar fuer Browser (AP05)
@@ -17,18 +17,40 @@ import {
  * Die Migrationskette des Projekts enthaelt kein From-Scratch-Baseline (Basistabellen wie
  * `project`/`users` werden in keiner Migration erzeugt, sondern stammen historisch aus
  * `drizzle-kit push`). Eine frische DB laesst sich darum ueber `db:migrate:test` nicht
- * aufbauen (FK auf nicht existierende Tabelle). Deshalb wird das Schema jeder Worker-DB aus
- * der bereits korrekten Basis-Test-DB geklont (SHOW CREATE TABLE/VIEW inkl. Fremdschluessel).
- * Das tieferliegende fehlende Baseline-Migrationsskript ist als separater Auftrag zu behandeln.
+ * aufbauen. Deshalb wird das Schema jeder Worker-DB aus der bereits korrekten Basis-Test-DB
+ * geklont (SHOW CREATE TABLE/VIEW inkl. Fremdschluessel).
  *
  * Sicherheit:
  * - Der Worker-DB-Name folgt dem in AP04 verankerten Muster `mugplan_w<index>_test` und wird
  *   vor jeder Operation gegen die zentralen Safety-Guards validiert (Testmodus, Host-Allowlist,
  *   `_test`-Suffix, Muster).
+ *
+ * Konfiguration:
+ * - Die Funktionen akzeptieren eine explizite WorkerDbConfig. Wird keine uebergeben, wird sie
+ *   aus der Laufzeit-Env gelesen. Die explizite Variante erlaubt Provisionierung, BEVOR
+ *   runtimeEnv auf die Worker-URL festgelegt wird (Import-Reihenfolge fuer AP05/AP10).
  */
 
 const WORKER_DB_PREFIX = "mugplan_w";
 const WORKER_DB_SUFFIX = "_test";
+
+export type WorkerDbConfig = {
+  /** Basis-Test-URL; dient als Schema-Quelle und liefert Host/Port/Credentials. */
+  baseUrl: string;
+  allowedDatabases: string[];
+  allowedHosts: string[];
+};
+
+/** Liest die Worker-DB-Konfiguration aus der Laufzeit-Env (initialisiert runtimeEnv). */
+export function runtimeWorkerDbConfig(): WorkerDbConfig {
+  initializeRuntimeEnv();
+  const config = getRuntimeConfig();
+  return {
+    baseUrl: config.mysqlDatabaseUrl,
+    allowedDatabases: config.allowedDatabases,
+    allowedHosts: config.allowedHosts,
+  };
+}
 
 /**
  * Loest den Worker-Index aus der Laufzeitumgebung auf.
@@ -59,38 +81,31 @@ export function workerDatabaseName(index: number = resolveWorkerIndex()): string
   return name;
 }
 
+/** Basis-DB-Name (Schema-Quelle) aus einer DB-URL. */
+function databaseNameFromUrl(url: string): string {
+  return new URL(url).pathname.replace(/^\/+/, "").trim();
+}
+
 /** Baut die Worker-DB-URL aus der Basis-Test-URL, indem der DB-Pfad ersetzt wird. */
 export function workerDatabaseUrl(
   index: number = resolveWorkerIndex(),
-  baseUrl: string = getRuntimeConfig().mysqlDatabaseUrl,
+  baseUrl: string = runtimeWorkerDbConfig().baseUrl,
 ): string {
   const url = new URL(baseUrl);
   url.pathname = `/${workerDatabaseName(index)}`;
   return url.toString();
 }
 
-/** DB-Name der Basis-Test-DB (Schema-Quelle) aus der Laufzeit-URL. */
-function baseTestDatabaseName(): string {
-  const url = new URL(getRuntimeConfig().mysqlDatabaseUrl);
-  return url.pathname.replace(/^\/+/, "").trim();
-}
-
 /**
- * Verbindung auf Serverebene (verbunden mit der Basis-Test-DB, die garantiert existiert)
- * fuer DB-uebergreifende Operationen wie CREATE/DROP DATABASE und das Schema-Klonen.
+ * Klont das Schema (Tabellen inkl. Fremdschluessel, danach Views) aus der Quell-DB in die
+ * aktuell verbundene Worker-DB. Foreign-Key-Checks werden waehrend des Aufbaus deaktiviert,
+ * damit die Tabellenreihenfolge keine Rolle spielt.
  */
-async function connectToServer(): Promise<mysql.Connection> {
-  const config = getRuntimeConfig();
-  return mysql.createConnection(config.mysqlDatabaseUrl);
-}
-
-/**
- * Klont das Schema (Tabellen inkl. Fremdschluessel, danach Views) aus der Basis-Test-DB in
- * die Ziel-DB. Foreign-Key-Checks werden waehrend des Aufbaus deaktiviert, damit die
- * Tabellenreihenfolge keine Rolle spielt.
- */
-async function cloneSchemaInto(connection: mysql.Connection, workerName: string): Promise<void> {
-  const sourceDb = baseTestDatabaseName();
+async function cloneSchemaInto(
+  connection: mysql.Connection,
+  workerName: string,
+  sourceDb: string,
+): Promise<void> {
   await connection.query(`USE \`${workerName}\``);
   await connection.query("SET FOREIGN_KEY_CHECKS = 0");
   try {
@@ -135,51 +150,58 @@ async function cloneSchemaInto(connection: mysql.Connection, workerName: string)
 }
 
 /**
- * Legt die Worker-DB an (idempotent) und klont das Schema aus der Basis-Test-DB.
- * Validiert das Ziel zuvor gegen den Test-Write-Guard.
+ * Provisioniert die Worker-DB idempotent: validiert das Ziel gegen die Safety-Guards,
+ * verwirft eine evtl. vorhandene Worker-DB (sauberer Ausgangszustand) und baut das Schema
+ * frisch aus der Basis-Test-DB. Die Verbindung erfolgt ueber die Basis-Test-DB.
  */
-export async function createWorkerDatabase(
+export async function provisionWorkerDatabase(
   index: number = resolveWorkerIndex(),
+  config: WorkerDbConfig = runtimeWorkerDbConfig(),
 ): Promise<{ name: string; url: string }> {
-  initializeRuntimeEnv();
-  const config = getRuntimeConfig();
   const name = workerDatabaseName(index);
-  const url = workerDatabaseUrl(index);
+  const url = workerDatabaseUrl(index, config.baseUrl);
+  const sourceDb = databaseNameFromUrl(config.baseUrl);
 
-  // Guard: validiert Name (Muster), Host-Allowlist und `_test`-Suffix.
+  // Guards: validieren Name (Muster), Host-Allowlist und `_test`-Suffix (Write + destruktiv).
   assertSafeWriteTargetForTestMode(url, config.allowedDatabases, config.allowedHosts);
+  assertSafeDestructiveOperationTarget({
+    mode: "test",
+    databaseUrl: url,
+    allowedDatabases: config.allowedDatabases,
+    allowedHosts: config.allowedHosts,
+  });
 
-  const connection = await connectToServer();
+  const connection = await mysql.createConnection(config.baseUrl);
   try {
+    await connection.query(`DROP DATABASE IF EXISTS \`${name}\``);
     await connection.query(
-      `CREATE DATABASE IF NOT EXISTS \`${name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`,
+      `CREATE DATABASE \`${name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`,
     );
-    await cloneSchemaInto(connection, name);
+    await cloneSchemaInto(connection, name, sourceDb);
   } finally {
     await connection.end();
   }
   return { name, url };
 }
 
-/** Bequemer Setup: Worker-DB anlegen und Schema aufbauen. */
+/** Bequemer Setup: Worker-DB provisionieren (anlegen + Schema klonen). */
 export async function setUpWorkerDatabase(
   index: number = resolveWorkerIndex(),
+  config: WorkerDbConfig = runtimeWorkerDbConfig(),
 ): Promise<{ name: string; url: string }> {
-  return createWorkerDatabase(index);
+  return provisionWorkerDatabase(index, config);
 }
 
 /**
  * Entfernt die Worker-DB rueckstandsfrei. Validiert das Ziel zuvor gegen den destruktiven
- * Guard (Testmodus + Write-Target). Die Verbindung erfolgt ueber die Basis-Test-DB, nicht
- * ueber die zu loeschende Worker-DB.
+ * Guard. Die Verbindung erfolgt ueber die Basis-Test-DB, nicht ueber die zu loeschende DB.
  */
 export async function dropWorkerDatabase(
   index: number = resolveWorkerIndex(),
+  config: WorkerDbConfig = runtimeWorkerDbConfig(),
 ): Promise<void> {
-  initializeRuntimeEnv();
-  const config = getRuntimeConfig();
   const name = workerDatabaseName(index);
-  const url = workerDatabaseUrl(index);
+  const url = workerDatabaseUrl(index, config.baseUrl);
 
   assertSafeDestructiveOperationTarget({
     mode: "test",
@@ -188,7 +210,7 @@ export async function dropWorkerDatabase(
     allowedHosts: config.allowedHosts,
   });
 
-  const connection = await connectToServer();
+  const connection = await mysql.createConnection(config.baseUrl);
   try {
     await connection.query(`DROP DATABASE IF EXISTS \`${name}\``);
   } finally {

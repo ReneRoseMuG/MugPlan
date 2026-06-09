@@ -42,7 +42,10 @@ export default mergeConfig(
               "tests/integration/**/*.test.tsx",
             ],
             exclude: ["tests/unit/**", "tests/e2e/**", "tests/e2e-browser/**"],
-            setupFiles: ["./tests/setup.integration.ts"],
+            // AP10 (MS-64): setup.worker-db.ts MUSS vor setup.integration.ts laufen, damit die
+            // Worker-DB-URL gesetzt ist, bevor runtimeEnv/server/db initialisieren. Im seriellen
+            // Modus (ohne MUGPLAN_WORKER_DB=1) ist setup.worker-db.ts ein No-op.
+            setupFiles: ["./tests/setup.worker-db.ts", "./tests/setup.integration.ts"],
           },
         }),
         defineProject({

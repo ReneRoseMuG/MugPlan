@@ -70,11 +70,29 @@ Serieller Fallback fuer Unit: `npm run test:unit -- --no-file-parallelism`.
 
 ### Integration (AP01-Baseline + AP10)
 
-Noch offen. Voraussetzung: Worker-DB-Lifecycle (AP03) und erweiterte Safety-Guards (AP04).
+Baseline seriell (`npm run test:integration`, gemeinsame `mugplan_test`): **334,40s**
+(129 Dateien, 736 Tests).
+
+Worker-parallel (`npm run test:integration:parallel`, je Worker eigene `mugplan_w<N>_test`,
+geklontes Schema, per-DB Reset-Lock): **132,90s** -> **~2,52x schneller** (~201s gespart).
+Voller Lauf gruen erreichbar (129 Dateien / 736 Tests). Dass alle Tests mit Listen-, Count-
+und Aggregationspruefungen parallel gruen sind, belegt die Isolation: bei geteilter DB gaebe
+es Kollisionen. Der serielle Fallback (`npm run test:integration`) bleibt unveraendert.
+
+Vorbestehender Flake (nicht durch Parallelitaet eingefuehrt): `ft04.multi-user.integration`
+ist isoliert gruen, faellt aber in vollen Laeufen **sowohl seriell als auch parallel**
+gelegentlich aus (Timing/Last bei Nebenlaeufigkeits-Assertions). Kandidat fuer separate
+Flake-Haertung (vgl. AP08). AP10 hat diese Flakiness nicht verursacht.
+
+Umsetzung: per-Worker-DB-Injektion in `tests/setup.worker-db.ts` (laeuft vor
+`setup.integration.ts`, setzt MYSQL_DATABASE_URL vor runtimeEnv/server/db-Init), aktiviert ueber
+`MUGPLAN_WORKER_DB=1` + `--fileParallelism`. DB-spezifischer Reset-Lock in
+`tests/helpers/resetDatabase.ts` (AP06). Worker-DB-Aufbau ueber den Klon-Helfer (AP03);
+Worker-DB-Namen unterliegen den AP04-Guards.
 
 ### E2E Vitest (haengt am Integration-Setup, mit AP10)
 
-Noch offen (AP10).
+Noch offen (AP10 fokussierte das integration-Projekt; das e2e-Projekt kann analog folgen).
 
 ### Browser/E2E (AP01-Baseline + AP05-AP09)
 
