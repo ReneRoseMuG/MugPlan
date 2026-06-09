@@ -14,7 +14,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer Empty- und Filter-Messages in Kunden-, Projekt-, Mitarbeiter-, Tour-, Team- und Terminlisten.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

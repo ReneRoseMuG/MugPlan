@@ -15,7 +15,7 @@
  * Ziel:
  * Das Durchreichen der konkreten Drag-&-Drop-Validierungsmessage im Browser Ende-zu-Ende absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

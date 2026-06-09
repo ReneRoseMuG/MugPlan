@@ -15,7 +15,7 @@
  * Sicherstellen, dass der Wochenkalender-Kundendaten-Preview die tatsächliche Telefonnummer anzeigt
  * und nicht permanent den Fallback-Text.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import * as customersService from "../../server/services/customersService";
 import {
   createAppointmentFixture,

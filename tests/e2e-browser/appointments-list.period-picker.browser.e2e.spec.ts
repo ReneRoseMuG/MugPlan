@@ -16,7 +16,7 @@
  * Ziel:
  * Den Terminlisten-Zeitraum mit festen Referenzdaten, echten Terminen und jahresabhängigen KW-Grenzen browserseitig regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

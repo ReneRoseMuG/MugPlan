@@ -16,7 +16,7 @@
  * Die Create-Sidebar-Persistenz des Mitarbeiterformulars browserseitig regressionssicher absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 

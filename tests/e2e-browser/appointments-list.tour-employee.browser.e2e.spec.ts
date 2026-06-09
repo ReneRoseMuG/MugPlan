@@ -22,7 +22,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer FT28 in beiden Formular-Kontexten.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
   createAppointmentFixture,

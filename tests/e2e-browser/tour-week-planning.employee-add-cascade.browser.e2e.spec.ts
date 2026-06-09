@@ -20,7 +20,7 @@
  * Ziel:
  * Das Hinzufügen von Mitarbeitern zur Tourenplanung einer Woche mit Kaskadenprüfung absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

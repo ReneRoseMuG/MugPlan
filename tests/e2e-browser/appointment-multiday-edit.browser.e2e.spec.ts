@@ -17,7 +17,7 @@
  * Ziel:
  * Den kompletten Create/Edit-Flow eines Mehrtagestermins im Wochenkalender gegen Datums- und Relationsverlust sowie gegen Render-Regressions absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   createAppointmentBrowserFixture,
 } from "../helpers/testDataFactory";

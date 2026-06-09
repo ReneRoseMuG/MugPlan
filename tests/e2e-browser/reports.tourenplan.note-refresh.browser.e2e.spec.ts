@@ -12,7 +12,7 @@
  * Ziel:
  * Den echten Browser-Workflow für nachträglich aktivierte Drucknotizen im Tourenplan regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";
 import {

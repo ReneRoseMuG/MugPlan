@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -15,7 +15,7 @@
  * Ziel:
  * Die FT26-Reportsuite aus Anwendersicht über Vorlaufliste, Persistenz, Druckvorschau und Produktionsplanung regressionssicher absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";

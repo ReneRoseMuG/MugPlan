@@ -14,7 +14,7 @@
  * Ziel:
  * Stabile Browser-E2E fuer die wichtigsten Direkttermin-Pfade ohne Abhaengigkeit von den aktuell bruechigen Picker-Dialogen.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   createAppointmentFixture,
   createCustomerFixture,

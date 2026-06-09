@@ -21,7 +21,7 @@
  * Browser-seitige Ende-zu-Ende-Absicherung des Loesch-Workflows fuer Projekt
  * sowie der rollenabhaengigen Sonderregel fuer historische Termine.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";
 import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
 import {

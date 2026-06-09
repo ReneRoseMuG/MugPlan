@@ -14,7 +14,7 @@
  * Ziel:
  * Den sichtbaren Nutzerfluss fuer die an den Monatskalender angeglichene Mitarbeiter-Auslastungsansicht browserseitig absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

@@ -15,7 +15,7 @@
  * Browser-E2E fuer die neuen Notizfelder und deren Sichtbarkeit in Entity-Cards und Terminpreviews absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import {
   createAppointmentFixture,
   createCustomerFixture,

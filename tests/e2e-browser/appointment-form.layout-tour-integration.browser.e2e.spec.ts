@@ -43,7 +43,7 @@
  * Ziel:
  * Die neuen FT01/FT04-Ergaenzungen fuer Tour-Setzen ohne Wochenplanung, KW-Wechsel und manuelle Mitarbeiter-Ergaenzungen im Browser sichtbar absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import { eq } from "drizzle-orm";
 

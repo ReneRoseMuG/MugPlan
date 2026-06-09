@@ -20,7 +20,7 @@
  * Den finalen Konfliktdialog über echte fehlgeschlagene Terminmutationen auslösen und
  * die fachliche Kernaussage belegen: Kein Termin wird bei Konflikt verändert.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

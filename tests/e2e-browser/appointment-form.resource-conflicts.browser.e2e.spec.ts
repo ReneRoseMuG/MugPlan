@@ -26,7 +26,7 @@
  * Ziel:
  * Das Terminformular-Speichern mit Ressourcenprüfung über alle Einstiegspfade absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";

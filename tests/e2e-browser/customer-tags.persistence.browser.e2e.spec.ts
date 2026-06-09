@@ -15,7 +15,7 @@
  * Ziel:
  * Den echten Auswahl-, Speicher- und Wiederfinde-Pfad für Kundentags browserseitig regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

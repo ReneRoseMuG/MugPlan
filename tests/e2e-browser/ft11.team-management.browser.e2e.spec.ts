@@ -12,7 +12,7 @@
  * Ziel:
  * Den sichtbaren FT11-Workflow fuer Team-Mitglied entfernen -> speichern -> Hauptansicht erneut oeffnen browserseitig regressionssicher absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { assignEmployeesToTeam } from "../../server/services/teamEmployeesService";
 import { createEmployeeFixture, createTeamFixture } from "../helpers/testDataFactory";

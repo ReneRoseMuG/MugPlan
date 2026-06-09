@@ -2,12 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 import { applyTestSystemSeed, resetDatabase } from "./resetDatabase";
-import {
-  assertIsolationFingerprintForConfiguredRun,
-  injectConfiguredCanariesForRun,
-  readIsolationExecutionConfigForSuite,
-  shouldInjectConfiguredCanaries,
-} from "./testIsolationExecution";
+import { readIsolationExecutionConfigForSuite } from "./testIsolationExecution";
 import { resetTestDataFactoryState } from "./testDataFactory";
 import { resetIsolatedTestStorage } from "./testStorageIsolation";
 
@@ -23,11 +18,11 @@ export async function resetBrowserSuiteState(testPath?: string) {
   if (config.baseline === "seeded") {
     await applyTestSystemSeed();
   }
-  await assertIsolationFingerprintForConfiguredRun(resolvedSuitePath);
 
-  if (shouldInjectConfiguredCanaries()) {
-    await injectConfiguredCanariesForRun();
-  }
+  // AP02/AP06 (MS-64): Fingerprint-/Canary-Checks des Alt-Isolations-Frameworks entfernt.
+  // Im worker-isolierten Modell (eigene DB + eigenes Storage je Worker) bieten sie keinen
+  // zusaetzlichen Schutz und sind unter Parallelitaet fehleranfaellig (Storage-Fingerprint im
+  // Spec-Prozess). Die baseline-Entscheidung (core/seeded) bleibt erhalten.
 }
 
 function resolveBrowserSuitePath(testPath?: string) {

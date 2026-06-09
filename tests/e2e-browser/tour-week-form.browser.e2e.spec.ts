@@ -16,7 +16,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer das gemeinsame tour_week-Formular mit echten KW-Daten, Notizeditor und sofortiger UI-Reflexion.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { eq } from "drizzle-orm";
 

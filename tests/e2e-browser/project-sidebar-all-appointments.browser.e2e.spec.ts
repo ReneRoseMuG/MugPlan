@@ -21,7 +21,7 @@
  * Ziel:
  * Browser-E2E Nachweis fuer Trennung + Sortierung in Sidebar-Panels sowie test-first Erwartungspruefung fuer Kunden-Projektpanel.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import {
   createAppointmentFixture,
   createRawAppointmentFixture,

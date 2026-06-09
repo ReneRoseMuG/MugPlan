@@ -20,7 +20,7 @@
  * Den Tag-Rule-Engine-Workflow im Browser absichern: Vorschlag-Dialog und Entfernen-Dialog greifen korrekt
  * beim direkten Tag-Setzen im Wochenkalender sowie beim Entfernen im Terminformular.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { MANAGED_COMPLAINT_TAG_NAME } from "../../shared/appointmentCancellation";
 import {
   createAppointmentFixture,

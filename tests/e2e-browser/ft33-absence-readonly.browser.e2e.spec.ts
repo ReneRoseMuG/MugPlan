@@ -17,7 +17,7 @@
  * Ziel:
  * Den beschlossenen FT-33-Readonly-Schnitt browserseitig gegen echte Nutzerpfade absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { ABSENCE_CUSTOMER_NUMBER } from "../../shared/absenceAppointments";
 import * as appointmentsService from "../../server/services/appointmentsService";

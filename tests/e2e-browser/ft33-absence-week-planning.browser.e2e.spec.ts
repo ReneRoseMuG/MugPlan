@@ -11,7 +11,7 @@
  * Ziel:
  * Den FT-33-Abwesenheitsflow browserseitig gegen echte Termin- und Tour-KW-Planungsdaten absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import { db } from "../../server/db";

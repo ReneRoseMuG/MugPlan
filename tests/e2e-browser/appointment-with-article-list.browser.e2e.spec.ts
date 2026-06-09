@@ -14,7 +14,7 @@
  * Ziel:
  * Den Browser-E2E-Pfad fuer FT01/FT27 vom Termin ueber die Projekt-Artikelliste bis zur Wochenkarten- und Kalender-API-Darstellung absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import {
   createAppointmentFixture,

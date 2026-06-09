@@ -14,7 +14,7 @@
  * Ziel:
  * Den sichtbaren Nutzerfluss der Mitarbeiter-Umsatzübersicht Ende-zu-Ende absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import { MANAGED_COMPLAINT_TAG_NAME } from "../../shared/appointmentCancellation";
 import {

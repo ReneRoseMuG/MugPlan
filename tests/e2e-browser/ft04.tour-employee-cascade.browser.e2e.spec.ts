@@ -14,7 +14,7 @@
  * Ziel:
  * Die neue FT04-Wochenplan-UX mit ihren wichtigsten Konfliktpfaden browserseitig absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import { db } from "../../server/db";

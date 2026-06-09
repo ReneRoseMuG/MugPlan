@@ -21,7 +21,7 @@
  * Ziel:
  * Das neue Save-Event-Buffering der Artikelliste im Projektformular end-to-end absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   createComponentFixture,
   createCustomerFixture,

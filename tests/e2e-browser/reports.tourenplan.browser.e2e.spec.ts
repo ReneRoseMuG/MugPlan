@@ -14,7 +14,7 @@
  * Ziel:
  * Den neuen Tourenplan-Report Ende-zu-Ende inklusive Paritaet zwischen sichtbarer Vorschau und echtem Browser-Print regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { eq } from "drizzle-orm";
 import { db } from "../../server/db";
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";

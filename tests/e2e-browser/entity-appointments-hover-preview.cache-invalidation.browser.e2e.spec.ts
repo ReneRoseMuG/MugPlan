@@ -17,7 +17,7 @@
  * Die neue "alle Termine"-Semantik für Badge, Preview und Cache-Invalidierung über alle drei
  * Parent-Typen im Browser absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

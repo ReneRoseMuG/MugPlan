@@ -13,7 +13,7 @@
  * Browserseitige Regression fuer stale Appointment-Context-Caches nach Projektattachment-Upload absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";
 import {

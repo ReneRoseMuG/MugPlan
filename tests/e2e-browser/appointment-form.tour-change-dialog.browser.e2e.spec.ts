@@ -19,7 +19,7 @@
  * Den Tourwechsel-Dialog im Terminformular für alle Einstiegskombinationen absichern,
  * ohne dass ein Speichern stattfindet.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

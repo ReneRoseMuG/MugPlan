@@ -19,7 +19,7 @@
  * Ziel:
  * Das Entfernen von Mitarbeitern aus der Tourenplanung einer Woche mit Kaskadenprüfung absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../server/db";

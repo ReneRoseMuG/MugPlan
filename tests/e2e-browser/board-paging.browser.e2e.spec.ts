@@ -14,7 +14,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer belastbares Board-Paging in Kunden- und Projektlisten.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import { createAppointmentFixture, createCustomerFixture, createProjectFixture } from "../helpers/testDataFactory";

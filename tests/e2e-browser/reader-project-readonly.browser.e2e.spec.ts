@@ -14,7 +14,7 @@
  * Ziel:
  * Die Leser-Readonly-Regeln für Projektliste und Projektformular browserseitig absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import * as customerAttachmentsService from "../../server/services/customerAttachmentsService";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";

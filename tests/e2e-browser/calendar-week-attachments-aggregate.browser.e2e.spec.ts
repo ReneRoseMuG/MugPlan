@@ -18,7 +18,7 @@
  * Ziel:
  * Sicherstellen, dass die Wochenkarte dieselbe fachliche Dokumentensicht wie das Termin-Dokumentenpanel widerspiegelt.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
 import * as customerAttachmentsService from "../../server/services/customerAttachmentsService";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";

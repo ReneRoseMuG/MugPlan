@@ -18,7 +18,7 @@
  * Ziel:
  * Die tourbezogene Lane- und Sortierdarstellung des Kalenders browserseitig regressionssicher absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { format, parseISO } from "date-fns";
 
 import { createCalendarConsistencyFixture } from "../helpers/calendarConsistencyFixtures";

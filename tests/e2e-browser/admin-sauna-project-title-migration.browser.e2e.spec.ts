@@ -15,7 +15,7 @@
  * Der Apply-Contract bleibt serverseitig über den Integrationstest abgedeckt, weil der fachliche
  * Sauna-Titel-Nutzerflow inzwischen im Projekt-Speichern-Review liegt.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

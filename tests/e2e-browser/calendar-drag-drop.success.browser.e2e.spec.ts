@@ -13,7 +13,7 @@
  * Ziel:
  * Einen positiven Browser-Referenztest fuer den normalen D&D-Pfad der Monatsuebersicht bereitstellen.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

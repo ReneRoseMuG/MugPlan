@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -23,7 +23,7 @@
  * Den kompletten fachlichen Storno-Flow sowie die Read-only-Oberflaeche fuer Planung blockiert aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
  * Ergaenzend: Picker-Schutz fuer die reservierten Termin-System-Tags browser-seitig absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { RESERVED_VACANT_TAG_NAME } from "../../shared/appointmentCancellation";
 
 import {

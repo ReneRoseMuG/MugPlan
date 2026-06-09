@@ -14,7 +14,7 @@
  * Ziel:
  * Die beiden Oeffnungsvarianten der drei FT26-Reports browserseitig auf echte Reportausgabe regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";

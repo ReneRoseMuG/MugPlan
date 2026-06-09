@@ -11,7 +11,7 @@
  * Ziel:
  * Den isolierten Drag-Start-Pfad der Wochenansicht im Browser ohne kompletten Drop-Flow absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

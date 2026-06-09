@@ -16,7 +16,7 @@
  * Ziel:
  * Browserseitig mit echten Past-, Future- und No-Appointment-Daten absichern, dass die neue Projekt-Filtersemantik konsistent in der Ergebnisliste ankommt.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

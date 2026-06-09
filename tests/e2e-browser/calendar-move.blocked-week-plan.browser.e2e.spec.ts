@@ -22,7 +22,7 @@
  * Das korrekte Dialog-Verhalten bei komplett gesperrter Wochenplanung im echten Browser
  * für alle drei Mutations-Pfade absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

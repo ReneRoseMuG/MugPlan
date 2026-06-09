@@ -14,7 +14,7 @@
  * Ziel:
  * Den zentralen Nutzerfluss des Tour-PLZ-Plans browserseitig absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { addDays, format, parseISO, startOfISOWeek } from "date-fns";
 
 import {

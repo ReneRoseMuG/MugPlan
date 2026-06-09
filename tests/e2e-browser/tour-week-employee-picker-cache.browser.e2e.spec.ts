@@ -24,7 +24,7 @@
  * Ziel:
  * Den Wochenkalender-Picker gegen stale /available-Daten nach KW-Wechsel absichern.
  */
-import { expect, test, type Page, type Response } from "@playwright/test";
+import { expect, test, type Page, type Response } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import {

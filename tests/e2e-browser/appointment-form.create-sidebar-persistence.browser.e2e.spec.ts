@@ -34,7 +34,7 @@
  * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins, den Projekt-Overlay-Rueckweg inklusive stiller `Anmerkungen`-Regel und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "../../server/db";
 import { MANAGED_COMPLAINT_TAG_NAME, MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";

@@ -14,7 +14,7 @@
  * Ziel:
  * Die browserseitigen Freshness- und Vollstaendigkeitsluecken fuer Entity Cards und Entity-Card-Previews sichtbar absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import {
   createAppointmentFixture,

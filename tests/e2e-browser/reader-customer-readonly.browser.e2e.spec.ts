@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import * as customerAttachmentsService from "../../server/services/customerAttachmentsService";
 import * as customerNotesService from "../../server/services/customerNotesService";

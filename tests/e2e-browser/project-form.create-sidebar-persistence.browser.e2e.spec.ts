@@ -29,7 +29,7 @@
  * Browser-E2E fuer die angeglichene Create-UX des Projektformulars, die stille `Anmerkungen`-Regel beim Speichern und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { MANAGED_COMPLAINT_TAG_NAME } from "../../shared/appointmentCancellation";
 import {
   createAppointmentFixture,

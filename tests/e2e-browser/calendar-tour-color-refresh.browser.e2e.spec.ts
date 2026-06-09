@@ -15,7 +15,7 @@
  * Ziel:
  * Den sichtbaren Farb-Refresh von Touränderungen in Woche und Monat browserseitig regressionssicher absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import { createAppointmentFixture, createProjectFixture, createTourFixture, getRelativeBerlinDate } from "../helpers/testDataFactory";

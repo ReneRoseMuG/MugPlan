@@ -16,7 +16,7 @@
  * Ziel:
  * Die vereinheitlichte KW-Guard-Logik für beide Reports im echten Browser regressionssicher absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 

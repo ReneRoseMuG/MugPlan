@@ -18,7 +18,7 @@
  * Ziel:
  * Die schwachen Kunden-/Projekt-Footer-Wiring-Tests durch echte Browser-Nachweise mit konkurrierenden Karten ergänzen.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

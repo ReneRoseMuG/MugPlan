@@ -17,7 +17,7 @@
  * Ziel:
  * Browserseitig mit echten historischen und zukuenftigen Terminen absichern, dass das neue Termin-Toggle die Ergebnismengen korrekt steuert.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {

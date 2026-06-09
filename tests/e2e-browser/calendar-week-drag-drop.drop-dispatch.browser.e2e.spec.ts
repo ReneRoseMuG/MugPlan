@@ -11,7 +11,7 @@
  * Ziel:
  * Den eigentlichen Drop-/Persistenzpfad der Wochenansicht getrennt vom nativen Browser-Drag absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 
 import { db } from "../../server/db";

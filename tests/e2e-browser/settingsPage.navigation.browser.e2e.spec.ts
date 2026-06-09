@@ -20,7 +20,7 @@
  * Ziel:
  * Interaktives Pane-Wechsel-Verhalten im echten Browser absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });

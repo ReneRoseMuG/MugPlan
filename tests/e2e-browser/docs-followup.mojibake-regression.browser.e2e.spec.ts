@@ -14,7 +14,7 @@
  * Ziel:
  * Die geänderten UI-Pfade browserseitig gegen erneute Mojibake-Regressions absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

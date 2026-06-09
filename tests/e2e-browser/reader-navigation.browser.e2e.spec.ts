@@ -14,7 +14,7 @@
  * Ziel:
  * Die Reader-Navigation und die zugehörigen Frontend-Zugangsgrenzen browserseitig gegen Regressionen absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { loginAsReader, resetBrowserSuiteState } from "../helpers/browserE2e";
 

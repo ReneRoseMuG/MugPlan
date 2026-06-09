@@ -96,10 +96,39 @@ Noch offen (AP10 fokussierte das integration-Projekt; das e2e-Projekt kann analo
 
 ### Browser/E2E (AP01-Baseline + AP05-AP09)
 
-Noch offen (AP05-AP09). Spaeter zusaetzlich zu erfassen: Liste der langsamsten Browser-
-Spezifikationen (Top-Zeitfresser) und die Dauer-Verteilung ueber alle Browser-Dateien
-(Median vs. Maximum), um zu beurteilen, ob einzelne lange Dateien den kritischen Pfad
-deckeln (Reorg-Potenzial).
+Baseline seriell (`npm run test:e2e:browser`, ein Server, gemeinsame `mugplan_test`):
+**20,6 Min** (433 Tests; 358 passed, 16 failed, 59 did not run).
+
+Worker-parallel (`npm run test:e2e:browser:parallel`, 4 Worker, je eigener Server auf Port
+4174+i, eigene `mugplan_w<i>_test`, eigenes Storage): **6,1-6,2 Min** -> **~3,4x schneller**.
+Ergebnis identisch zur Baseline: 358 passed, 16 failed, 59 did not run.
+
+Isolations-/Flake-Nachweis (AP08/AP09): Die Menge der fehlschlagenden Specs ist seriell und
+parallel **exakt deckungsgleich** (16 Specs, ueber zwei parallele Laeufe bestaetigt). Die
+Parallelisierung fuehrt damit **keine** neuen Flakes ein. Beispielbeleg: `appointment-overlap-
+ranges` OR-01 scheitert auch seriell (Dialog `toBeVisible`). Die 16 Fehler sind also
+**vorbestehend** auf dem Branch und unabhaengig von der Parallelisierung (eigener Folgeauftrag,
+nicht Teil von MS-64).
+
+Umsetzung (alles Testinfrastruktur/Konfiguration, KEIN Produktionscode):
+- `tests/e2e-browser/fixtures.ts`: Spec-Prozess-Bootstrap setzt MYSQL_DATABASE_URL aus
+  `TEST_PARALLEL_INDEX` vor dem server/db-Import; baseURL pro Worker ueber `parallelIndex`.
+  Wichtig: `parallelIndex` (gebunden [0,workers)), NICHT `workerIndex` (steigt global bei
+  Worker-Ersatz -> falscher Port).
+- `playwright.config.ts`: gated ueber PLAYWRIGHT_PARALLEL=1; parallel -> workers=N (PLAYWRIGHT_
+  WORKERS, Default 4), `webServer`-Array (N Server, je Worker-DB-URL + Storage ueber env-Feld),
+  `fullyParallel:false` (Datei-Parallelitaet, Tests je Datei seriell). Seriell unveraendert.
+- `tests/helpers/provisionBrowserWorkers.ts`: Vorstufe vor `playwright test` (Playwright startet
+  webServer VOR globalSetup -> Provisionierung muss vorher laufen). Provisioniert N Worker-DBs
+  (Klon) + Storage.
+- `tests/helpers/browserE2e.ts`: Fingerprint-/Canary-Checks des Alt-Frameworks entfernt
+  (AP02/AP06), da unter Worker-Isolation ueberfluessig und parallel fehleranfaellig.
+- Alle 90 Browser-Specs importieren `test`/`expect` aus `./fixtures` statt `@playwright/test`.
+- Serieller Fallback: `npm run test:e2e:browser` (unveraendert).
+
+Offen/optional: Liste der langsamsten Browser-Spezifikationen und Dauer-Verteilung fuer
+moegliches Datei-Entzerren (Reorg-Potenzial) sowie die Aufarbeitung der 16 vorbestehenden
+Fehlschlaege (separater Auftrag).
 
 ## Migrations-Befund und gewaehlte Loesung fuer den Worker-DB-Aufbau (AP03)
 

@@ -12,7 +12,7 @@
  * Ziel:
  * Die Erreichbarkeit der unteren Benutzer in der Adminsicht im echten Browser absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 

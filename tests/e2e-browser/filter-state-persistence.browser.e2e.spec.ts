@@ -12,7 +12,7 @@
  * Ziel:
  * Die Listenpersistenz ueber echte Browser-Navigation mit produktnahen Daten absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

@@ -14,7 +14,7 @@
  * Ziel:
  * Die Leser-Readonly-Regeln für Kalender und Terminformular browserseitig gegen sichtbare Regressionspfade absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";

@@ -59,8 +59,11 @@ export function runtimeWorkerDbConfig(): WorkerDbConfig {
  * Faellt auf 0 zurueck, wenn keine Worker-Variable gesetzt ist (serieller Modus).
  */
 export function resolveWorkerIndex(): number {
+  // Playwright: TEST_PARALLEL_INDEX (gebunden auf [0, workers), bei Worker-Ersatz
+  // wiederverwendet) -- bewusst NICHT TEST_WORKER_INDEX (steigt global).
+  // Vitest: VITEST_POOL_ID / VITEST_WORKER_ID (1-basiert).
   const raw =
-    process.env.TEST_WORKER_INDEX ??
+    process.env.TEST_PARALLEL_INDEX ??
     process.env.VITEST_POOL_ID ??
     process.env.VITEST_WORKER_ID ??
     "0";

@@ -15,7 +15,7 @@
  * Ziel:
  * Die Überschneidungslogik für ganztägige, mehrtägige und zeitscharfe Termine absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import {
   createAppointmentFixture,

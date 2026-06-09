@@ -16,7 +16,7 @@
  * Ziel:
  * Den vollständigen Park-Workflow im Browser absichern: vom offenen Terminformular oder Kalender-Menü bis zum verifizierten Parkzustand in Kalender, Monitoring und API.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   RESERVED_VACANT_TAG_NAME,
 } from "../../shared/appointmentCancellation";

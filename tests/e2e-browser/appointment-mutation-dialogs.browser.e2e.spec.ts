@@ -25,7 +25,7 @@
  * Ziel:
  * Das bereinigte Dialog-Verhalten nach MILE-53 im echten Browser für alle Mutations-Pfade absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import { db } from "../../server/db";

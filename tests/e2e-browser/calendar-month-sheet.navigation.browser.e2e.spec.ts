@@ -16,7 +16,7 @@
  * Ziel:
  * Die neue Monatsübersicht im Browser auf Erreichbarkeit und driftfreie Einzelblatt-Navigation absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, addMonths, format, parseISO, startOfISOWeek, startOfMonth } from "date-fns";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";

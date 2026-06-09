@@ -8,7 +8,7 @@
  * - Kalender zeigen den Feiertagsnamen statt `FT`.
  */
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 const suitePath = "tests/e2e-browser/calendar-markers-visualization.browser.e2e.spec.ts";

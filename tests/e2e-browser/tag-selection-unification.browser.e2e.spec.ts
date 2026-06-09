@@ -14,7 +14,7 @@
  * Ziel:
  * Die vereinheitlichte Tag-Auswahl browserseitig an einem Edit-Formular, einer Listen-View mit Tag-Filter und den Wochen-Terminkarten regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import {
   MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,

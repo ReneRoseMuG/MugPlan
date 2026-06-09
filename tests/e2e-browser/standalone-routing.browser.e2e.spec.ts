@@ -19,7 +19,7 @@
  * Ziel:
  * Standalone-Tab-Routing browserseitig gegen Regressionen der bestehenden Navigation, gegen Login-/Fallback-Fehler im Popup-Flow und gegen kaputte Edit-Rückwege der Standalone-Ansichten absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { getISOWeek } from "date-fns";
 
 import {

@@ -14,7 +14,7 @@
  * Ziel:
  * Die gemeinsame Refresh-Funktion fuer Sidebar und alle relevanten Open-Tab-Views browserseitig gegen Freshness-Regressionen absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 
 import {
   buildCustomerPayload,

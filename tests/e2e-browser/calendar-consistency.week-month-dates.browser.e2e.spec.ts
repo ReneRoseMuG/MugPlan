@@ -17,7 +17,7 @@
  * Ziel:
  * Die sichtbare Datum- und KW-Konsistenz fuer die gemeinsame Kalenderdarstellung im Browser absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { format, getISOWeek, parseISO, startOfWeek } from "date-fns";
 
 import { createCalendarConsistencyFixture } from "../helpers/calendarConsistencyFixtures";

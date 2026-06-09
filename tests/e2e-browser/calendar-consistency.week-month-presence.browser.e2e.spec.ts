@@ -17,7 +17,7 @@
  * Ziel:
  * Die sichtbare Vollstaendigkeit und die Monatsabgrenzung der Monatsbalken browserseitig absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { format, parseISO } from "date-fns";
 
 import { getAppointmentEndDate } from "../../client/src/lib/calendar-utils";

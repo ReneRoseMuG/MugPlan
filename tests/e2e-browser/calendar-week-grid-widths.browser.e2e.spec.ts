@@ -23,7 +23,7 @@
  * Ziel:
  * Die sichtbaren Breitenregeln des Wochenkalenders im echten Browser regressionssicher absichern.
  */
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { addDays, format, parseISO, startOfWeek } from "date-fns";
 
 import { createAppointmentBrowserFixture, createAppointmentFixture } from "../helpers/testDataFactory";

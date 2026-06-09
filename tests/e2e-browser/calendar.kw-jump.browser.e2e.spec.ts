@@ -16,7 +16,7 @@
  * Ziel:
  * Das korrigierte KW-Jump-Verhalten des Wochenkalenders im echten Browser regressionssicher absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 import { closeDispatcherLoginConflictsDialog, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 

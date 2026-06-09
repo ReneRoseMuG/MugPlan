@@ -26,7 +26,7 @@
  * Ziel:
  * Den neuen Wochenkalender-Zugang zur Tour-KW-Personalplanung und die Notiz-Anheftung im echten Browser gegen Regressionen absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import { eq } from "drizzle-orm";
 

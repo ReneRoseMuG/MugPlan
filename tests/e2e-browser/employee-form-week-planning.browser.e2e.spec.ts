@@ -16,7 +16,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer die sichtbare Mitarbeiter-Wochenplanung und das gemeinsame Wochenformular im Mitarbeiterformular.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import { db } from "../../server/db";

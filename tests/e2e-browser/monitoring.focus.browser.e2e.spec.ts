@@ -10,7 +10,7 @@
  * - Die Fokus-Markierung verschwindet oder ueberschreibt die Triggerfarbe.
  * - Nach einem leergefilterten Zustand bleibt ein alter Fokus sichtbar.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
