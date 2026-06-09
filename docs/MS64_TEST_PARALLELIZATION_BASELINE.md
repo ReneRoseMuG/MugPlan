@@ -74,22 +74,48 @@ Noch offen. Voraussetzung: Worker-DB-Lifecycle (AP03) und erweiterte Safety-Guar
 
 ### E2E Vitest (haengt am Integration-Setup, mit AP10)
 
-Noch offen.
+Blockiert (siehe Migrations-Blocker unten).
 
 ### Browser/E2E (AP01-Baseline + AP05-AP09)
 
-Noch offen. Zusaetzlich zu erfassen: Liste der langsamsten Browser-Spezifikationen
-(Top-Zeitfresser) und die Dauer-Verteilung ueber alle Browser-Dateien (Median vs. Maximum),
-um zu beurteilen, ob einzelne lange Dateien den kritischen Pfad deckeln (Reorg-Potenzial).
+Blockiert (siehe Migrations-Blocker unten). Spaeter zusaetzlich zu erfassen: Liste der
+langsamsten Browser-Spezifikationen (Top-Zeitfresser) und die Dauer-Verteilung ueber alle
+Browser-Dateien (Median vs. Maximum), um zu beurteilen, ob einzelne lange Dateien den
+kritischen Pfad deckeln (Reorg-Potenzial).
 
-## Offener Umgebungsbefund (relevant fuer AP03/AP09)
+## HARTER BLOCKER: Migrationskette baut kein Schema von Grund auf (AP03/AP05/AP10)
 
-`npm run db:migration-status:test` meldet fuer `mugplan_test`: 29 Repository-Migrationen,
-**0 angewendete Migrationen, 29 fehlende**. Das getrackte Migrationsjournal der Test-DB ist
-leer. `tests/helpers/resetDatabase.ts` legt kein Schema an, sondern setzt ein vorhandenes
-Schema voraus (SHOW TABLES + DELETE, plus manueller 2FA-Spalten-Patch). Das deutet auf
-historische Schema-Drift (Schema vermutlich ueber `drizzle-kit push` entstanden, Journal
-leer). Fuer AP03 ist daraus abzuleiten, dass jede Worker-DB ueber den produktionsnahen
-Migrationspfad (`db:migrate:test` / `script/run-migrations.ts`) sauber aufgebaut werden muss;
-fuer die Integration/Browser-Baseline ist der migrierte Ausgangszustand der Test-DB
-sicherzustellen.
+Status: **blockiert** — betrifft AP03 (Worker-DB-Lifecycle) und davon abhaengig AP05
+(Worker-Server) und AP10 (Integration worker-parallel). AP11 (Unit) und AP04 (Guards) sind
+davon **nicht** betroffen und bleiben gueltig.
+
+Befund (verifiziert):
+- `npm run db:migration-status:test` meldet fuer `mugplan_test`: 29 Repository-Migrationen,
+  0 angewendete, 29 fehlende. Das getrackte Migrationsjournal ist leer.
+- Keine Migration erzeugt die Basistabellen (`project`, `users`, `customers`, `appointments`,
+  `employees`, `tours`). `0000_nice_bulldozer.sql` legt nur Produkt-Management-Tabellen an
+  und fuegt sofort einen Fremdschluessel `project_order_items -> project(id)` hinzu, obwohl
+  die Tabelle `project` nie per Migration erzeugt wird.
+- Folge: Die Migrationskette ist rein inkrementell auf einem historisch via `drizzle-kit push`
+  erzeugten Schema. `tests/helpers/resetDatabase.ts` setzt ein vorhandenes Schema voraus
+  (SHOW TABLES + DELETE, plus manueller 2FA-Spalten-Patch).
+- Auf der bestehenden `mugplan_test` bleibt das verborgen, weil der idempotente
+  Migrationsrunner vorhandene Tabellen ueberspringt. Auf einer **frischen** Worker-DB laufen
+  alle Statements in Dateireihenfolge und brechen mit `Failed to open the referenced table
+  'project'` (MySQL 1824) ab.
+
+Konsequenz fuer AP03: Eine frische Worker-DB kann ueber `db:migrate:test` derzeit nicht
+aufgebaut werden. Die in AP03 geforderte Akzeptanz ("vollstaendig migriert, Historie ohne
+pending/unexpected") ist damit ohne vorgelagerte Korrektur nicht erreichbar. Gemaess CLAUDE.md
+Abschnitt 16 ist dies als harter Abschluss-Blocker zu behandeln; AP03 gilt als blockiert, nicht
+als umgesetzt.
+
+Optionen (Entscheidung erforderlich, jeweils ausserhalb des bisherigen AP03-Scopes):
+1. Konsolidiertes Baseline-Migrationsskript erstellen, das das aktuelle Gesamtschema von Grund
+   auf erzeugt (sauberster, produktionsnaher Weg; eigener, sensibler Migrationsauftrag mit
+   Dev/Test-Verifikation nach CLAUDE.md 16).
+2. Worker-DB-Schema per Klon der bestehenden `mugplan_test` aufbauen (mysqldump --no-data oder
+   `CREATE TABLE LIKE`) statt Migration; entkoppelt die Parallelisierung von der
+   Migrationsdrift, weicht aber vom AP03-Ziel "produktionsnaher Migrationspfad" ab.
+3. DB-gebundene Parallelisierung (AP03/AP05/AP10) zurueckstellen; nur den bereits erzielten
+   Unit-Gewinn (AP11) behalten.
