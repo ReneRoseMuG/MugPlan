@@ -112,13 +112,13 @@ Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angeleg
 
 ### 4.1 Branch-Frage
 
-Claude fragt nur dann nach einem lokalen Branch von `work_version_2`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert (Klasse 4 oder 5).
+Claude fragt nur dann nach einem lokalen Branch von `work`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert (Klasse 4 oder 5).
 
 **Keine Branch-Frage bei:** reinen Leseaufträgen, Analyse-/Audit-/Test-Reports, Git-Operationen ohne inhaltliche Änderung, reinen Rückfragen oder Erklärungen.
 
 Wenn eine Branch-Frage erforderlich ist:
 
-> „Soll für diesen Auftrag ein lokaler Branch von `work_version_2` abgezweigt werden?"
+> „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
 
 - Bei **ja**: Branch-Namen erfragen, Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`). Git-Aktionen ausschließlich seriell (siehe Abschnitt 5.1).
 - Bei **nein**: direkt mit der Planung fortfahren.
@@ -164,7 +164,7 @@ Jeder Plan muss ausreichend Kontext enthalten, damit der Nutzer die Tragweite de
 ### 4.4 Kurzkommandos
 
 `branch <n>`
-Claude legt vor der weiteren Arbeit einen lokalen Branch von `work_version_2` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <n>`. Alle Git-Schritte werden seriell ausgeführt.
+Claude legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <n>`. Alle Git-Schritte werden seriell ausgeführt.
 
 `plan`
 Claude klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 3 aus und erstellt danach direkt den Plan im Format aus Abschnitt 4.2, ohne die Branch-Frage erneut zu stellen.
@@ -179,20 +179,20 @@ Claude führt den vollen Testlauf gemäß Abschnitt 13 als reinen Report-Auftrag
 Claude führt ausschließlich seriell `git add`, `git commit` und `git push` für alle offenen Änderungen des aktuellen Arbeitsstands aus. Falls Commit oder Push durch Konflikte, fehlende Inhalte oder andere Git-Blocker nicht sauber möglich sind, bricht Claude kontrolliert ab und dokumentiert den Grund.
 
 `log <kurztitel>`
-Claude erstellt das Auftragslog gemäß Abschnitt 15.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
+Claude erstellt das Auftragslog gemäß Abschnitt 15.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md` und hängt zusätzlich einen zusammenfassenden Kommentar an das Projekt-Manager-Projekt `PROJ-1` (numerische `id: 1`, dieser MugPlan-Worktree) via `add_comment_to_parent` (`parentType: "project"`, `parentId: 1`).
 
 `docs-sync`
 Claude prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
 
 `cleanup`
 Claude führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell aus:
-0. Wenn sich Claude bereits auf einem Arbeitsbranch ungleich `work_version_2` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Claude genau diese Änderungen vor dem eigentlichen Cleanup seriell stagen, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
-1. Sicherstellen, dass der aktuelle Branch nicht `work_version_2` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
-2. Auf `work_version_2` wechseln.
-3. Sicherstellen, dass `work_version_2` keine uncommitteten Änderungen enthält und vollständig mit `origin/work_version_2` synchronisiert ist.
-4. Den Arbeitsbranch in `work_version_2` mergen.
-5. Das Ergebnis auf `work_version_2` prüfen.
-6. `work_version_2` pushen.
+0. Wenn sich Claude bereits auf einem Arbeitsbranch ungleich `work` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Claude genau diese Änderungen vor dem eigentlichen Cleanup seriell stagen, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
+1. Sicherstellen, dass der aktuelle Branch nicht `work` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
+2. Auf `work` wechseln.
+3. Sicherstellen, dass `work` keine uncommitteten Änderungen enthält und vollständig mit `origin/work` synchronisiert ist.
+4. Den Arbeitsbranch in `work` mergen.
+5. Das Ergebnis auf `work` prüfen.
+6. `work` pushen.
 7. Nur den lokalen Arbeitsbranch löschen. Der Remote-Branch wird nicht gelöscht.
 8. Unzulässig: zusätzliche inhaltliche Änderungen, Refactorings oder Dokumentationsarbeiten, die nicht bereits Teil des Arbeitsbranches sind.
 9. Bei uncommitteten Änderungen außerhalb des erlaubten Vorbereitungsfalls, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern: kontrolliert abbrechen und den Grund dokumentieren.
@@ -474,7 +474,7 @@ Claude stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Ant
 
 > „Soll ich ein Log für diesen Auftrag schreiben?"
 
-- Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen.
+- Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen. Zusätzlich hängt Claude einen zusammenfassenden Kommentar an das Projekt-Manager-Projekt `PROJ-1` (numerische `id: 1`, dieser MugPlan-Worktree) via `add_comment_to_parent` (`parentType: "project"`, `parentId: 1`). Ist das Projekt-Manager-MCP nicht erreichbar oder schlägt der Kommentar fehl, bleibt die FS-Logdatei bestehen und Claude meldet den MCP-Fehler offen, statt ihn zu verschlucken.
 - Bei **nein**: keine Dokumentationsdatei.
 
 ### 15.3 Architekturdokumentation aktualisieren
