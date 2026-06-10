@@ -16,12 +16,15 @@ interface CalendarBulkWeekMoveDialogContainerProps {
   open: boolean;
   sourceWeekDate: string;
   onClose: () => void;
+  /** Wird nach erfolgreichem Verschieben mit einem Zieldatum (yyyy-MM-dd) aufgerufen, um in die Zielwoche zu springen. */
+  onMoved?: (targetWeekDate: string) => void;
 }
 
 export function CalendarBulkWeekMoveDialogContainer({
   open,
   sourceWeekDate,
   onClose,
+  onMoved,
 }: CalendarBulkWeekMoveDialogContainerProps) {
   const move = useBulkWeekMove({ open, sourceWeekDate });
 
@@ -60,8 +63,13 @@ export function CalendarBulkWeekMoveDialogContainer({
   ]);
 
   const handleClose = () => {
+    // Vor dem Reset das Zieldatum sichern, um nach erfolgreichem Verschieben in die Zielwoche zu springen.
+    const targetWeekDate = move.executeResult?.moved?.[0]?.targetStartDate ?? null;
     move.resetPreview();
     move.resetExecute();
+    if (targetWeekDate) {
+      onMoved?.(targetWeekDate);
+    }
     onClose();
   };
 

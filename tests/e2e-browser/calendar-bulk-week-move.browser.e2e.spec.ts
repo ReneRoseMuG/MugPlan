@@ -115,14 +115,15 @@ test("verschiebt ausgewählte Termine in die Ziel-KW und schließt blockierte au
   await expect(page.getByTestId("bulk-week-move-result-moved")).toContainText("2 Termine verschoben");
   await page.getByTestId("button-bulk-week-move-close").click();
 
-  // In-place-Aktualisierung OHNE Navigation (Invalidierung): die verschobenen Termine verschwinden
-  // sofort aus der Quell-KW, der blockierte Termin bleibt unveraendert sichtbar.
-  await expect(page.getByTestId(`week-appointment-panel-${movableIdA}`)).toHaveCount(0);
-  await expect(page.getByTestId(`week-appointment-panel-${movableIdB}`)).toHaveCount(0);
-  await expect(page.getByTestId(`week-appointment-panel-${blockedId}`).first()).toBeVisible();
-
-  // Ziel-KW: beide verschobenen Termine sind vorhanden.
-  await navigateToAnchorWeekOf(page, targetDate);
+  // Auto-Sprung in die Ziel-KW nach dem Verschieben: ohne manuelles Blaettern sind die verschobenen
+  // Termine sichtbar und die Anker-Woche ist die Zielwoche (belegt zugleich die Invalidierung).
   await expect(page.getByTestId(`week-appointment-panel-${movableIdA}`).first()).toBeVisible();
   await expect(page.getByTestId(`week-appointment-panel-${movableIdB}`).first()).toBeVisible();
+  expect(await getAnchorWeekStart(page)).toBe(weekMonday(targetDate));
+
+  // Quell-KW: verschobene Termine ausgeschlossen, blockierter Termin bleibt unveraendert.
+  await navigateToAnchorWeekOf(page, sourceDate);
+  await expect(page.getByTestId(`week-appointment-panel-${blockedId}`).first()).toBeVisible();
+  await expect(page.getByTestId(`week-appointment-panel-${movableIdA}`)).toHaveCount(0);
+  await expect(page.getByTestId(`week-appointment-panel-${movableIdB}`)).toHaveCount(0);
 });

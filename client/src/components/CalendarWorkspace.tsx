@@ -1070,6 +1070,7 @@ export function CalendarWorkspace({
         <CalendarBulkWeekMoveDialogContainer
           open
           sourceWeekDate={format(currentDate, "yyyy-MM-dd")}
+          onMoved={(targetWeekDate) => onDateChange(parseISO(targetWeekDate))}
           onClose={() => setIsBulkWeekMoveOpen(false)}
         />
       ) : null}
