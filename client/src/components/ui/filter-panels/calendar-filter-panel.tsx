@@ -11,6 +11,7 @@ interface CalendarFilterPanelProps {
   employeeId: number | null;
   onEmployeeIdChange: (employeeId: number | null) => void;
   footerAction?: React.ReactNode;
+  bulkWeekMoveAction?: (() => void) | null;
   showEmployeeFilter?: boolean;
   showWeekDisplayMode?: boolean;
   conflictHighlightActive?: boolean;
@@ -163,6 +164,7 @@ export function CalendarFilterPanel({
   employeeId,
   onEmployeeIdChange,
   footerAction,
+  bulkWeekMoveAction,
   showEmployeeFilter = true,
   showWeekDisplayMode = false,
   conflictHighlightActive = false,
@@ -185,12 +187,26 @@ export function CalendarFilterPanel({
     showKwJump &&
     typeof onKwJumpChange === "function" &&
     typeof onKwJumpSubmit === "function";
+  const showBulkWeekMove = typeof bulkWeekMoveAction === "function";
+
+  const bulkWeekMoveControl = showBulkWeekMove ? (
+    <Button
+      type="button"
+      variant="outline"
+      className="h-9 rounded-lg border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+      onClick={() => bulkWeekMoveAction?.()}
+      data-testid="button-open-bulk-week-move"
+    >
+      Start
+    </Button>
+  ) : null;
 
   if (showWeekDisplayMode) {
     const weekGridTemplateColumns = [
       ...(showEmployeeFilter ? ["180px"] : []),
       ...(showKwJumpControls ? ["max-content"] : []),
       ...(showConflictHighlightControls ? ["max-content"] : []),
+      ...(showBulkWeekMove ? ["max-content"] : []),
       ...(footerAction ? ["minmax(0,1fr)"] : []),
     ].join(" ");
 
@@ -204,6 +220,7 @@ export function CalendarFilterPanel({
           {showEmployeeFilter ? <FooterSectionLabel>Mitarbeiter</FooterSectionLabel> : null}
           {showKwJumpControls ? <FooterSectionLabel>KW</FooterSectionLabel> : null}
           {showConflictHighlightControls ? <FooterSectionLabel>Konflikte</FooterSectionLabel> : null}
+          {showBulkWeekMove ? <FooterSectionLabel>Termine verschieben</FooterSectionLabel> : null}
           {footerAction ? <span aria-hidden="true" /> : null}
 
           {showEmployeeFilter ? (
@@ -242,6 +259,7 @@ export function CalendarFilterPanel({
             conflictAppointmentCount,
             onConflictHighlightChange,
           }) : null}
+          {showBulkWeekMove ? <div>{bulkWeekMoveControl}</div> : null}
           {footerAction ? <div className="flex justify-end self-end">{footerAction}</div> : null}
         </div>
       </FilterPanel>

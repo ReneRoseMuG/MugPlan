@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -982,21 +982,6 @@ export function CalendarWorkspace({
         />
       ) : null}
 
-      {activeView === "week" && !isReaderCalendarReadOnly ? (
-        <div className="flex items-center justify-end border-b border-border bg-card px-6 py-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsBulkWeekMoveOpen(true)}
-            data-testid="button-open-bulk-week-move"
-          >
-            <CalendarClock className="mr-2 h-4 w-4" aria-hidden="true" />
-            Termine kalenderwochenweise verschieben
-          </Button>
-        </div>
-      ) : null}
-
       <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
         <button
           onClick={prev}
@@ -1022,6 +1007,7 @@ export function CalendarWorkspace({
           <CalendarFilterPanel
             employeeId={employeeFilterId}
             onEmployeeIdChange={onEmployeeFilterChange}
+            bulkWeekMoveAction={activeView === "week" && !isReaderCalendarReadOnly ? () => setIsBulkWeekMoveOpen(true) : null}
             showWeekDisplayMode={activeView === "week"}
             weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
             onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
