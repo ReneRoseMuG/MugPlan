@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -19,6 +19,7 @@ import {
   AppointmentMoveDialog,
   type AppointmentMoveDialogContext,
 } from "@/components/AppointmentMoveDialog";
+import { CalendarBulkWeekMoveDialogContainer } from "@/components/CalendarBulkWeekMoveDialogContainer";
 import {
   AppointmentFinalConflictDialog,
   normalizeAppointmentConflictEmployees,
@@ -309,6 +310,7 @@ export function CalendarWorkspace({
   const [footerAction, setFooterAction] = useState<ReactNode | null>(null);
   const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
   const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
+  const [isBulkWeekMoveOpen, setIsBulkWeekMoveOpen] = useState(false);
   const [calendarMoveFinalConflict, setCalendarMoveFinalConflict] = useState<CalendarMoveFinalConflict | null>(null);
   const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
@@ -980,6 +982,21 @@ export function CalendarWorkspace({
         />
       ) : null}
 
+      {activeView === "week" && !isReaderCalendarReadOnly ? (
+        <div className="flex items-center justify-end border-b border-border bg-card px-6 py-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsBulkWeekMoveOpen(true)}
+            data-testid="button-open-bulk-week-move"
+          >
+            <CalendarClock className="mr-2 h-4 w-4" aria-hidden="true" />
+            Termine kalenderwochenweise verschieben
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
         <button
           onClick={prev}
@@ -1061,6 +1078,13 @@ export function CalendarWorkspace({
           conflictEmployees={calendarMoveFinalConflict.conflictEmployees}
           onClose={() => setCalendarMoveFinalConflict(null)}
           testId="dialog-calendar-move-final-conflict"
+        />
+      ) : null}
+      {isBulkWeekMoveOpen ? (
+        <CalendarBulkWeekMoveDialogContainer
+          open
+          sourceWeekDate={format(currentDate, "yyyy-MM-dd")}
+          onClose={() => setIsBulkWeekMoveOpen(false)}
         />
       ) : null}
       <WorkflowNoteSuggestionDialog
