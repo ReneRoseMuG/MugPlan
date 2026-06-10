@@ -196,6 +196,7 @@ export function AppointmentMoveDialog({
 
   const currentStep = stepIds[stepIndex] ?? "warn";
   const isLastStep = stepIndex >= stepIds.length - 1;
+  const hasNoEmployeeStep = stepIds.length === 0 && resolvedEmployeeIds.length === 0;
 
   const selectionGroups: SelectionGroup[] = [];
   const blockedWeekPlanItems = weekPlanItems.filter(isBlockedWeekPlanOverlap);
@@ -247,7 +248,7 @@ export function AppointmentMoveDialog({
         !isLastStep
           ? { label: "Weiter", onClick: () => setStepIndex((i) => i + 1) }
           : {
-              label: buildConfirmLabel(),
+              label: hasNoEmployeeStep ? "Trotzdem verschieben" : buildConfirmLabel(),
               pendingLabel: "Speichern...",
               onClick: onConfirm,
               isPending: isSubmitting,
@@ -269,6 +270,16 @@ export function AppointmentMoveDialog({
       testId="dialog-appointment-move"
     >
       <div className="space-y-4" data-testid="appointment-move-dialog-content">
+
+        {hasNoEmployeeStep ? (
+          <section className="space-y-4" data-testid="appointment-move-step-no-employees">
+            <DialogBaseInlineMessage
+              tone="warning"
+              title="Termin hat keine Mitarbeiter"
+              description="Der Termin wird ohne Mitarbeiter verschoben. Soll er trotzdem verschoben werden?"
+            />
+          </section>
+        ) : null}
 
         {currentStep === "warn" && removedItems.length > 0 ? (
           <div

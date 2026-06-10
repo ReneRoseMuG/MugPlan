@@ -754,8 +754,10 @@ export function CalendarWorkspace({
       return;
     }
 
-    // Same tour and same week: Mitarbeiter bleiben, nur Notizen ggf. prüfen.
-    if (isCalendarMoveSameTourAndWeek(request)) {
+    // Same Tour und Woche:
+    //  - mit Mitarbeitern: Mitarbeiter bleiben, nur Notizen ggf. prüfen.
+    //  - ohne Mitarbeiter: in den Vorschau-Pfad fallen, um die Wochenplanung des Ziels anzubieten.
+    if (isCalendarMoveSameTourAndWeek(request) && request.appointment.employeeIds.length > 0) {
       await requestCalendarMoveSaveReview({
         request,
         targetEndDate,

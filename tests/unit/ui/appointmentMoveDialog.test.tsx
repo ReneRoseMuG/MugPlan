@@ -419,3 +419,38 @@ describe("AppointmentMoveDialog two-step: removals + week plan", () => {
     expect(html).toContain(">Abbrechen<");
   });
 });
+
+describe("AppointmentMoveDialog no-employees fallback (move results in 0 employees)", () => {
+  beforeEach(() => {
+    buttonPropsLog.length = 0;
+    vi.stubGlobal("React", React);
+  });
+
+  it("shows the 'Termin hat keine Mitarbeiter' message instead of an empty body", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentMoveDialog
+        {...defaultProps}
+        preview={makePreview()}
+        moveContext={{ tourChanged: false, weekChanged: true, isCalendarMove: true }}
+      />,
+    );
+    expect(html).toContain("appointment-move-step-no-employees");
+    expect(html).toContain("Termin hat keine Mitarbeiter");
+    expect(html).toContain("Der Termin wird ohne Mitarbeiter verschoben. Soll er trotzdem verschoben werden?");
+    expect(html).not.toContain("appointment-move-removal-warning");
+    expect(html).not.toContain("appointment-move-selection-list");
+  });
+
+  it("uses the 'Trotzdem verschieben' confirm label and no 'Weiter' step", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentMoveDialog
+        {...defaultProps}
+        preview={null}
+        moveContext={{ tourChanged: false, weekChanged: true, isCalendarMove: true }}
+      />,
+    );
+    expect(html).not.toContain(">Weiter<");
+    expect(html).toContain("button-appointment-move-confirm");
+    expect(html).toContain("Trotzdem verschieben");
+  });
+});

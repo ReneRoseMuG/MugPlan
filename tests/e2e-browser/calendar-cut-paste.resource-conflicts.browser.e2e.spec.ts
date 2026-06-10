@@ -20,6 +20,7 @@
  * Cut-and-Paste-Verschiebung mit Konflikt- und Dialogverhalten über alle relevanten Szenarien absichern.
  */
 import { expect, test } from "./fixtures";
+import { format } from "date-fns";
 import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
@@ -91,7 +92,9 @@ test("CP-01: Cut & Paste auf freien Zielzeitpunkt in selber Tour – Termin vers
     .select({ startDate: appointments.startDate })
     .from(appointments)
     .where(eq(appointments.id, appointment.id));
-  expect(String(updated.startDate).slice(0, 10)).toBe(week.weekSecondDate);
+  // startDate kommt beim Direkt-DB-Read als lokales Date-Objekt zurück; lokal formatieren
+  // (nicht toISOString, das wegen UTC-Verschiebung off-by-one liefern könnte).
+  expect(format(updated.startDate, "yyyy-MM-dd")).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

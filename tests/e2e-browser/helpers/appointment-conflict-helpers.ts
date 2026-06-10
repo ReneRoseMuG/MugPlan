@@ -246,8 +246,14 @@ export async function dispatchMonthViewDrop(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Schneidet einen Termin aus (Dropdown-Menü → Ausschneiden) und fügt ihn
- * durch Klick auf die Zielzelle ein.
+ * Schneidet einen Termin aus (Dropdown-Menü → Ausschneiden) und fügt ihn über
+ * das Tagesaktions-Menü der Ziel-Lane ein: erst den "+"-Trigger öffnen, dann den
+ * Eintrag "Markierten Termin einfügen" klicken.
+ *
+ * Hinweis: Das Drop-Overlay (`week-day-drop-overlay-…`) existiert nur während
+ * eines echten Drag-Vorgangs (`draggedAppointmentId !== null`) und hat kein
+ * onClick — im Paste-Modus läuft ein Klick darauf deterministisch in einen
+ * Timeout. Der reale Paste-Pfad führt über das "+"-Menü.
  */
 export async function cutAndPasteAppointment(
   page: Page,
@@ -255,9 +261,11 @@ export async function cutAndPasteAppointment(
   targetDate: string,
   targetTourId: number,
 ): Promise<void> {
+  const laneKey = `tour-${targetTourId}`;
   await page.getByTestId(`week-appointment-menu-trigger-${appointmentId}`).click();
   await page.getByTestId(`week-appointment-cut-${appointmentId}`).click();
-  await page.getByTestId(`week-day-drop-overlay-${targetDate}-lane-tour-${targetTourId}`).click();
+  await page.getByTestId(`button-new-appointment-week-${targetDate}-lane-${laneKey}`).click();
+  await page.getByTestId(`button-insert-selected-appointment-week-${targetDate}-lane-${laneKey}`).click();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
