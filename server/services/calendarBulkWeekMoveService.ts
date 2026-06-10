@@ -254,10 +254,15 @@ export async function executeBulkWeekMove(params: {
     const employeeIds = existing.employees.map((employee) => employee.id);
 
     try {
+      // tourId/projectId/customerId explizit mitgeben: updateAppointment persistiert tourId direkt aus
+      // data.tourId (Default null), ohne Mitgabe würde die Tourzuordnung sonst entfernt.
       await appointmentsService.updateAppointment(
         item.appointmentId,
         {
           version: item.version,
+          projectId: existing.projectId ?? null,
+          customerId: existing.customerId,
+          tourId: existing.tourId ?? null,
           startDate: targetStartDate,
           endDate: targetEndDate,
           startTime: existing.startTime ?? null,
