@@ -351,6 +351,8 @@ Unzulässig ist insbesondere:
 
 Vor jedem weiteren Testkommando ist immer das Ergebnis des vorherigen abzuwarten und zu dokumentieren.
 
+Diese Regel betrifft das gleichzeitige Starten mehrerer Testprozesse. Worker-Parallelität **innerhalb** eines einzelnen Kommandos (getrennte Worker-DBs/-Ports, siehe Abschnitt 13) ist davon ausdrücklich ausgenommen und ist der Standard für den vollen Testlauf.
+
 ### Verbotene Testmuster
 
 - Direkter Insert/Update-Sprawl in Testdateien ohne zentralen Einstieg
@@ -398,26 +400,32 @@ Verbindliche Arbeitsgrundlage für den späteren Umbau ist `docs/TEST_ISOLATION_
 
 ### Voller Testlauf umfasst mindestens
 
+**Standard (worker-parallel) — Default für den vollen Lauf und das Kurzkommando `test`:**
+
+- `npm run test:unit` (bereits datei-parallel, Flag im Skript verankert)
+- `npm run test:integration:parallel`
+- `npm run test:e2e` (vitest-E2E, keine eigene Parallel-Variante — bleibt unverändert)
+- `npm run test:e2e:browser:parallel`
+
+#### Worker-parallele Ausführung (MS-64) als Standard, serieller Fallback
+
+Der volle Testlauf wird **standardmäßig worker-parallel** ausgeführt, weil das die Laufzeit
+deutlich verkürzt (je Worker eigene temporäre `mugplan_w<N>_test`-DB, eigenes Storage;
+Browser zusätzlich eigener Server-Port). Voraussetzung: Der Testnutzer darf im Testmodus
+`CREATE`/`DROP DATABASE` (temporäre Worker-DBs). Ist das in der jeweiligen Umgebung nicht
+erlaubt, gilt der serielle Fallback.
+
+Serieller Referenz-Fallback (funktional gleichwertig; maßgeblich bei Unsicherheit, zur
+Fehlereingrenzung oder ohne Recht auf Worker-DBs):
+
 - `npm run test:unit`
 - `npm run test:integration`
 - `npm run test:e2e`
 - `npm run test:e2e:browser`
 
-#### Worker-parallele Ausführung (MS-64) und serieller Fallback
-
-Die oben genannten Kommandos sind der verbindliche, serielle Referenz-Fallback. Zusätzlich
-stehen worker-parallele Varianten für deutlich kürzere Laufzeiten bereit (je Worker eigene
-temporäre `mugplan_w<N>_test`-DB, eigenes Storage; Browser zusätzlich eigener Server-Port):
-
-- `npm run test:unit` ist bereits datei-parallel (Flag im Skript verankert).
-- `npm run test:integration:parallel` — Integration worker-parallel; `npm run test:integration` bleibt serieller Fallback.
-- `npm run test:e2e:browser:parallel` — Browser worker-parallel; `npm run test:e2e:browser` bleibt serieller Fallback.
-
-Die parallelen Varianten setzen voraus, dass der Testnutzer `CREATE`/`DROP DATABASE` im
-Testmodus darf (temporäre Worker-DBs). Sie sind funktional gleichwertig zum seriellen Modus;
-bei Unsicherheit oder zur Fehlereingrenzung ist der serielle Modus maßgeblich. Auch die
-parallelen Kommandos werden untereinander seriell gestartet (kein gleichzeitiges Starten
-mehrerer Testprozesse).
+Auch im Standardmodus werden die Kommandos **untereinander seriell gestartet** (kein
+gleichzeitiges Starten mehrerer Testprozesse); die Parallelität liegt innerhalb eines
+Kommandos über getrennte Worker-DBs/-Ports, nicht im gleichzeitigen Start mehrerer Läufe.
 
 ### Voller Audit umfasst mindestens
 

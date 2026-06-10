@@ -90,11 +90,6 @@ function normalizeOptionalNote(value: string | null | undefined): string | null 
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeOptionalCustomerField(value: string | null | undefined): string | null {
-  const trimmed = value?.trim() ?? "";
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function normalizeConfirmedEmployeeRemovalAppointments(input: EmployeeAppointmentAbsenceInput["confirmedEmployeeRemovalAppointments"]) {
   const confirmed = new Map<number, number>();
   for (const item of input ?? []) {
@@ -193,21 +188,6 @@ async function ensureAbsenceTour() {
   return toursRepository.createTour(ABSENCE_TOUR_NAME, ABSENCE_TOUR_COLOR);
 }
 
-function customerMatchesAbsenceSeedCustomer(
-  customer: Awaited<ReturnType<typeof customersRepository.getCustomersByCustomerNumber>>[number],
-): boolean {
-  return customer.customerNumber.trim() === ABSENCE_CUSTOMER_NUMBER
-    && normalizeOptionalCustomerField(customer.firstName) === null
-    && normalizeOptionalCustomerField(customer.lastName) === null
-    && normalizeOptionalCustomerField(customer.fullName) === ABSENCE_CUSTOMER_NAME
-    && normalizeOptionalCustomerField(customer.company) === ABSENCE_CUSTOMER_NAME
-    && normalizeOptionalCustomerField(customer.addressLine1) === ABSENCE_CUSTOMER_ADDRESS_LINE1
-    && normalizeOptionalCustomerField(customer.addressLine2) === null
-    && normalizeOptionalCustomerField(customer.postalCode) === ABSENCE_CUSTOMER_POSTAL_CODE
-    && normalizeOptionalCustomerField(customer.city) === ABSENCE_CUSTOMER_CITY
-    && normalizeOptionalCustomerField(customer.country) === ABSENCE_CUSTOMER_COUNTRY;
-}
-
 async function getExistingAbsenceCustomer() {
   const matches = await customersRepository.getCustomersByCustomerNumber(ABSENCE_CUSTOMER_NUMBER);
   return matches[0] ?? null;
@@ -223,13 +203,9 @@ async function ensureAbsenceCustomer() {
         `Systemkunde '${ABSENCE_CUSTOMER_NAME}' ist inaktiv.`,
       );
     }
-    if (!customerMatchesAbsenceSeedCustomer(existing)) {
-      throw new EmployeeAppointmentAbsencesError(
-        409,
-        "BUSINESS_CONFLICT",
-        `Systemkunde '${ABSENCE_CUSTOMER_NUMBER} · ${ABSENCE_CUSTOMER_NAME}' weicht vom erwarteten Sollzustand ab. Bitte System-Seed ausführen.`,
-      );
-    }
+    // Anzeige-/Suchfelder (Vor-/Nachname, Firma, Adresse) dürfen frei geändert werden:
+    // Der Abwesenheitsablauf identifiziert sich über Systemtour + Abwesenheits-Tag, nicht
+    // über den Kundennamen. Es genügt, dass der Systemkunde 001 existiert und aktiv ist.
     return existing;
   }
 

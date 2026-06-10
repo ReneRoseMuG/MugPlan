@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Abwesenheiten werden als normale Termine mit Systemtour, Systemkunde und Systemtag angelegt.
+ * - Geänderte Anzeige-/Suchfelder des Systemkunden 001 (z. B. Vor-/Nachname) blockieren die Abwesenheit nicht.
  * - Abwesenheiten blockieren Mitarbeiter ganztägig gegen reguläre Terminzuweisungen.
  * - Reguläre Terminzuweisungen erfordern vor der Abwesenheit eine bestätigte Mitarbeiterentfernung.
  * - Leser dürfen Abwesenheiten sehen, aber nicht anlegen.
@@ -26,6 +27,7 @@ import {
 } from "../../../shared/absenceAppointments";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as appointmentNotesService from "../../../server/services/appointmentNotesService";
+import * as customersService from "../../../server/services/customersService";
 import { applySystemSeed } from "../../../server/services/systemSeedService";
 import {
   EmployeeAppointmentAbsencesError,
@@ -119,6 +121,44 @@ describe("FT33 integration: Employee absence appointments", () => {
 
     const readerList = await listEmployeeAppointmentAbsences(employee.id, "LESER");
     expect(readerList.map((item) => item.id)).toContain(created.id);
+  });
+
+  it("still creates an absence after the system customer 001 was renamed for search/display", async () => {
+    // Simuliert die echte Nutzeraktion aus dem Kunden-Formular: Vor-/Nachname von 001
+    // werden gesetzt, damit der Kunde über die Kontextfilter auffindbar ist.
+    const [seedCustomer] = await customersService.getCustomersByCustomerNumber(ABSENCE_CUSTOMER_NUMBER);
+    expect(seedCustomer?.id).toBeGreaterThan(0);
+    const renamed = await customersService.updateCustomer(seedCustomer!.id, {
+      version: seedCustomer!.version,
+      firstName: "MuG",
+      lastName: "Interne Termine",
+    }, "ADMIN");
+    expect(renamed?.firstName).toBe("MuG");
+    expect(renamed?.lastName).toBe("Interne Termine");
+    expect(renamed?.fullName).toBe("Interne Termine, MuG");
+
+    const employee = await createEmployeeFixture("ABS-RENAMED-EMP");
+    const noteToken = `ABS-RENAMED-${employee.id}`;
+
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: "2099-05-18",
+      endDate: "2099-05-20",
+      note: noteToken,
+    }, "DISPONENT");
+
+    // Speichern gelingt trotz geänderter Anzeigefelder; die Abwesenheit bleibt an Kunde 001
+    // gebunden und über Systemtour + Abwesenheits-Tag eindeutig identifizierbar.
+    expect(created.id).toBeGreaterThan(0);
+    expect(created.description).toBe(noteToken);
+    expect(created.tourName).toBe(ABSENCE_TOUR_NAME);
+    expect(created.customer.customerNumber).toBe(ABSENCE_CUSTOMER_NUMBER);
+    expect(created.customer.fullName).toBe("Interne Termine, MuG");
+    expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
+    expect(created.appointmentTags.map((tag) => tag.name)).toContain("Urlaub");
+
+    const absences = await listEmployeeAppointmentAbsences(employee.id, "DISPONENT");
+    expect(absences.map((item) => item.id)).toContain(created.id);
   });
 
   it("rejects a regular timed appointment when the employee has an all-day absence", async () => {

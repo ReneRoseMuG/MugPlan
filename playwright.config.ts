@@ -73,6 +73,14 @@ export default defineConfig({
   fullyParallel: false,
   workers: WORKERS,
   retries: process.env.CI ? 1 : 0,
+  // Konsolen-Reporter (list) wie bisher; zusaetzlich ein maschinenlesbares JSON-Ergebnis,
+  // damit die Abschluss-Zusammenfassung (Anzahl bestanden/fehlgeschlagen/uebersprungen) auch
+  // dann verlaesslich vorliegt, wenn die Konsolenausgabe gekuerzt wird. test-results/ ist
+  // bereits in .gitignore, das Artefakt wird also nicht eingecheckt.
+  reporter: [
+    ["list"],
+    ["json", { outputFile: "test-results/browser-results.json" }],
+  ],
   use: {
     baseURL: `http://127.0.0.1:${PORT_BASE}`,
     headless: true,
