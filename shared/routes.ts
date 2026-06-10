@@ -2069,6 +2069,101 @@ export const api = {
       },
     },
   },
+  calendarBulkWeekMove: {
+    preview: {
+      method: "POST" as const,
+      path: "/api/calendar/bulk-week-move/preview",
+      input: z.object({
+        sourceTourIds: z.array(z.number().int().positive()).min(1),
+        sourceWeekDate: z.string(),
+        shiftWeeks: z.number().int().min(1),
+        blockingTagIds: z.array(z.number().int().positive()).default([]),
+      }).strict(),
+      responses: {
+        200: z.object({
+          sourceWeek: z.object({
+            isoYear: z.number().int(),
+            isoWeek: z.number().int().min(1).max(53),
+            fromDate: z.string(),
+            toDate: z.string(),
+          }),
+          shiftWeeks: z.number().int().min(1),
+          items: z.array(
+            z.object({
+              appointmentId: z.number().int().positive(),
+              version: z.number().int().min(1),
+              title: z.string(),
+              tourId: z.number().int().positive().nullable(),
+              tourName: z.string().nullable(),
+              sourceStartDate: z.string(),
+              sourceEndDate: z.string().nullable(),
+              startTime: z.string().nullable(),
+              targetStartDate: z.string(),
+              targetEndDate: z.string().nullable(),
+              status: z.enum(["movable", "blocked"]),
+              selectable: z.boolean(),
+              preselected: z.boolean(),
+              blockReasons: z.array(
+                z.object({
+                  code: z.enum([
+                    "PAST_APPOINTMENT_READONLY",
+                    "CANCELLED_APPOINTMENT_READONLY",
+                    "ABSENCE_APPOINTMENT_READONLY",
+                    "TOUR_WEEK_BLOCKED",
+                    "EMPLOYEE_OVERLAP_CONFLICT",
+                    "BLOCKING_TAG",
+                    "VALIDATION_ERROR",
+                  ]),
+                  message: z.string(),
+                }),
+              ),
+              hints: z.array(
+                z.object({
+                  code: z.enum(["PUBLIC_HOLIDAY", "NOTES"]),
+                  message: z.string(),
+                }),
+              ),
+            }),
+          ),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    execute: {
+      method: "POST" as const,
+      path: "/api/calendar/bulk-week-move/execute",
+      input: z.object({
+        shiftWeeks: z.number().int().min(1),
+        items: z.array(
+          z.object({
+            appointmentId: z.number().int().positive(),
+            version: z.number().int().min(1),
+          }),
+        ).min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          moved: z.array(
+            z.object({
+              appointmentId: z.number().int().positive(),
+              sourceStartDate: z.string(),
+              targetStartDate: z.string(),
+            }),
+          ),
+          failed: z.array(
+            z.object({
+              appointmentId: z.number().int().positive(),
+              code: z.string(),
+              message: z.string(),
+            }),
+          ),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   calendarMarkers: {
     list: {
       method: "GET" as const,

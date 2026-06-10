@@ -2341,6 +2341,138 @@ export async function previewAppointmentTourChange(
   return tourWeekEmployeesService.previewAppointmentTourChange(appointmentId, params, roleKey);
 }
 
+export type WeekMoveBlockReasonCode =
+  | "PAST_APPOINTMENT_READONLY"
+  | "CANCELLED_APPOINTMENT_READONLY"
+  | "ABSENCE_APPOINTMENT_READONLY"
+  | "TOUR_WEEK_BLOCKED"
+  | "EMPLOYEE_OVERLAP_CONFLICT"
+  | "VALIDATION_ERROR";
+
+export type WeekMoveBlockReason = { code: WeekMoveBlockReasonCode; message: string };
+
+function mapWeekMoveBlockCode(code: string): WeekMoveBlockReasonCode {
+  switch (code) {
+    case "PAST_APPOINTMENT_READONLY":
+      return "PAST_APPOINTMENT_READONLY";
+    case "CANCELLED_APPOINTMENT_READONLY":
+      return "CANCELLED_APPOINTMENT_READONLY";
+    case "ABSENCE_APPOINTMENT_READONLY":
+      return "ABSENCE_APPOINTMENT_READONLY";
+    case "BUSINESS_CONFLICT":
+      return "TOUR_WEEK_BLOCKED";
+    case "EMPLOYEE_OVERLAP_CONFLICT":
+      return "EMPLOYEE_OVERLAP_CONFLICT";
+    default:
+      return "VALIDATION_ERROR";
+  }
+}
+
+/**
+ * Bewertet (read-only) eine Kalenderwochen-Verschiebung eines einzelnen Termins gegen
+ * dieselben Regeln wie {@link updateAppointment} (Rolle/Historie, Sperre/Storno,
+ * Tour-KW-Schreibbarkeit, Mitarbeiterüberschneidung), ohne zu schreiben oder zu werfen.
+ * Tag-Sperren und nicht-blockierende Hinweise werden bewusst außerhalb behandelt.
+ */
+export async function evaluateWeekMoveTarget(params: {
+  appointmentId: number;
+  targetStartDate: string;
+  targetEndDate: string | null;
+  startTime: string | null;
+  employeeIds: number[];
+  roleKey: CanonicalRoleKey;
+}): Promise<{ blockReasons: WeekMoveBlockReason[] }> {
+  const blockReasons: WeekMoveBlockReason[] = [];
+  const collect = (err: unknown) => {
+    if (err instanceof AppointmentError) {
+      blockReasons.push({ code: mapWeekMoveBlockCode(err.code), message: err.message });
+      return;
+    }
+    throw err;
+  };
+
+  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, params.appointmentId);
+    if (!existing) {
+      blockReasons.push({ code: "VALIDATION_ERROR", message: "Termin nicht gefunden" });
+      return;
+    }
+
+    const allTours = await toursRepository.getTours();
+    const existingTour = existing.tourId != null
+      ? (allTours.find((entry) => entry.id === existing.tourId) ?? null)
+      : null;
+    const parkplatzTourId = await getParkplatzTourId();
+    const allowHistorical = allowsHistoricalAppointmentMutation(params.roleKey)
+      || allowsHistoricalParkplatzMutation(existing.tourId, existing.tourId, parkplatzTourId);
+
+    try {
+      await assertAbsenceAppointmentMutationAllowed({
+        appointmentId: params.appointmentId,
+        appointment: existing,
+        knownTourName: existingTour?.name,
+        nextTourName: existingTour?.name,
+      });
+    } catch (err) {
+      collect(err);
+    }
+
+    try {
+      await assertAppointmentWriteAllowed(params.appointmentId, existing, {
+        parkplatzTourId,
+        allowHistorical: allowsHistoricalAppointmentMutation(params.roleKey),
+        historicalMessage: params.roleKey !== "ADMIN"
+          ? "Termin ist ab dem Starttag gesperrt"
+          : "Historische Termine können nicht geändert werden",
+      });
+    } catch (err) {
+      collect(err);
+    }
+
+    try {
+      validateDateRange(params.targetStartDate, params.targetEndDate);
+    } catch (err) {
+      collect(err);
+    }
+
+    try {
+      await assertTargetTourWeekWritable(existing.tourId, params.targetStartDate);
+    } catch (err) {
+      collect(err);
+    }
+
+    try {
+      assertNotHistoricalInput(
+        { startDate: params.targetStartDate, startTime: params.startTime },
+        { allowHistorical },
+      );
+    } catch (err) {
+      collect(err);
+    }
+
+    try {
+      const startDate = parseDateOnly(params.targetStartDate);
+      const endDate = params.targetEndDate ? parseDateOnly(params.targetEndDate) : null;
+      const startTimeHour = resolveOverlapStartTimeHour(params.startTime ?? null);
+      const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+        employeeIds: params.employeeIds,
+        startDate,
+        endDate,
+        startTimeHour,
+        excludeAppointmentId: params.appointmentId,
+        forceAllDayOverlap: isAbsenceTourName(existingTour?.name),
+      });
+      if (conflictEmployees.length > 0) {
+        blockReasons.push({ code: "EMPLOYEE_OVERLAP_CONFLICT", message: overlapConflictMessage });
+      }
+    } catch (err) {
+      collect(err);
+    }
+  });
+
+  return { blockReasons };
+}
+
 export function isAppointmentError(err: unknown): err is AppointmentError {
   return err instanceof AppointmentError;
 }

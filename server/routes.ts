@@ -39,6 +39,7 @@ import authRoutes from "./routes/authRoutes";
 import attachmentQueriesRoutes from "./routes/attachmentQueriesRoutes";
 import calendarWeekNotesRoutes from "./routes/calendarWeekNotesRoutes";
 import calendarMarkersRoutes from "./routes/calendarMarkersRoutes";
+import calendarBulkWeekMoveRoutes from "./routes/calendarBulkWeekMoveRoutes";
 import changeNotificationsRoutes from "./routes/changeNotificationsRoutes";
 import systemSeedRoutes from "./routes/systemSeedRoutes";
 import journalRoutes from "./routes/journalRoutes";
@@ -89,6 +90,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
   app.use(calendarMarkersRoutes);
+  app.use(calendarBulkWeekMoveRoutes);
   app.use(calendarWeekNotesRoutes);
   app.use(journalRoutes);
   app.use(attachmentQueriesRoutes);

@@ -580,6 +580,37 @@ export const userSettingsRegistry = {
     placeholderWhitelist: templateAllowedKeys,
     validate: isValidTemplateValue,
   },
+  calendarBulkMoveSourceTourIds: {
+    key: "calendarBulkMove.sourceTourIds",
+    label: "KW-Sammelverschiebung Ausgangstouren",
+    description: "Zuletzt gewählte Ausgangstouren der kalenderwochenweisen Sammelverschiebung (Tour-IDs).",
+    type: "json",
+    defaultValue: [] as number[],
+    allowedScopes: ["USER"],
+    validate: isValidPositiveIntegerArray,
+  },
+  calendarBulkMoveShiftWeeks: {
+    key: "calendarBulkMove.shiftWeeks",
+    label: "KW-Sammelverschiebung Distanz",
+    description: "Zuletzt gewählte Verschiebungsdistanz in vollen Kalenderwochen (nur vorwärts).",
+    type: "number",
+    defaultValue: 1,
+    min: 1,
+    max: 52,
+    integer: true,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 52,
+  },
+  calendarBulkMoveBlockingTagIds: {
+    key: "calendarBulkMove.blockingTagIds",
+    label: "KW-Sammelverschiebung blockierende Tags",
+    description: "Zuletzt gewählte blockierende Tags der kalenderwochenweisen Sammelverschiebung (Tag-IDs).",
+    type: "json",
+    defaultValue: [] as number[],
+    allowedScopes: ["USER"],
+    validate: isValidPositiveIntegerArray,
+  },
 } as const satisfies Record<string, SettingDefinition>;
 
 export type UserSettingKey = keyof typeof userSettingsRegistry;
