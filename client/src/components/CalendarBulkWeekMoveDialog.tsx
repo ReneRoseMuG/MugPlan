@@ -27,6 +27,7 @@ type CatalogEntry = { id: number; name: string };
 export interface CalendarBulkWeekMoveDialogProps {
   open: boolean;
   phase: BulkWeekMovePhase;
+  sourceWeekDate: string;
   tours: ReadonlyArray<CatalogEntry>;
   tags: ReadonlyArray<CatalogEntry>;
   isCatalogLoading: boolean;
@@ -73,6 +74,7 @@ export function CalendarBulkWeekMoveDialog(props: CalendarBulkWeekMoveDialogProp
   const {
     open,
     phase,
+    sourceWeekDate,
     tours,
     tags,
     isCatalogLoading,
@@ -148,6 +150,9 @@ export function CalendarBulkWeekMoveDialog(props: CalendarBulkWeekMoveDialogProp
       <div className="space-y-4" data-testid="bulk-week-move-content">
         {phase === "config" ? (
           <section className="space-y-5" data-testid="bulk-week-move-config">
+            <p className="text-sm text-muted-foreground" data-testid="bulk-week-move-source-week">
+              Ausgangswoche: Woche ab {formatBulkMoveDate(sourceWeekDate)}
+            </p>
             <div className="space-y-2">
               <Label>Ausgangstouren</Label>
               {isCatalogLoading ? (

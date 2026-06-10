@@ -102,6 +102,7 @@ export function CalendarBulkWeekMoveDialogContainer({
     <CalendarBulkWeekMoveDialog
       open={open}
       phase={phase}
+      sourceWeekDate={sourceWeekDate}
       tours={move.tours}
       tags={move.tags}
       isCatalogLoading={move.isCatalogLoading}

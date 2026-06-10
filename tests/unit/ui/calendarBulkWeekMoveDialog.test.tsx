@@ -90,6 +90,7 @@ function baseProps(overrides: Partial<CalendarBulkWeekMoveDialogProps>): Calenda
   return {
     open: true,
     phase: "config",
+    sourceWeekDate: "2026-07-20",
     tours: [{ id: 10, name: "Tour A" }, { id: 11, name: "Tour B" }],
     tags: [{ id: 1, name: "Fix" }],
     isCatalogLoading: false,
