@@ -27,18 +27,12 @@ function toPositiveInteger(value: unknown, fallback: number): number {
 }
 
 function invalidateCalendarQueries(): void {
-  queryClient.invalidateQueries({
-    predicate: (query) =>
-      Array.isArray(query.queryKey)
-      && typeof query.queryKey[0] === "string"
-      && (query.queryKey[0] as string).startsWith("/api/calendar/"),
-  });
-  queryClient.invalidateQueries({
-    predicate: (query) =>
-      Array.isArray(query.queryKey)
-      && typeof query.queryKey[0] === "string"
-      && (query.queryKey[0] as string).startsWith("/api/appointments"),
-  });
+  // Kanonische Kalender-Invalidierung wie in AppointmentForm/CalendarWorkspace: die Wochen-/Monatsansicht
+  // cached unter ["calendarAppointments"] (nicht unter "/api/calendar/appointments"), daher diese Keys.
+  queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+  queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+  queryClient.invalidateQueries({ queryKey: ["calendarBlockedTourWeeks"] });
+  queryClient.invalidateQueries({ queryKey: ["/api/appointments/list"] });
 }
 
 export function useBulkWeekMove(params: { open: boolean; sourceWeekDate: string }) {
