@@ -3,10 +3,10 @@
  *
  * Abgedeckte Regeln:
  * - normalizeKwStart akzeptiert nur gültige ISO-KW und verwirft KW 0 sowie Nicht-Ganzzahlen.
- * - normalizeWeekCount klemmt auf 1–52 und verwirft Nicht-Ganzzahlen sowie undefined.
+ * - normalizeWeekCount klemmt auf 1–53 und verwirft Nicht-Ganzzahlen sowie undefined.
  * - resolveReportRangeFromKw gibt null zurück, wenn kwStart ungültig ist.
- * - resolveReportRangeFromKw gibt null zurück, wenn der KW-Sprung im Referenzjahr nicht
- *   existiert (z. B. KW 53 in einem Kurzjahr).
+ * - resolveReportRangeFromKw gibt null zurück, wenn der KW-Sprung im angegebenen ISO-Jahr
+ *   nicht existiert (z. B. KW 53 in einem Kurzjahr).
  * - resolveReportRangeFromKw berechnet fromDate als ISO-Montag der Ziel-KW und
  *   toDate als ISO-Sonntag der letzten eingeschlossenen Woche.
  * - Für weekCount=1 umfasst das Fenster genau eine Woche (Mon–Son).
@@ -18,7 +18,8 @@
  * - KW 53 in einem Jahr ohne 53 ISO-Wochen liefert null.
  *
  * Ziel:
- * Die clientseitige KW-zu-Datum-Berechnung isoliert und deterministisch absichern.
+ * Die clientseitige KW-zu-Datum-Berechnung über explizites ISO-Jahr isoliert und
+ * deterministisch absichern.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -69,51 +70,49 @@ describe("normalizeWeekCount", () => {
     expect(normalizeWeekCount(-5)).toBe(1);
   });
 
-  it("klemmt auf Maximum 52", () => {
-    expect(normalizeWeekCount(53)).toBe(52);
-    expect(normalizeWeekCount(100)).toBe(52);
+  it("klemmt auf Maximum 53", () => {
+    expect(normalizeWeekCount(54)).toBe(53);
+    expect(normalizeWeekCount(100)).toBe(53);
   });
 
   it("gibt gültige Werte unverändert zurück", () => {
     expect(normalizeWeekCount(1)).toBe(1);
     expect(normalizeWeekCount(4)).toBe(4);
     expect(normalizeWeekCount(52)).toBe(52);
+    expect(normalizeWeekCount(53)).toBe(53);
   });
 });
 
 describe("resolveReportRangeFromKw", () => {
-  const ref2026 = new Date("2026-01-14T00:00:00Z");
-
   it("gibt null zurück wenn kwStart undefined ist", () => {
-    expect(resolveReportRangeFromKw({ kwStart: undefined, weekCount: 1, referenceDate: ref2026 })).toBeNull();
+    expect(resolveReportRangeFromKw({ kwStart: undefined, weekCount: 1, isoWeekYear: 2026 })).toBeNull();
   });
 
   it("gibt null zurück wenn kwStart 0 ist", () => {
-    expect(resolveReportRangeFromKw({ kwStart: 0, weekCount: 1, referenceDate: ref2026 })).toBeNull();
+    expect(resolveReportRangeFromKw({ kwStart: 0, weekCount: 1, isoWeekYear: 2026 })).toBeNull();
   });
 
   it("gibt null zurück wenn KW 53 im Kurzjahr nicht existiert", () => {
-    const ref2024 = new Date("2024-06-12T00:00:00Z");
-    expect(resolveReportRangeFromKw({ kwStart: 53, weekCount: 1, referenceDate: ref2024 })).toBeNull();
+    expect(resolveReportRangeFromKw({ kwStart: 53, weekCount: 1, isoWeekYear: 2024 })).toBeNull();
   });
 
   it("berechnet KW 14 2026 mit 1 Woche korrekt", () => {
-    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: 1, referenceDate: ref2026 });
+    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: 1, isoWeekYear: 2026 });
     expect(result).toEqual({ fromDate: "2026-03-30", toDate: "2026-04-05" });
   });
 
   it("berechnet KW 14 2026 mit 2 Wochen korrekt", () => {
-    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: 2, referenceDate: ref2026 });
+    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: 2, isoWeekYear: 2026 });
     expect(result).toEqual({ fromDate: "2026-03-30", toDate: "2026-04-12" });
   });
 
   it("normalisiert weekCount undefined auf 1 und liefert Einwochenfenster", () => {
-    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: undefined, referenceDate: ref2026 });
+    const result = resolveReportRangeFromKw({ kwStart: 14, weekCount: undefined, isoWeekYear: 2026 });
     expect(result).toEqual({ fromDate: "2026-03-30", toDate: "2026-04-05" });
   });
 
   it("erlaubt KW 53 in einem Langjahr", () => {
-    const result = resolveReportRangeFromKw({ kwStart: 53, weekCount: 1, referenceDate: ref2026 });
+    const result = resolveReportRangeFromKw({ kwStart: 53, weekCount: 1, isoWeekYear: 2026 });
     expect(result).toEqual({ fromDate: "2026-12-28", toDate: "2027-01-03" });
   });
 });

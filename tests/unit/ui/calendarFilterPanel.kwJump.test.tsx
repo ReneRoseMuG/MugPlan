@@ -6,6 +6,7 @@
  * - Enter und Blur loesen weiterhin den Submit aus.
  * - Das Redesign rendert keinen Ruecksprung-Link mehr.
  * - Fehlerhafte Eingaben markieren das Spinner-Feld sichtbar.
+ * - Der optionale Jahr-Spinner erscheint nur, wenn Jahr-Jump-Handler uebergeben werden.
  *
  * Fehlerfaelle:
  * - Die KW-Steuerung verschwindet im Week-Footer.
@@ -174,5 +175,87 @@ describe("CalendarFilterPanel - kw jump", () => {
     expect(kwInput?.type).toBe("text");
     expect(kwInput?.inputMode).toBe("numeric");
     expect(kwInput?.pattern).toBe("[0-9]*");
+  });
+});
+
+describe("CalendarFilterPanel - year jump", () => {
+  beforeEach(() => {
+    inputCalls.length = 0;
+    buttonCalls.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it("renders the year spinner only when year jump handlers are provided", () => {
+    const withoutYear = renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        showWeekDisplayMode
+        showKwJump
+        kwJumpValue="22"
+        onKwJumpChange={() => undefined}
+        onKwJumpSubmit={() => undefined}
+      />,
+    );
+    const withYear = renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        showWeekDisplayMode
+        showKwJump
+        kwJumpValue="22"
+        onKwJumpChange={() => undefined}
+        onKwJumpSubmit={() => undefined}
+        yearJumpValue="2026"
+        onYearJumpChange={() => undefined}
+        onYearJumpSubmit={() => undefined}
+      />,
+    );
+
+    expect(withoutYear).not.toContain("input-calendar-year-jump");
+    expect(withYear).toContain("input-calendar-year-jump");
+  });
+
+  it("submits the year jump on enter and blur", () => {
+    const onYearSubmit = vi.fn();
+    renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        showWeekDisplayMode
+        showKwJump
+        kwJumpValue="22"
+        onKwJumpChange={() => undefined}
+        onKwJumpSubmit={() => undefined}
+        yearJumpValue="2026"
+        onYearJumpChange={() => undefined}
+        onYearJumpSubmit={onYearSubmit}
+      />,
+    );
+
+    const yearInput = inputCalls.find((entry) => entry["data-testid"] === "input-calendar-year-jump");
+    yearInput?.onKeyDown?.({ key: "Enter", preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
+    yearInput?.onBlur?.({} as React.FocusEvent<HTMLInputElement>);
+
+    expect(onYearSubmit).toHaveBeenCalledTimes(2);
+  });
+
+  it("renders the year input as a four-digit text-based numeric field", () => {
+    renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        showWeekDisplayMode
+        showKwJump
+        kwJumpValue="22"
+        onKwJumpChange={() => undefined}
+        onKwJumpSubmit={() => undefined}
+        yearJumpValue="2026"
+        onYearJumpChange={() => undefined}
+        onYearJumpSubmit={() => undefined}
+      />,
+    );
+
+    const yearInput = inputCalls.find((entry) => entry["data-testid"] === "input-calendar-year-jump");
+
+    expect(yearInput?.type).toBe("text");
+    expect(yearInput?.inputMode).toBe("numeric");
+    expect(yearInput?.maxLength).toBe(4);
   });
 });

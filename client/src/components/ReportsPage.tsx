@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
-import { differenceInCalendarDays, format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
+import { format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { Columns3, FileText, LayoutGrid, Loader2, Table2 } from "lucide-react";
 import {
@@ -74,6 +74,7 @@ import {
   paginateAuftragslistePrintPages,
   paginateMeasuredAuftragslistePrintPages,
 } from "@/lib/auftragsliste-print-model";
+import { countTouchedIsoWeeks } from "@/lib/isoWeekRange";
 import { resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 import {
@@ -291,7 +292,7 @@ function resolveReportRangeMetaLabel(params: {
   const parsedFromDate = parseDateOnlyInput(fromDate);
   const parsedToDate = parseDateOnlyInput(toDate);
   const weekCount = parsedFromDate && parsedToDate
-    ? Math.max(1, Math.ceil((differenceInCalendarDays(parsedToDate, parsedFromDate) + 1) / 7))
+    ? countTouchedIsoWeeks(parsedFromDate, parsedToDate)
     : 1;
   const fromLabel = formatCompactWeekdayDate(fromDate);
   const toLabel = parsedToDate ? formatCompactWeekdayDate(toDate) : null;
@@ -957,18 +958,18 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const vorlauflisteKwRange = useMemo(() => resolveReportRangeFromKw({
     kwStart: vorlauflisteKwStart,
     weekCount: vorlauflisteWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [defaultReportRange.referenceDate, vorlauflisteKwStart, vorlauflisteWeekCount]);
+    isoWeekYear: defaultIsoWeekYear,
+  }), [defaultIsoWeekYear, vorlauflisteKwStart, vorlauflisteWeekCount]);
   const produktionsplanungKwRange = useMemo(() => resolveReportRangeFromKw({
     kwStart: produktionsplanungKwStart,
     weekCount: produktionsplanungWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [defaultReportRange.referenceDate, produktionsplanungKwStart, produktionsplanungWeekCount]);
+    isoWeekYear: defaultIsoWeekYear,
+  }), [defaultIsoWeekYear, produktionsplanungKwStart, produktionsplanungWeekCount]);
   const auftragslisteKwRange = useMemo(() => resolveReportRangeFromKw({
     kwStart: auftragslisteKwStart,
     weekCount: auftragslisteWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [auftragslisteKwStart, auftragslisteWeekCount, defaultReportRange.referenceDate]);
+    isoWeekYear: defaultIsoWeekYear,
+  }), [auftragslisteKwStart, auftragslisteWeekCount, defaultIsoWeekYear]);
 
   const persistCategoryLayoutConfig = async (nextConfig: CategoryLayoutConfig) => {
     await setSetting({

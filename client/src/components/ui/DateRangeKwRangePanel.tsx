@@ -3,7 +3,9 @@ import { getISOWeek } from "date-fns";
 
 import { type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { countTouchedIsoWeeks } from "@/lib/isoWeekRange";
 import { parseIsoWeekInput } from "@/lib/isoWeekInput";
+import { MAX_REPORT_WEEK_COUNT } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 
 const WEEKDAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"] as const;
@@ -28,7 +30,7 @@ function resolveWeekCount(fromDate: string, toDate: string): number | null {
   const startDate = parseDate(fromDate);
   const endDate = parseDate(toDate);
   if (!startDate || !endDate || endDate < startDate) return null;
-  return Math.ceil(((endDate.getTime() - startDate.getTime()) / 86400000 + 1) / 7);
+  return countTouchedIsoWeeks(startDate, endDate);
 }
 
 function resolveWeekRangeLabel(fromDate: string, toDate: string): string | null {
@@ -223,7 +225,7 @@ export function DateRangeKwRangePanel({
                   value={String(weekCount)}
                   onChange={(e) => {
                     const parsed = Number.parseInt(e.target.value.replace(/\D/g, ""), 10);
-                    if (!Number.isNaN(parsed)) onWeekCountChange(clamp(parsed, 1, 52));
+                    if (!Number.isNaN(parsed)) onWeekCountChange(clamp(parsed, 1, MAX_REPORT_WEEK_COUNT));
                   }}
                   className={SPIN_INPUT_CLASS}
                   data-testid={weekCountInputTestId}
@@ -231,7 +233,7 @@ export function DateRangeKwRangePanel({
                 <div className="flex flex-col border-l border-slate-200">
                   <button
                     type="button"
-                    onClick={() => onWeekCountChange(clamp(weekCount + 1, 1, 52))}
+                    onClick={() => onWeekCountChange(clamp(weekCount + 1, 1, MAX_REPORT_WEEK_COUNT))}
                     className="flex flex-1 items-center justify-center border-b border-slate-200 px-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                     data-testid={weekCountIncrementTestId}
                   >
@@ -239,7 +241,7 @@ export function DateRangeKwRangePanel({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onWeekCountChange(clamp(weekCount - 1, 1, 52))}
+                    onClick={() => onWeekCountChange(clamp(weekCount - 1, 1, MAX_REPORT_WEEK_COUNT))}
                     className="flex flex-1 items-center justify-center px-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                     data-testid={weekCountDecrementTestId}
                   >

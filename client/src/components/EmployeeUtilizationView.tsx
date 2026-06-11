@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { addWeeks, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { addWeeks, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheetView";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
@@ -55,7 +55,7 @@ export function EmployeeUtilizationView({
       return;
     }
 
-    const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
+    const targetDate = resolveKwJumpTarget(getISOWeekYear(currentDate), parsedKw);
     if (!targetDate) {
       setKwJumpError(true);
       return;

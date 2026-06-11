@@ -1,7 +1,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
+import { addWeeks, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
 import type { z } from "zod";
 import { api } from "@shared/routes";
 import { ReportPrintPreviewDialog } from "@/components/print/ReportPrintPreviewDialog";
@@ -32,6 +32,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { normalizeServerError } from "@/lib/error-normalization";
+import { countTouchedIsoWeeks } from "@/lib/isoWeekRange";
 import { normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
@@ -274,8 +275,8 @@ export function TourenplanReportPanel({
   const kwRange = React.useMemo(() => resolveReportRangeFromKw({
     kwStart,
     weekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [defaultReportRange.referenceDate, kwStart, weekCount]);
+    isoWeekYear: defaultIsoWeekYear,
+  }), [defaultIsoWeekYear, kwStart, weekCount]);
 
   React.useEffect(() => {
     if (!standaloneLaunch || hasAppliedStandaloneLaunchRef.current) {
@@ -314,7 +315,7 @@ export function TourenplanReportPanel({
 
     return {
       fromDate,
-      weekCount: Math.max(1, Math.ceil((differenceInCalendarDays(parsedTo, parsedFrom) + 1) / 7)),
+      weekCount: countTouchedIsoWeeks(parsedFrom, parsedTo),
     };
   }, [activeTab, fromDate, kwRange?.fromDate, toDate, weekCount]);
 

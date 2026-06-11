@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
@@ -317,6 +317,9 @@ export function CalendarWorkspace({
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
   );
+  const [yearInputValue, setYearInputValue] = useState(() =>
+    isKwJumpEnabled ? String(getISOWeekYear(currentDate)) : "",
+  );
   const [kwJumpError, setKwJumpError] = useState(false);
   const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
   const monthWindowRestoreAppliedRef = useRef(false);
@@ -346,6 +349,7 @@ export function CalendarWorkspace({
     }
     if (!isKwJumpEnabled) {
       setKwInputValue("");
+      setYearInputValue("");
     }
   }, [activeView, isKwJumpEnabled, mode]);
 
@@ -374,9 +378,11 @@ export function CalendarWorkspace({
   useEffect(() => {
     if (!isKwJumpEnabled) {
       setKwInputValue("");
+      setYearInputValue("");
       return;
     }
     setKwInputValue(String(getISOWeek(currentDate)));
+    setYearInputValue(String(getISOWeekYear(currentDate)));
   }, [currentDate, isKwJumpEnabled]);
 
   const rememberWeekViewportForNextNavigation = () => {
@@ -385,24 +391,37 @@ export function CalendarWorkspace({
     setLocalWeekRestoreRequest(nextRestoreRequest);
   };
 
-  const submitKwJump = (valueOverride?: string) => {
-    const trimmedValue = sanitizeIsoWeekInput(valueOverride ?? kwInputValue);
-    if (trimmedValue.length === 0) {
+  const kwJumpMinYear = 2000;
+  const kwJumpMaxYear = 2100;
+
+  const parseKwJumpYear = (value: string): number | null => {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed) || parsed < kwJumpMinYear || parsed > kwJumpMaxYear) {
+      return null;
+    }
+    return parsed;
+  };
+
+  const submitKwJump = (override?: { kw?: string; year?: string }) => {
+    const trimmedKw = sanitizeIsoWeekInput(override?.kw ?? kwInputValue);
+    if (trimmedKw.length === 0) {
       setKwJumpError(false);
       return;
     }
 
-    const parsedKw = parseIsoWeekInput(trimmedValue);
-    if (!parsedKw) {
+    const parsedKw = parseIsoWeekInput(trimmedKw);
+    const parsedYear = parseKwJumpYear(override?.year ?? yearInputValue);
+    if (!parsedKw || parsedYear === null) {
       setKwJumpError(true);
       return;
     }
 
-    const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
+    const targetDate = resolveKwJumpTarget(parsedYear, parsedKw);
     if (targetDate) {
       const currentWeekStart = startOfISOWeek(currentDate);
       if (targetDate.getTime() === currentWeekStart.getTime()) {
         setKwInputValue(String(parsedKw));
+        setYearInputValue(String(parsedYear));
         setKwJumpError(false);
         return;
       }
@@ -410,6 +429,7 @@ export function CalendarWorkspace({
       setJumpBackDate(isMonthWindowView(activeView) ? normalizeMonthWindowStart(currentDate) : currentDate);
       onDateChange(isMonthWindowView(activeView) ? normalizeMonthWindowStart(targetDate) : targetDate);
       setKwInputValue(String(parsedKw));
+      setYearInputValue(String(parsedYear));
       setKwJumpError(false);
       return;
     }
@@ -1025,13 +1045,27 @@ export function CalendarWorkspace({
             onKwJumpValueCommit={(value) => {
               setKwInputValue(value);
               setKwJumpError(false);
-              submitKwJump(value);
+              submitKwJump({ kw: value });
+            }}
+            yearJumpValue={yearInputValue}
+            yearJumpMin={kwJumpMinYear}
+            yearJumpMax={kwJumpMaxYear}
+            onYearJumpChange={(value) => {
+              setYearInputValue(value.replace(/\D/g, "").slice(0, 4));
+              setKwJumpError(false);
+            }}
+            onYearJumpSubmit={() => submitKwJump()}
+            onYearJumpValueCommit={(value) => {
+              setYearInputValue(value);
+              setKwJumpError(false);
+              submitKwJump({ year: value });
             }}
             showKwJumpBack={jumpBackDate !== null}
             onKwJumpBack={() => {
               if (!jumpBackDate) return;
               rememberWeekViewportForNextNavigation();
               setKwInputValue(String(getISOWeek(jumpBackDate)));
+              setYearInputValue(String(getISOWeekYear(jumpBackDate)));
               onDateChange(isMonthWindowView(activeView) ? normalizeMonthWindowStart(jumpBackDate) : jumpBackDate);
               setJumpBackDate(null);
               setKwJumpError(false);

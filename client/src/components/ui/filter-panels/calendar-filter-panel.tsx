@@ -25,6 +25,12 @@ interface CalendarFilterPanelProps {
   onKwJumpValueCommit?: (value: string) => void;
   showKwJumpBack?: boolean;
   onKwJumpBack?: () => void;
+  yearJumpValue?: string;
+  yearJumpMin?: number;
+  yearJumpMax?: number;
+  onYearJumpChange?: (value: string) => void;
+  onYearJumpSubmit?: () => void;
+  onYearJumpValueCommit?: (value: string) => void;
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
 }
@@ -123,6 +129,64 @@ function KwJumpSpinner({
   );
 }
 
+function YearSpinner({
+  value,
+  min,
+  max,
+  onChange,
+  onSubmit,
+  onCommitValue,
+}: {
+  value: string;
+  min: number;
+  max: number;
+  onChange?: (value: string) => void;
+  onSubmit?: () => void;
+  onCommitValue?: (value: string) => void;
+}) {
+  const commitStep = (delta: number) => {
+    const parsed = Number.parseInt(value, 10);
+    const base = Number.isNaN(parsed) ? min : parsed;
+    const nextValue = String(Math.min(max, Math.max(min, base + delta)));
+    onChange?.(nextValue);
+    onCommitValue?.(nextValue);
+    if (!onCommitValue) {
+      onSubmit?.();
+    }
+  };
+
+  return (
+    <div className="flex w-24 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <Input
+        id="input-calendar-year-jump"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={4}
+        value={value}
+        className="h-9 rounded-none border-0 px-3 text-left text-sm font-semibold text-slate-800 shadow-none focus-visible:ring-1 focus-visible:ring-blue-500"
+        onChange={(event) => onChange?.(event.target.value.replace(/\D/g, "").slice(0, 4))}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            onSubmit?.();
+          }
+        }}
+        onBlur={() => {
+          if (value.trim().length > 0) {
+            onSubmit?.();
+          }
+        }}
+        data-testid="input-calendar-year-jump"
+      />
+      <div className="flex w-6 flex-col border-l border-slate-200">
+        <SpinnerButton direction="up" onClick={() => commitStep(1)} />
+        <SpinnerButton direction="down" onClick={() => commitStep(-1)} />
+      </div>
+    </div>
+  );
+}
+
 function renderConflictControls({
   conflictHighlightActive,
   conflictAppointmentCount,
@@ -178,6 +242,12 @@ export function CalendarFilterPanel({
   onKwJumpValueCommit,
   showKwJumpBack = false,
   onKwJumpBack,
+  yearJumpValue = "",
+  yearJumpMin = 2000,
+  yearJumpMax = 2100,
+  onYearJumpChange,
+  onYearJumpSubmit,
+  onYearJumpValueCommit,
 }: CalendarFilterPanelProps) {
   const showConflictHighlightControls =
     typeof conflictAppointmentCount === "number" &&
@@ -187,6 +257,10 @@ export function CalendarFilterPanel({
     showKwJump &&
     typeof onKwJumpChange === "function" &&
     typeof onKwJumpSubmit === "function";
+  const showKwJumpYearControls =
+    showKwJumpControls &&
+    typeof onYearJumpChange === "function" &&
+    typeof onYearJumpSubmit === "function";
   const showBulkWeekMove = typeof bulkWeekMoveAction === "function";
 
   const bulkWeekMoveControl = showBulkWeekMove ? (
@@ -240,6 +314,16 @@ export function CalendarFilterPanel({
                   onSubmit={onKwJumpSubmit}
                   onCommitValue={onKwJumpValueCommit}
                 />
+                {showKwJumpYearControls ? (
+                  <YearSpinner
+                    value={yearJumpValue}
+                    min={yearJumpMin}
+                    max={yearJumpMax}
+                    onChange={onYearJumpChange}
+                    onSubmit={onYearJumpSubmit}
+                    onCommitValue={onYearJumpValueCommit}
+                  />
+                ) : null}
                 {showKwJumpBack && typeof onKwJumpBack === "function" ? (
                   <Button
                     type="button"
@@ -296,6 +380,16 @@ export function CalendarFilterPanel({
               onSubmit={onKwJumpSubmit}
               onCommitValue={onKwJumpValueCommit}
             />
+            {showKwJumpYearControls ? (
+              <YearSpinner
+                value={yearJumpValue}
+                min={yearJumpMin}
+                max={yearJumpMax}
+                onChange={onYearJumpChange}
+                onSubmit={onYearJumpSubmit}
+                onCommitValue={onYearJumpValueCommit}
+              />
+            ) : null}
             {showKwJumpBack && typeof onKwJumpBack === "function" ? (
               <Button
                 type="button"

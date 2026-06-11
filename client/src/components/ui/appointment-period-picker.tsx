@@ -7,6 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import type { ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import type { AppointmentListScope } from "@/components/ui/filter-panels/appointments-filter-panel";
+import { countTouchedIsoWeeks, resolveIsoWeekStart } from "@/lib/isoWeekRange";
 
 function parseIsoDate(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -22,12 +23,8 @@ function formatIsoDate(date: Date): string {
 }
 
 function isoWeekToDateRange(isoYear: number, kwStart: number, weekCount: number): { dateFrom: string; dateTo: string } {
-  const jan4 = new Date(isoYear, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const weekOneMonday = new Date(jan4);
-  weekOneMonday.setDate(jan4.getDate() - jan4Day);
-  const monday = new Date(weekOneMonday);
-  monday.setDate(weekOneMonday.getDate() + (kwStart - 1) * 7);
+  const monday =
+    resolveIsoWeekStart(isoYear, kwStart) ?? resolveIsoWeekStart(isoYear, 1) ?? new Date(isoYear, 0, 4, 12, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + weekCount * 7 - 1);
   return { dateFrom: formatIsoDate(monday), dateTo: formatIsoDate(sunday) };
@@ -37,7 +34,7 @@ function resolveWeekCount(dateFrom: string, dateTo: string): number {
   const from = parseIsoDate(dateFrom);
   const to = parseIsoDate(dateTo);
   if (!from || !to || to < from) return 1;
-  return Math.max(1, Math.ceil(((to.getTime() - from.getTime()) / 86400000 + 1) / 7));
+  return countTouchedIsoWeeks(from, to);
 }
 
 export interface AppointmentListAvailableRange {
