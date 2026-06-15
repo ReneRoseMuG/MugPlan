@@ -18,13 +18,13 @@ Von dieser Klassifikation hängen Branch-Frage, Dokumentenlektüre, Analyseumfan
 
 ### Folgen der Klassifikation
 
-| Klasse | Branch-Frage | Notion-Lektüre | Dokumentenlektüre | Analyseumfang | Planung |
-|---|---|---|---|---|---|
-| 1. Reine Frage oder Leseauftrag | Nein | Nein | Nur wenn fachlich nötig | Minimal, nur auftragsnah | Keine formale Planung |
-| 2. Analyse-, Audit- oder Test-Report | Nein | Nur bei fachlichem Bedarf | Nur relevante Indizes / gezielte Abschnitte | Nur für den Report nötige Bereiche | Nur kurzer Analyseplan bei Bedarf |
-| 3. Git-Operation ohne Codeänderung | Nein | Nein | Nein, außer bei fachlicher Rückfrage | Nur Git-Zustand prüfen | Keine normale Planpflicht |
-| 4. Kleiner lokaler Fix | Nur wenn Änderungen tatsächlich durchgeführt werden sollen | Nein | Minimal und gezielt | Start klein und dateinah | Kompakter Plan (3 Abschnitte) |
-| 5. Mehrschichtige Änderung oder neues Feature | Ja, sofern Änderungen durchgeführt werden sollen | Nur bei fachlichem Bedarf | Gestuft und gezielt erweitern | Breiter, aber begründet | Voller Plan (5 Abschnitte) |
+| Klasse | Branch-Frage | Dokumentenlektüre | Analyseumfang | Planung |
+|---|---|---|---|---|
+| 1. Reine Frage oder Leseauftrag | Nein | Nur wenn fachlich nötig | Minimal, nur auftragsnah | Keine formale Planung |
+| 2. Analyse-, Audit- oder Test-Report | Nein | Nur relevante Indizes / gezielte Abschnitte | Nur für den Report nötige Bereiche | Nur kurzer Analyseplan bei Bedarf |
+| 3. Git-Operation ohne Codeänderung | Nein | Nein, außer bei fachlicher Rückfrage | Nur Git-Zustand prüfen | Keine normale Planpflicht |
+| 4. Kleiner lokaler Fix | Nur wenn Änderungen tatsächlich durchgeführt werden sollen | Minimal und gezielt | Start klein und dateinah | Kompakter Plan (3 Abschnitte) |
+| 5. Mehrschichtige Änderung oder neues Feature | Ja, sofern Änderungen durchgeführt werden sollen | Gestuft und gezielt erweitern | Breiter, aber begründet | Voller Plan (5 Abschnitte) |
 
 Claude dokumentiert zu Beginn kurz:
 - welche Klasse gewählt wurde,
@@ -72,22 +72,15 @@ Claude dokumentiert kurz:
 - warum diese Auswahl genügt,
 - warum keine weitere Lektüre nötig ist.
 
-### 2.1 Notion als fachlicher Einstiegspunkt
+### 2.1 Projekt-Manager-MCP als fachlicher Einstiegspunkt
 
-Notion wird **nicht** zu Beginn jeder Session automatisch gelesen. Notion wird nur dann konsultiert, wenn für einen Auftrag fachliche Projektkontexte, Feature-Listen oder Statusstände benötigt werden und die lokalen Repo-Dokumente dafür nicht ausreichen.
+Der Projekt-Manager-MCP wird **nicht** zu Beginn jeder Session automatisch abgefragt. Er wird nur dann konsultiert, wenn für einen Auftrag fachliche Projektkontexte, Feature-Listen, Ticketinhalte oder Statusstände benötigt werden und die lokalen Repo-Dokumente dafür nicht ausreichen.
 
-Bevorzugter Einstiegspunkt:
+Für Kurzreferenzen wie `TKT-*`, `UC-*`, `FEAT-*`, `MS-*` oder `PROJ-*` löst Claude zuerst die Referenz über den Projekt-Manager-MCP auf und liest danach nur die für den Auftrag nötigen Kontextdaten.
 
-- `https://www.notion.so/Meisel-Gerken-Tourenplaner-303da094354e80ba83a5f0a1659bd723`
+Feature-Dokumente, Use-Case-Beschreibungen und Tickets sind als informative Arbeitsgrundlage zu lesen, nicht als absolute Wahrheit. Sie können veraltet, unvollständig oder gegenüber dem aktuellen Fachverhalten im Code anders ausgelegt sein. Abweichungen zwischen Doku und Code werden nicht automatisch als Bug behandelt — bei Unklarheiten fragt Claude nach.
 
-Von dort aus ist insbesondere die Datenbank `Lastenheft` relevant. Sie enthält Feature-Dokumente mit der Eigenschaft `Status` (`geplant`, `Entfernt`, `Abgeschlossen`).
-
-Feature-Dokumente und Use-Case-Beschreibungen sind als informative Arbeitsgrundlage zu lesen, nicht als absolute Wahrheit. Sie können veraltet oder gegenüber dem aktuellen Fachverhalten im Code anders ausgelegt sein. Abweichungen zwischen Doku und Code werden nicht automatisch als Bug behandelt — bei Unklarheiten fragt Claude nach.
-
-Koordinationsseiten (nur bei explizitem Bedarf):
-
-- Release 01 Aufgaben: `https://www.notion.so/Release-01-Aufgaben-326da094354e809ea174d7c13738958b`
-- Test Coverage Projekt: `https://www.notion.so/Test-Coverage-Projekt-326da094354e80f59180c16c6b040229`
+Notion-Seiten, Notion-Datenbanken und Notion-Suche dürfen in diesem Repository nicht verwendet werden, außer der Nutzer erlaubt dies für einen konkreten Auftrag ausdrücklich neu.
 
 ---
 

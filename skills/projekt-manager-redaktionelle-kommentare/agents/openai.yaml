@@ -1,7 +1,0 @@
-interface:
-  display_name: "Projektmanager-Kommentare"
-  short_description: "Schreibt datierte Session- und Projektkommentare per Projekt-Manager-MCP."
-  default_prompt: "Schreibe einen Session-Kommentar für das genannte Zielobjekt und hänge ihn per Projekt-Manager-MCP an."
-
-policy:
-  allow_implicit_invocation: true
