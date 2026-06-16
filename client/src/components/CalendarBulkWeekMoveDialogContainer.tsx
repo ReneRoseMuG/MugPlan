@@ -88,9 +88,13 @@ export function CalendarBulkWeekMoveDialogContainer({
   const handleRunPreview = async () => {
     const config = { sourceTourIds, shiftWeeks, blockingTagIds };
     void move.persistConfig(config);
-    const result = await move.runPreview(config);
-    setSelectedIds(getPreselectedItemIds(result.items));
-    setPhase("report");
+    try {
+      const result = await move.runPreview(config);
+      setSelectedIds(getPreselectedItemIds(result.items));
+      setPhase("report");
+    } catch {
+      // Fehler steht in move.previewError und wird im Dialog angezeigt; der Konfig-Schritt bleibt offen.
+    }
   };
 
   const handleToggleItem = (item: BulkWeekMovePreviewItem) => {
@@ -100,8 +104,12 @@ export function CalendarBulkWeekMoveDialogContainer({
   const handleConfirm = async () => {
     if (!move.preview) return;
     const items = buildExecuteItems(move.preview.items, selectedIds);
-    await move.runExecute({ shiftWeeks, items });
-    setPhase("result");
+    try {
+      await move.runExecute({ shiftWeeks, items });
+      setPhase("result");
+    } catch {
+      // Fehler steht in move.executeError und wird im Dialog angezeigt; der Report-Schritt bleibt offen.
+    }
   };
 
   const errorMessage = move.previewError?.message ?? move.executeError?.message ?? null;
@@ -120,14 +128,14 @@ export function CalendarBulkWeekMoveDialogContainer({
       onShiftWeeksChange={setShiftWeeks}
       blockingTagIds={blockingTagIds}
       onToggleBlockingTag={handleToggleBlockingTag}
-      onRunPreview={handleRunPreview}
+      onRunPreview={() => void handleRunPreview()}
       isPreviewPending={move.isPreviewPending}
       previewError={errorMessage}
       preview={move.preview}
       selectedIds={selectedIds}
       onToggleItem={handleToggleItem}
       onBackToConfig={() => setPhase("config")}
-      onConfirm={handleConfirm}
+      onConfirm={() => void handleConfirm()}
       isExecutePending={move.isExecutePending}
       executeResult={move.executeResult}
       onClose={handleClose}

@@ -26,13 +26,16 @@ function toPositiveInteger(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 1 ? value : fallback;
 }
 
-function invalidateCalendarQueries(): void {
+async function invalidateCalendarQueries(): Promise<void> {
   // Kanonische Kalender-Invalidierung wie in AppointmentForm/CalendarWorkspace: die Wochen-/Monatsansicht
   // cached unter ["calendarAppointments"] (nicht unter "/api/calendar/appointments"), daher diese Keys.
-  queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-  queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
-  queryClient.invalidateQueries({ queryKey: ["calendarBlockedTourWeeks"] });
-  queryClient.invalidateQueries({ queryKey: ["/api/appointments/list"] });
+  // Das Neuladen wird abgewartet, damit der Erfolgspfad erst nach abgeschlossener Invalidierung abschließt.
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] }),
+    queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] }),
+    queryClient.invalidateQueries({ queryKey: ["calendarBlockedTourWeeks"] }),
+    queryClient.invalidateQueries({ queryKey: ["/api/appointments/list"] }),
+  ]);
 }
 
 export function useBulkWeekMove(params: { open: boolean; sourceWeekDate: string }) {
@@ -87,8 +90,8 @@ export function useBulkWeekMove(params: { open: boolean; sourceWeekDate: string 
       const response = await apiRequest("POST", api.calendarBulkWeekMove.execute.path, input);
       return (await response.json()) as BulkWeekMoveExecuteResponse;
     },
-    onSuccess: () => {
-      invalidateCalendarQueries();
+    onSuccess: async () => {
+      await invalidateCalendarQueries();
     },
   });
 
