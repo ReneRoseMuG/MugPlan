@@ -84,7 +84,7 @@ test("SC-01: D&D auf freien Zielzeitpunkt in selber Tour/KW – Mitarbeiter blei
 
   // DB-Prüfung: Termin auf neuem Datum
   const [updated] = await db.select({ startDate: appointments.startDate }).from(appointments).where(eq(appointments.id, appointment.id));
-  expect(String(updated.startDate).slice(0, 10)).toBe(week.weekSecondDate);
+  expect(new Date(updated.startDate).toISOString().slice(0, 10)).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,11 +117,12 @@ test("SC-02: D&D auf kollidierenden Zielzeitpunkt in selber Tour/KW – Konflikt
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 2);
+  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
 
   await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 
   await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
   await expectAppointmentUnchanged(sourceAppointment.id, before);
@@ -159,12 +160,13 @@ test("SC-03: D&D mehrtägiger Termin – Überschneidung im Gesamtzeitraum erkan
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 3);
+  await expect(page.getByTestId(`week-appointment-panel-${multiDayAppointment.id}`)).toBeVisible();
 
   // Verschieben auf weekSecondDate (Konflikt liegt dort)
   await dispatchWeekViewDrop(page, multiDayAppointment.id, week.weekSecondDate, tour.id);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
   await expectAppointmentUnchanged(multiDayAppointment.id, before);
 });
 
@@ -187,6 +189,7 @@ test("SC-04: D&D Termin mit Notizen in selber Tour/KW – Notizschritt erscheint
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 4);
+  await expect(page.getByTestId(`week-appointment-panel-${appointment.id}`)).toBeVisible();
 
   const dropped = await dispatchWeekViewDrop(page, appointment.id, week.weekSecondDate, tour.id);
   expect(dropped).toBe(true);
@@ -199,7 +202,7 @@ test("SC-04: D&D Termin mit Notizen in selber Tour/KW – Notizschritt erscheint
 
   // Termin auf neuem Datum
   const [updated] = await db.select({ startDate: appointments.startDate }).from(appointments).where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekSecondDate);
+  expect(new Date(updated.startDate).toISOString().slice(0, 10)).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,10 +232,11 @@ test("SC-05: D&D ohne Notizen in selber Tour/KW – Konfliktprüfung läuft ohne
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 5);
+  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
 
   await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 
   // Direkter Konfliktdialog ohne vorherigen Move-Dialog-Schritt
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 });

@@ -2,22 +2,22 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - D&D zu anderer Tour ohne Mitarbeiter und Zielplanung: direkter Wechsel ohne Dialog.
+ * - D&D zu anderer Tour ohne Mitarbeiter und Zielplanung: no-employee-Bestätigungsdialog, dann Tourwechsel.
  * - D&D zu anderer Tour mit Mitarbeiter, keine Zielplanung: Entfernen-Schritt erscheint.
  * - D&D zu anderer Tour ohne Mitarbeiter, mit Zielplanung: Übernahme-Schritt mit vorausgewähltem Mitarbeiter.
  * - D&D zu anderer Tour mit Mitarbeiter und Zielplanung: Entfernen-Schritt, dann Übernahme-Schritt.
- * - Zielplanung enthält kollidierenden Mitarbeiter: finaler Konfliktdialog nach Übernahme.
- * - Zielplanung enthält gemischte Mitarbeiter (frei + kollidierend): Konflikt blockiert, Termin unverändert.
+ * - Zielplanung enthält kollidierenden Mitarbeiter: blockiert (nicht übernehmbar), Termin ohne ihn verschoben.
+ * - Zielplanung enthält gemischte Mitarbeiter (frei + kollidierend): freier übernommen, kollidierender blockiert.
  * - D&D zu anderer Tour mit Notizen: Entfernen → Übernahme → Notizschritt vollständig.
  * - Dialog abbrechen: Termin bleibt vollständig unverändert.
  * - D&D zu anderer Tour und anderem Datum: Tour und Datum gemeinsam geändert.
  *
  * Fehlerfälle:
- * - Dialog erscheint obwohl kein Mitarbeiter und keine Zielplanung vorhanden.
+ * - Termin ohne Mitarbeiter wird ohne Bestätigung verschoben.
  * - Entfernen-Schritt fehlt bei vorhandenen Mitarbeitern.
  * - Übernahme-Schritt fehlt bei vorhandener Zielplanung.
  * - Termin mutiert trotz Abbruch.
- * - Finaler Konflikt blockiert nicht bei kollidierendem Zielplanungs-Mitarbeiter.
+ * - Kollidierender Zielplanungs-Mitarbeiter ist auswählbar oder wird übernommen.
  * - Notizschritt erscheint nicht nach Übernahme.
  *
  * Ziel:
@@ -40,10 +40,8 @@ import {
   cancelMoveDialog,
   confirmMoveDialog,
   createAppointmentNoteFixture,
-  dismissFinalConflictDialog,
   dispatchWeekViewDrop,
   expectAppointmentUnchanged,
-  expectFinalConflictDialog,
   getMoveDialog,
   insertTourWeekEmployee,
   navigateToWeekView,
@@ -59,10 +57,10 @@ test.beforeAll(async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CC-01: D&D zu anderer Tour, kein Mitarbeiter, keine Zielplanung → direkter Wechsel
+// CC-01: D&D zu anderer Tour, kein Mitarbeiter, keine Zielplanung → no-employee-Bestätigung
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("CC-01: D&D zu anderer Tour ohne Mitarbeiter und Zielplanung – kein Dialog, Tour direkt gewechselt", async ({ page }) => {
+test("CC-01: D&D zu anderer Tour ohne Mitarbeiter und Zielplanung – no-employee-Bestätigung, dann Tour gewechselt", async ({ page }) => {
   const week = resolveWeek(1);
   const project = await createProjectFixture({ prefix: "CC-01" });
   const sourceTour = await createTourFixture("#11aa22");
@@ -79,6 +77,13 @@ test("CC-01: D&D zu anderer Tour ohne Mitarbeiter und Zielplanung – kein Dialo
   await navigateWeekOffset(page, 1);
   await expect(page.getByTestId(`week-appointment-panel-${appointment.id}`)).toBeVisible();
 
+  const dropped = await dispatchWeekViewDrop(page, appointment.id, week.weekStartDate, targetTour.id);
+  expect(dropped).toBe(true);
+
+  // Termin ohne Mitarbeiter: Move-Dialog mit no-employee-Schritt erscheint (kein direkter Move)
+  const dialog = await getMoveDialog(page);
+  await expect(dialog).toContainText("Termin hat keine Mitarbeiter");
+
   const patchResponsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(`/api/appointments/${appointment.id}`) &&
@@ -86,11 +91,7 @@ test("CC-01: D&D zu anderer Tour ohne Mitarbeiter und Zielplanung – kein Dialo
     { timeout: 10_000 },
   );
 
-  const dropped = await dispatchWeekViewDrop(page, appointment.id, week.weekStartDate, targetTour.id);
-  expect(dropped).toBe(true);
-
-  // Kein Move-Dialog
-  await expect(page.getByTestId("dialog-appointment-move")).toHaveCount(0);
+  await confirmMoveDialog(page);
 
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
@@ -233,10 +234,10 @@ test("CC-04: D&D zu anderer Tour mit Mitarbeiter und Zielplanung – Entfernen-S
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CC-05: Zielplanung enthält kollidierenden Mitarbeiter → Finaler Konfliktdialog
+// CC-05: Zielplanung enthält kollidierenden Mitarbeiter → blockiert, Termin ohne ihn verschoben
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("CC-05: D&D zu anderer Tour, Zielplanung hat kollidierenden Mitarbeiter – Finaler Konfliktdialog, Termin unverändert", async ({ page }) => {
+test("CC-05: D&D zu anderer Tour, Zielplanung hat kollidierenden Mitarbeiter – Mitarbeiter blockiert, Termin ohne ihn verschoben", async ({ page }) => {
   const week = resolveWeek(5);
   const project = await createProjectFixture({ prefix: "CC-05" });
   const sourceTour = await createTourFixture("#11cc22");
@@ -267,24 +268,40 @@ test("CC-05: D&D zu anderer Tour, Zielplanung hat kollidierenden Mitarbeiter –
 
   await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekStartDate, targetTour.id);
 
-  // Übernahme-Schritt: kollidierender Mitarbeiter sichtbar
+  // Übernahme-Schritt: kollidierender Wochenplan-Mitarbeiter ist blockiert (nicht auswählbar)
   const dialog = await getMoveDialog(page);
-  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-move-preview-status-${conflictEmployee.id}`)).toContainText(
+    "Am Zieltermin besteht bereits eine ganztägige Planung.",
+  );
+  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toHaveCount(0);
+
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${sourceAppointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
 
   await confirmMoveDialog(page);
 
-  // Finaler Konfliktdialog erscheint
-  await expectFinalConflictDialog(page, [conflictEmployee.id]);
-  await dismissFinalConflictDialog(page);
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
-  await expectAppointmentUnchanged(sourceAppointment.id, before);
+  // Kein finaler Konfliktdialog: der blockierte Mitarbeiter wurde gar nicht übernommen
+  await expect(page.getByTestId("dialog-calendar-move-final-conflict")).toHaveCount(0);
+
+  // Termin zur Ziel-Tour verschoben (Datum unverändert), ohne den blockierten Mitarbeiter
+  const after = await snapshotAppointment(sourceAppointment.id);
+  expect(after.startDate).toBe(before.startDate);
+  expect(after.tourId).toBe(targetTour.id);
+  expect(after.employeeIds).toEqual([]);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CC-06: Zielplanung enthält gemischte Mitarbeiter (frei + kollidierend) → Konflikt blockiert
+// CC-06: Zielplanung gemischt (frei + kollidierend) → freier übernommen, kollidierender blockiert
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("CC-06: D&D zu anderer Tour, gemischte Zielplanung – Konflikt durch belegten Mitarbeiter blockiert, Termin unverändert", async ({ page }) => {
+test("CC-06: D&D zu anderer Tour, gemischte Zielplanung – freier Mitarbeiter übernommen, kollidierender blockiert", async ({ page }) => {
   const week = resolveWeek(6);
   const project = await createProjectFixture({ prefix: "CC-06" });
   const sourceTour = await createTourFixture("#11ee22");
@@ -319,17 +336,33 @@ test("CC-06: D&D zu anderer Tour, gemischte Zielplanung – Konflikt durch beleg
 
   const dialog = await getMoveDialog(page);
 
-  // Beide Mitarbeiter im Übernahme-Schritt sichtbar
+  // Freier Wochenplan-Mitarbeiter ist auswählbar, kollidierender ist blockiert (nicht auswählbar)
   await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${freeEmployee.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-move-preview-status-${conflictEmployee.id}`)).toContainText(
+    "Am Zieltermin besteht bereits eine ganztägige Planung.",
+  );
+  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toHaveCount(0);
+
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${sourceAppointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
 
   await confirmMoveDialog(page);
 
-  // Finaler Konfliktdialog nur für den kollidierenden Mitarbeiter
-  await expectFinalConflictDialog(page, [conflictEmployee.id]);
-  await dismissFinalConflictDialog(page);
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
-  await expectAppointmentUnchanged(sourceAppointment.id, before);
+  // Kein finaler Konfliktdialog: kollidierender Mitarbeiter wurde nicht übernommen
+  await expect(page.getByTestId("dialog-calendar-move-final-conflict")).toHaveCount(0);
+
+  // Termin verschoben mit freiem Mitarbeiter, kollidierender nicht übernommen
+  const after = await snapshotAppointment(sourceAppointment.id);
+  expect(after.startDate).toBe(before.startDate);
+  expect(after.tourId).toBe(targetTour.id);
+  expect(after.employeeIds).toEqual([freeEmployee.id]);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -435,6 +468,14 @@ test("CC-09: D&D zu anderer Tour und anderem Datum – Tourwechsel und Datumsver
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 9);
 
+  // Anderes Datum UND andere Tour in einem Drop
+  const dropped = await dispatchWeekViewDrop(page, appointment.id, week.weekSecondDate, targetTour.id);
+  expect(dropped).toBe(true);
+
+  // Termin ohne Mitarbeiter: Move-Dialog mit no-employee-Schritt erscheint (kein direkter Move)
+  const dialog = await getMoveDialog(page);
+  await expect(dialog).toContainText("Termin hat keine Mitarbeiter");
+
   const patchResponsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(`/api/appointments/${appointment.id}`) &&
@@ -442,12 +483,7 @@ test("CC-09: D&D zu anderer Tour und anderem Datum – Tourwechsel und Datumsver
     { timeout: 10_000 },
   );
 
-  // Anderes Datum UND andere Tour in einem Drop
-  const dropped = await dispatchWeekViewDrop(page, appointment.id, week.weekSecondDate, targetTour.id);
-  expect(dropped).toBe(true);
-
-  // Kein Move-Dialog (kein Mitarbeiter, keine Zielplanung)
-  await expect(page.getByTestId("dialog-appointment-move")).toHaveCount(0);
+  await confirmMoveDialog(page);
 
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
@@ -457,5 +493,5 @@ test("CC-09: D&D zu anderer Tour und anderem Datum – Tourwechsel und Datumsver
     .from(appointments)
     .where(eq(appointments.id, appointment.id));
   expect(updated.tourId).toBe(targetTour.id);
-  expect(updated.startDate).toBe(week.weekSecondDate);
+  expect(new Date(updated.startDate).toISOString().slice(0, 10)).toBe(week.weekSecondDate);
 });

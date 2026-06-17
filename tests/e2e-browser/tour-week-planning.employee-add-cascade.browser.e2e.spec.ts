@@ -2,20 +2,19 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Mitarbeiter zur Wochenplanung hinzufügen: Vorschau-Dialog erscheint mit betroffenen Terminen.
- * - Mitarbeiter ohne Terminüberschneidung: kein Konflikt, Zuweisung wird übernommen.
- * - Mitarbeiter mit Konflikt an einem Tag: Konflikt im Vorschau-Dialog angezeigt.
- * - Mitarbeiter mit Konflikt an mehreren Tagen: alle Konflikte aufgelistet.
- * - Nur konfliktfreie Termine werden übernommen (Teilübernahme).
- * - Vorschau-Dialog abbrechen: Wochenplanung unverändert.
- * - Mitarbeiter zu Tour ohne Termine in der KW: sofortige Übernahme, kein Dialog.
- * - Mehrere Mitarbeiter gleichzeitig hinzufügen: jeder einzeln geprüft.
+ * - KW-Plan-Spalte im Wochen-View einblenden/erweitern, Mitarbeiter über den Picker hinzufügen.
+ * - Mitarbeiter ohne Terminüberschneidung: Cascade-Dialog zeigt Termine als übernehmbar, Zuweisung bestätigt.
+ * - Tour ohne Termine in der KW: Cascade-Dialog ohne Terminliste, direkt bestätigbar.
+ * - Belegter Mitarbeiter (Konflikt an einem oder mehreren Tagen): im Picker nicht angeboten (proaktive Konfliktvermeidung).
+ * - Vorschau-/Cascade-Dialog abbrechen: Wochenplanung unverändert.
+ * - Bereits eingetragener Mitarbeiter: im Picker nicht erneut angeboten.
+ * - Mehrere Mitarbeiter: freie werden übernommen, belegte nicht angeboten.
  *
  * Fehlerfälle:
- * - Dialog erscheint nicht trotz betroffener Termine.
- * - Konflikt an einem Tag blockiert alle anderen Tage (ungewollte Blockade).
+ * - Cascade-Dialog erscheint nicht trotz Hinzufügen.
+ * - Belegter Mitarbeiter wird trotz Konflikt im Picker angeboten.
  * - Abbruch mutiert die Wochenplanung.
- * - Dialog zeigt falsche oder fehlende Terminbezüge.
+ * - Cascade-Dialog zeigt falsche oder fehlende Terminbezüge.
  *
  * Ziel:
  * Das Hinzufügen von Mitarbeitern zur Tourenplanung einer Woche mit Kaskadenprüfung absichern.
@@ -47,30 +46,37 @@ test.beforeAll(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function openTourWeekPlanningPanel(page: import("@playwright/test").Page, tourId: number) {
-  await page.getByTestId(`week-tour-header-${tourId}`).click();
-  await expect(page.getByTestId(`week-tour-planning-panel-${tourId}`)).toBeVisible();
+  // KW-Plan-Spalte (Wochenplanung) im Wochen-View einblenden; Zielwoche ist nach Navigation die erste sichtbare
+  await page.getByTestId("switch-week-personnel-column").click();
+  await expect(page.getByTestId(`week-personnel-column-tour-${tourId}`).first()).toBeVisible();
+  // Personalspalte erweitern, falls eingeklappt (Einklapp-Zustand kann aus vorherigem Test persistieren)
+  const addButton = page.getByTestId(`button-add-week-personnel-tour-${tourId}`).first();
+  if (!(await addButton.isVisible())) {
+    await page.getByTestId(`button-week-personnel-column-toggle-tour-${tourId}`).first().click();
+  }
+  await expect(addButton).toBeVisible();
 }
 
 async function addEmployeeToWeekPlan(page: import("@playwright/test").Page, tourId: number, employeeId: number) {
-  const panel = page.getByTestId(`week-tour-planning-panel-${tourId}`);
-  await panel.getByTestId(`week-planning-employee-add-${employeeId}`).click();
+  await page.getByTestId(`button-add-week-personnel-tour-${tourId}`).first().click();
+  await page.getByTestId(`employee-picker-card-${employeeId}`).dblclick();
 }
 
 async function getWeekPlanPreviewDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-preview");
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
   return dialog;
 }
 
 async function confirmWeekPlanPreviewDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-preview");
-  await dialog.getByTestId("button-week-plan-preview-confirm").click();
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(dialog).toBeHidden();
 }
 
 async function cancelWeekPlanPreviewDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-preview");
-  await dialog.getByTestId("button-week-plan-preview-cancel").click();
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -99,14 +105,11 @@ test("WA-01: Mitarbeiter zu Tour ohne Termine in der KW hinzufügen – sofortig
   await openTourWeekPlanningPanel(page, tour.id);
   await addEmployeeToWeekPlan(page, tour.id, employee.id);
 
-  // Kein Vorschau-Dialog — direkt übernommen
-  await expect(page.getByTestId("dialog-week-plan-preview")).toHaveCount(0);
+  // Tour ohne Termine in der KW: Cascade-Dialog ohne Terminliste, nur bestätigen
+  await confirmWeekPlanPreviewDialog(page);
 
   // Mitarbeiter-Badge in der Wochenplanung sichtbar
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toBeVisible();
+  await expect(page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`).first()).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -136,26 +139,21 @@ test("WA-02: Mitarbeiter zu Tour mit Termin ohne Überschneidung hinzufügen –
 
   const dialog = await getWeekPlanPreviewDialog(page);
 
-  // Termin in der Vorschau sichtbar
-  await expect(dialog.getByTestId(`week-plan-preview-appointment-${appointment.id}`)).toBeVisible();
-
-  // Kein Konflikt-Indikator
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${appointment.id}`)).toHaveCount(0);
+  // Termin in der Vorschau sichtbar, konfliktfrei übernehmbar
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${appointment.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-status-${appointment.id}`)).toContainText("Wird zum Termin hinzugefügt");
 
   await confirmWeekPlanPreviewDialog(page);
 
   // Mitarbeiter jetzt in der Wochenplanung
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toBeVisible();
+  await expect(page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`).first()).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-03: Mitarbeiter hinzufügen, Konflikt an einem Tag → Konflikt im Dialog angezeigt
+// WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag → im Picker nicht angeboten
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-03: Mitarbeiter hinzufügen, Konflikt an einem Tag – Vorschau-Dialog zeigt Konflikt, Termin abweisend markiert", async ({ page }) => {
+test("WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
   const week = resolveWeek(3);
   const project = await createProjectFixture({ prefix: "WA-03" });
   const tour = await createTourFixture("#33cc66");
@@ -170,8 +168,8 @@ test("WA-03: Mitarbeiter hinzufügen, Konflikt an einem Tag – Vorschau-Dialog 
     employeeIds: [employee.id],
   });
 
-  // Termin in der Ziel-Tour ohne diesen Mitarbeiter
-  const appointment = await createAppointmentFixture({
+  // Termin in der Ziel-Tour, damit der belegte Mitarbeiter für die Tour-Woche nicht verfügbar ist
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
@@ -183,19 +181,17 @@ test("WA-03: Mitarbeiter hinzufügen, Konflikt an einem Tag – Vorschau-Dialog 
   await navigateWeekOffset(page, 3);
 
   await openTourWeekPlanningPanel(page, tour.id);
-  await addEmployeeToWeekPlan(page, tour.id, employee.id);
 
-  const dialog = await getWeekPlanPreviewDialog(page);
-
-  // Konflikt am Termin angezeigt
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${appointment.id}`)).toBeVisible();
+  // Belegter Mitarbeiter wird im Wochenplan-Picker nicht angeboten (proaktive Konfliktvermeidung)
+  await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-04: Mitarbeiter hinzufügen, Konflikte an mehreren Tagen → alle aufgelistet
+// WA-04: Mitarbeiter mit Konflikten an mehreren Tagen → im Picker nicht angeboten
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-04: Mitarbeiter hinzufügen, Konflikte an mehreren Tagen – alle Konflikttermine im Dialog aufgelistet", async ({ page }) => {
+test("WA-04: Mitarbeiter mit Konflikten an mehreren Tagen – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
   const week = resolveWeek(4);
   const project = await createProjectFixture({ prefix: "WA-04" });
   const tour = await createTourFixture("#44dd66");
@@ -216,14 +212,14 @@ test("WA-04: Mitarbeiter hinzufügen, Konflikte an mehreren Tagen – alle Konfl
     employeeIds: [employee.id],
   });
 
-  // Zwei Termine in Ziel-Tour
-  const appointmentA = await createAppointmentFixture({
+  // Zwei Termine in Ziel-Tour, damit der an beiden Tagen belegte Mitarbeiter für die Tour-Woche nicht verfügbar ist
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [],
   });
-  const appointmentB = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekSecondDate,
     tourId: tour.id,
@@ -235,20 +231,17 @@ test("WA-04: Mitarbeiter hinzufügen, Konflikte an mehreren Tagen – alle Konfl
   await navigateWeekOffset(page, 4);
 
   await openTourWeekPlanningPanel(page, tour.id);
-  await addEmployeeToWeekPlan(page, tour.id, employee.id);
 
-  const dialog = await getWeekPlanPreviewDialog(page);
-
-  // Beide Konflikte sichtbar
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${appointmentA.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${appointmentB.id}`)).toBeVisible();
+  // An mehreren Tagen belegter Mitarbeiter wird im Wochenplan-Picker nicht angeboten
+  await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-05: Teilübernahme — konfliktfreie Termine werden übernommen, Konflikte nicht
+// WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen → im Picker nicht angeboten
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-05: Mitarbeiter hinzufügen, gemischte Situation – konfliktfreier Termin übernommen, Konflikttermin ausgelassen", async ({ page }) => {
+test("WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
   const week = resolveWeek(5);
   const project = await createProjectFixture({ prefix: "WA-05" });
   const tour = await createTourFixture("#55ee66");
@@ -263,16 +256,14 @@ test("WA-05: Mitarbeiter hinzufügen, gemischte Situation – konfliktfreier Ter
     employeeIds: [employee.id],
   });
 
-  // Montag-Termin in Ziel-Tour (Konflikt)
-  const conflictAppointment = await createAppointmentFixture({
+  // Montag-Termin (Konflikt für den Mitarbeiter) und Dienstag-Termin (frei) in der Ziel-Tour
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [],
   });
-
-  // Dienstag-Termin in Ziel-Tour (kein Konflikt)
-  const freeAppointment = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekSecondDate,
     tourId: tour.id,
@@ -284,22 +275,10 @@ test("WA-05: Mitarbeiter hinzufügen, gemischte Situation – konfliktfreier Ter
   await navigateWeekOffset(page, 5);
 
   await openTourWeekPlanningPanel(page, tour.id);
-  await addEmployeeToWeekPlan(page, tour.id, employee.id);
 
-  const dialog = await getWeekPlanPreviewDialog(page);
-
-  // Konflikt am Montag sichtbar, Dienstag konfliktfrei
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${conflictAppointment.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`week-plan-preview-conflict-${freeAppointment.id}`)).toHaveCount(0);
-  await expect(dialog.getByTestId(`week-plan-preview-appointment-${freeAppointment.id}`)).toBeVisible();
-
-  await confirmWeekPlanPreviewDialog(page);
-
-  // Mitarbeiter in Wochenplanung vorhanden
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toBeVisible();
+  // Mitarbeiter ist an einem Wochentag belegt → für die Tour-Woche nicht vollständig verfügbar, daher nicht angeboten
+  await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -330,10 +309,7 @@ test("WA-06: Vorschau-Dialog abbrechen – Wochenplanung unverändert, kein Mita
   await cancelWeekPlanPreviewDialog(page);
 
   // Mitarbeiter-Badge nicht in der Wochenplanung
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toHaveCount(0);
+  await expect(page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,22 +329,19 @@ test("WA-07: Bereits eingetragener Mitarbeiter wird nicht erneut angeboten – H
 
   await openTourWeekPlanningPanel(page, tour.id);
 
-  // Mitarbeiter bereits eingetragen — kein separater Add-Button erwartet
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-add-${employee.id}`),
-  ).toHaveCount(0);
+  // Mitarbeiter bereits eingetragen — Badge sichtbar
+  await expect(page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`).first()).toBeVisible();
+
+  // Bereits eingetragener Mitarbeiter wird im Hinzufügen-Picker nicht erneut angeboten
+  await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-08: Mehrere Mitarbeiter hinzufügen — individuelle Konfliktprüfung pro Mitarbeiter
+// WA-08: Mehrere Mitarbeiter — freier wird angeboten/übernommen, belegter nicht angeboten
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-08: Zwei Mitarbeiter hinzufügen, einer mit Konflikt – Vorschau unterscheidet Konflikt und Konfliktfreiheit", async ({ page }) => {
+test("WA-08: Zwei Mitarbeiter – freier wird übernommen, belegter im Picker nicht angeboten", async ({ page }) => {
   const week = resolveWeek(8);
   const project = await createProjectFixture({ prefix: "WA-08" });
   const tour = await createTourFixture("#88bb66");
@@ -398,14 +371,13 @@ test("WA-08: Zwei Mitarbeiter hinzufügen, einer mit Konflikt – Vorschau unter
 
   await openTourWeekPlanningPanel(page, tour.id);
 
-  // freeEmployee hinzufügen
+  // freeEmployee hinzufügen — konfliktfrei
   await addEmployeeToWeekPlan(page, tour.id, freeEmployee.id);
   const dialogFree = await getWeekPlanPreviewDialog(page);
-  await expect(dialogFree.getByTestId(`week-plan-preview-conflict-${appointment.id}`)).toHaveCount(0);
+  await expect(dialogFree.getByTestId(`tour-employee-cascade-status-${appointment.id}`)).toContainText("Wird zum Termin hinzugefügt");
   await confirmWeekPlanPreviewDialog(page);
 
-  // conflictEmployee hinzufügen
-  await addEmployeeToWeekPlan(page, tour.id, conflictEmployee.id);
-  const dialogConflict = await getWeekPlanPreviewDialog(page);
-  await expect(dialogConflict.getByTestId(`week-plan-preview-conflict-${appointment.id}`)).toBeVisible();
+  // conflictEmployee ist am Termin belegt → wird im Picker nicht angeboten
+  await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
+  await expect(page.getByTestId(`employee-picker-card-${conflictEmployee.id}`)).toHaveCount(0);
 });

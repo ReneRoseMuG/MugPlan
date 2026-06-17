@@ -642,9 +642,9 @@ test("marks conflicting week employees as non-selectable for new appointments", 
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter aus der Tour/KW-Planung sind am Zieldatum wegen doppelter Planung nicht verfügbar.");
+  await expect(dialog).toContainText("Mitarbeiter aus der Wochenplanung sind am Zieltermin wegen doppelter Planung nicht verfügbar.");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Kann nicht übernommen werden",
+    "Am Zieltermin besteht bereits eine ganztägige Planung.",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toHaveCount(0);
 });
@@ -679,24 +679,24 @@ test("uses the already confirmed preview decision when an existing appointment c
   await expect(page.getByTestId("section-tour-picker")).toBeVisible();
   await page.getByTestId(`badge-tour-select-${targetTour.id}-add`).click();
 
-  const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
-  await expect(immediateDialog).toBeVisible();
-  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
-  );
-  await expect(immediateDialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
-  await expect(immediateDialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
-  await immediateDialog.getByTestId("button-tour-employee-cascade-confirm").click();
-  await expect(immediateDialog).toHaveCount(0);
+  const dialog = page.getByTestId("dialog-appointment-move");
+  await expect(dialog).toBeVisible();
 
-  await page.getByTestId("button-save-appointment").click();
-  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+  // Schritt "Mitarbeiter": aktuelle Mitarbeiter werden beim Tourwechsel abgezogen
+  await expect(dialog).toContainText("Achtung: Mitarbeiter werden abgezogen");
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${currentEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${sideEmployee.id}`)).toBeVisible();
+
+  // Weiter zum Schritt "Wochenplanung": Wochenplan-Mitarbeiter ist übernehmbar
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+  await expect(dialog.getByTestId(`appointment-move-preview-status-${weekEmployee.id}`)).toContainText(
+    "Kann dem Termin zugewiesen werden.",
+  );
+
+  await dialog.getByTestId("button-appointment-move-confirm").click();
+  await expect(dialog).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -747,12 +747,12 @@ test("rechecks week planning when the start date moves into another ISO week on 
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter aus der Wochenplanung am Zieltermin können übernommen werden.");
+  await expect(dialog).toContainText("Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
     "Wird vom Termin entfernt",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
+    "Kann dem Termin zugewiesen werden.",
   );
   await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
   await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
@@ -810,7 +810,7 @@ test("keeps the additive or replace decision when an existing appointment stays 
     "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung am Zieltermin übernommen werden",
+    "Kann dem Termin zugewiesen werden.",
   );
   await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toBeVisible();
   await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toBeVisible();
@@ -870,8 +870,8 @@ test("shows a resource conflict dialog before saving a pure date move in the sam
   await expect(dialog).toContainText("Mitarbeiter wegen doppelter Planung nicht verfügbar.");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("Wird beim Speichern vom Termin entfernt.");
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).toHaveCount(0);
-  await dialog.getByTestId("button-appointment-save-review-next").click();
-  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
+  // Einziger Schritt (resources): Konflikt-Mitarbeiter wird entfernt → Termin ohne Mitarbeiter
+  await expect(dialog).toContainText("Der Termin wird ohne Mitarbeiter gespeichert.");
   await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
@@ -950,11 +950,8 @@ test("requires checking appointment notes when an existing appointment is moved"
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId("appointment-save-review-step-notes")).toBeVisible();
   await expect(dialog.getByTestId("list-notes")).toContainText("Terminnotiz mit altem Datum");
-  await expect(dialog.getByTestId("button-appointment-save-review-next")).toBeEnabled();
 
-  await dialog.getByTestId("button-appointment-save-review-next").click();
-
-  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
+  // Notizschritt ist der einzige Schritt → direkt bestätigen (kein Mitarbeiter-Schritt nötig)
   const saveResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "PATCH"
     && new URL(response.url()).pathname === `/api/appointments/${appointment.id}`
@@ -1024,15 +1021,11 @@ test("removes existing employees after changing to a tour without target week pl
   await expect(page.getByTestId("section-tour-picker")).toBeVisible();
   await page.getByTestId(`badge-tour-select-${targetTour.id}-add`).click();
 
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  const dialog = page.getByTestId("dialog-appointment-move");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter werden ersetzt");
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
-  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(dialog).toContainText("Achtung: Mitarbeiter werden abgezogen");
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${currentEmployee.id}`)).toBeVisible();
+  await dialog.getByTestId("button-appointment-move-confirm").click();
   await expect(dialog).toHaveCount(0);
 
   await saveExistingAppointment(page, appointment.id);
@@ -1074,11 +1067,9 @@ test("opens the week preview when an existing appointment without tour later get
   await openExistingAppointmentInNextWeek(page, appointment.id);
   await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
 
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  const dialog = page.getByTestId("dialog-appointment-move");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
-  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
-  await expect(dialog).toContainText("Wochenplanung für Termin übernehmen");
+  await expect(dialog).toContainText("Mitarbeiter aus der Wochenplanung sind am Zieltermin verfügbar.");
   await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId("badge-tour")).toBeVisible();

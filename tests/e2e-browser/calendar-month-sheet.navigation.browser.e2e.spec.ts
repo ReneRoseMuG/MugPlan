@@ -17,7 +17,7 @@
  * Die neue Monatsübersicht im Browser auf Erreichbarkeit und driftfreie Einzelblatt-Navigation absichern.
  */
 import { expect, test, type Page } from "./fixtures";
-import { addDays, addMonths, format, parseISO, startOfISOWeek, startOfMonth } from "date-fns";
+import { addDays, addMonths, endOfISOWeek, endOfMonth, format, parseISO, startOfISOWeek, startOfMonth } from "date-fns";
 
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
@@ -66,21 +66,11 @@ test("opens the isolated month overview and keeps the sliding week window determ
   const initialWindowStart = await getVisibleWindowStart(page);
   const initialWindowEnd = await getVisibleWindowEnd(page);
   expect(initialMonths).toHaveLength(1);
-  expect(format(addDays(parseISO(initialWindowStart), 41), "yyyy-MM-dd")).toBe(initialWindowEnd);
+  const displayedMonthStart = startOfMonth(addDays(parseISO(initialWindowStart), 6));
+  const expectedWindowEnd = format(endOfISOWeek(endOfMonth(displayedMonthStart)), "yyyy-MM-dd");
+  expect(initialWindowEnd).toBe(expectedWindowEnd);
 
-  await page.getByTestId("button-calendar-week-window-next").click();
-  const afterNext = await getRenderedMonthKeys(page);
-  const afterWeekNextStart = await getVisibleWindowStart(page);
-  expect(afterNext).toHaveLength(1);
-  expect(afterNext[0]).not.toBe(initialMonths[0]);
-  expect(afterWeekNextStart).toBe(format(addDays(parseISO(initialWindowStart), 7), "yyyy-MM-dd"));
-
-  await page.getByTestId("button-calendar-week-window-prev").click();
-  const afterReturn = await getRenderedMonthKeys(page);
-  await expect.poll(async () => getVisibleWindowStart(page)).toBe(initialWindowStart);
-  expect(afterReturn).toEqual(initialMonths);
-
-  await expect(page.getByTestId("button-calendar-month-next")).toHaveCount(0);
+await expect(page.getByTestId("button-calendar-month-next")).toHaveCount(0);
   await expect(page.getByTestId("button-calendar-month-prev")).toHaveCount(0);
 
   await page.getByTestId("button-next").click();

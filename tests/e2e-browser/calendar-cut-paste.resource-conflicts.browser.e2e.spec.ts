@@ -4,16 +4,16 @@
  * Abgedeckte Regeln:
  * - Cut & Paste auf freien Zielzeitpunkt (selbe Tour): Termin verschoben, Mitarbeiter erhalten.
  * - Cut & Paste auf kollidierenden Zielzeitpunkt: finaler Konfliktdialog, Termin unverändert.
- * - Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung: direkter Wechsel ohne Dialog.
+ * - Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung: no-employee-Bestätigungsdialog, dann Tourwechsel.
  * - Cut & Paste zu anderer Tour mit Mitarbeiter: Entfernen-Schritt erscheint.
  * - Cut & Paste zu anderer Tour mit Zielplanung: Übernahme-Schritt erscheint.
  * - Cut & Paste mit Notizen: Notizschritt erscheint, Termin bestätigt.
- * - Cut & Paste Konflikt nach Tourwechsel und Übernahme: finaler Konfliktdialog.
+ * - Cut & Paste, kollidierender Wochenplan-Mitarbeiter: blockiert (nicht übernehmbar), Termin ohne ihn verschoben.
  *
  * Fehlerfälle:
  * - Termin wird trotz Konflikt am Ziel verschoben.
  * - Mitarbeiter geht nach erfolgreicher Verschiebung verloren.
- * - Move-Dialog erscheint ohne Mitarbeiter oder Zielplanung.
+ * - Termin ohne Mitarbeiter wird ohne Bestätigung verschoben.
  * - Finaler Konfliktdialog zeigt keinen Mitarbeiternamen.
  *
  * Ziel:
@@ -130,8 +130,8 @@ test("CP-02: Cut & Paste auf kollidierenden Zielzeitpunkt – Finaler Konfliktdi
 
   await cutAndPasteAppointment(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 
   // Terminkarte noch sichtbar
   await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
@@ -139,10 +139,10 @@ test("CP-02: Cut & Paste auf kollidierenden Zielzeitpunkt – Finaler Konfliktdi
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CP-03: Cut & Paste zu anderer Tour, kein Mitarbeiter, keine Zielplanung → direkter Wechsel
+// CP-03: Cut & Paste zu anderer Tour, kein Mitarbeiter, keine Zielplanung → no-employee-Bestätigung
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("CP-03: Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung – kein Dialog, Tour direkt gewechselt", async ({ page }) => {
+test("CP-03: Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung – no-employee-Bestätigung, dann Tour gewechselt", async ({ page }) => {
   const week = resolveWeek(3);
   const project = await createProjectFixture({ prefix: "CP-03" });
   const sourceTour = await createTourFixture("#33cc11");
@@ -158,6 +158,12 @@ test("CP-03: Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung – ke
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 3);
 
+  await cutAndPasteAppointment(page, appointment.id, week.weekStartDate, targetTour.id);
+
+  // Termin ohne Mitarbeiter: Move-Dialog mit no-employee-Schritt erscheint (kein direkter Move)
+  const dialog = await getMoveDialog(page);
+  await expect(dialog).toContainText("Termin hat keine Mitarbeiter");
+
   const patchResponsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(`/api/appointments/${appointment.id}`) &&
@@ -165,9 +171,7 @@ test("CP-03: Cut & Paste zu anderer Tour ohne Mitarbeiter und Zielplanung – ke
     { timeout: 10_000 },
   );
 
-  await cutAndPasteAppointment(page, appointment.id, week.weekStartDate, targetTour.id);
-
-  await expect(page.getByTestId("dialog-appointment-move")).toHaveCount(0);
+  await confirmMoveDialog(page);
 
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
@@ -305,10 +309,10 @@ test("CP-06: Cut & Paste zu anderer Tour mit Notizen – Notizschritt erscheint,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CP-07: Cut & Paste, Konflikt nach Tourwechsel und Übernahme → Finaler Konfliktdialog
+// CP-07: Cut & Paste, kollidierender Wochenplan-Mitarbeiter → blockiert, Termin ohne ihn verschoben
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("CP-07: Cut & Paste zu anderer Tour, kollidierender Wochenplan-Mitarbeiter – Finaler Konfliktdialog nach Übernahme, Termin unverändert", async ({ page }) => {
+test("CP-07: Cut & Paste zu anderer Tour, kollidierender Wochenplan-Mitarbeiter – blockiert, Termin ohne ihn verschoben", async ({ page }) => {
   const week = resolveWeek(7);
   const project = await createProjectFixture({ prefix: "CP-07" });
   const sourceTour = await createTourFixture("#77ee11");
@@ -339,17 +343,31 @@ test("CP-07: Cut & Paste zu anderer Tour, kollidierender Wochenplan-Mitarbeiter 
 
   await cutAndPasteAppointment(page, sourceAppointment.id, week.weekStartDate, targetTour.id);
 
-  // Übernahme-Schritt: kollidierender Mitarbeiter sichtbar
+  // Übernahme-Schritt: kollidierender Wochenplan-Mitarbeiter ist blockiert (nicht auswählbar)
   const dialog = await getMoveDialog(page);
-  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-move-preview-status-${conflictEmployee.id}`)).toContainText(
+    "Am Zieltermin besteht bereits eine ganztägige Planung.",
+  );
+  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${conflictEmployee.id}`)).toHaveCount(0);
+
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${sourceAppointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
 
   await confirmMoveDialog(page);
 
-  // Finaler Konfliktdialog
-  await expectFinalConflictDialog(page, [conflictEmployee.id]);
-  await dismissFinalConflictDialog(page);
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
-  // Terminkarte noch sichtbar
-  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
-  await expectAppointmentUnchanged(sourceAppointment.id, before);
+  // Kein finaler Konfliktdialog: der blockierte Mitarbeiter wurde gar nicht übernommen
+  await expect(page.getByTestId("dialog-calendar-move-final-conflict")).toHaveCount(0);
+
+  // Termin zur Ziel-Tour verschoben (Datum unverändert), ohne den blockierten Mitarbeiter
+  const after = await snapshotAppointment(sourceAppointment.id);
+  expect(after.startDate).toBe(before.startDate);
+  expect(after.tourId).toBe(targetTour.id);
+  expect(after.employeeIds).toEqual([]);
 });

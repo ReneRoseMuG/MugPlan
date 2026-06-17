@@ -313,7 +313,8 @@ test("tour form leaves historical-only rows on page one without a false focus hi
   await page.getByTestId("tab-tour-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
-  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  // Projektname wird in der Tabelle abgeschnitten — über die voll sichtbare Auftragsnummer filtern
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.orderNumber ?? "" }).first();
   await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
   await expect(historicRow).toBeVisible();
   await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
@@ -342,7 +343,8 @@ test("employee form leaves historical-only rows on page one without a false focu
   await page.getByTestId("tab-employee-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
-  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  // Projektname wird in der Tabelle abgeschnitten — über die voll sichtbare Auftragsnummer filtern
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.orderNumber ?? "" }).first();
   await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
   await expect(historicRow).toBeVisible();
   await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);

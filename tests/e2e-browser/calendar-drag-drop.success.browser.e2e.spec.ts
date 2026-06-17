@@ -66,7 +66,9 @@ test("moves a regular future appointment onto another future day in the month sh
     && response.request().method() === "PATCH"
   ), { timeout: 15_000 });
 
-  await appointmentBar.dragTo(targetCalendarDay);
+  // Termin-Balken liegen im unteren Slot-Bereich des Zieltags; auf den freien Kopfbereich
+  // (Tagesnummer-Zeile) zielen, damit das Drop nicht von einem Balken abgefangen wird.
+  await appointmentBar.dragTo(targetCalendarDay, { targetPosition: { x: 20, y: 8 } });
 
   const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();

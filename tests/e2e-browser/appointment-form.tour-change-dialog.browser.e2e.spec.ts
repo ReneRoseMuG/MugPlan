@@ -6,13 +6,13 @@
  * - Mitarbeiter vorhanden, keine Zielplanung → nur Entfernen-Schritt erscheint.
  * - Keine Mitarbeiter, aber Zielplanung → nur Übernahme-Schritt erscheint.
  * - Mitarbeiter vorhanden und Zielplanung → Entfernen-Schritt, dann Übernahme-Schritt.
- * - Dialog abbrechen → Tour und Mitarbeiter im Formular unverändert.
+ * - Dialog abbrechen → gewählte Ziel-Tour bleibt im Formular, Mitarbeiter werden nicht entfernt (nur Kaskade verworfen).
  * - Kein "Alle wählen" / "Alle abwählen" in keinem Schritt.
  *
  * Fehlerfälle:
  * - Dialog erscheint obwohl kein Mitarbeiter und keine Zielplanung vorhanden.
  * - Entfernen-Schritt und Übernahme-Schritt erscheinen im selben Schritt.
- * - Abbrechen mutiert Tour oder Mitarbeiterliste.
+ * - Abbrechen entfernt Mitarbeiter oder persistiert die Änderung.
  * - "Alle wählen" / "Alle abwählen" sichtbar.
  *
  * Ziel:
@@ -194,7 +194,7 @@ test("TC-04: Tourwechsel mit Mitarbeiter und Zielplanung – Entfernen-Schritt, 
 // TC-05: Dialog abbrechen → keine Änderung
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("TC-05: Tourwechsel-Dialog abbrechen – Tour und Mitarbeiter im Formular unverändert", async ({ page }) => {
+test("TC-05: Tourwechsel-Dialog abbrechen – gewählte Ziel-Tour bleibt, Mitarbeiter nicht entfernt", async ({ page }) => {
   const week = resolveWeek(5);
   const project = await createProjectFixture({ prefix: "TC-05" });
   const sourceTour = await createTourFixture("#556677");
@@ -217,8 +217,9 @@ test("TC-05: Tourwechsel-Dialog abbrechen – Tour und Mitarbeiter im Formular u
   await getMoveDialog(page);
   await cancelMoveDialog(page);
 
-  // Formular: sourceTour-Badge noch vorhanden (statische testId "badge-tour"), Mitarbeiter-Badge noch vorhanden
+  // Abbruch verwirft nur die Mitarbeiter-Kaskade: die zuvor im Formular gewählte Ziel-Tour
+  // bleibt bestehen (Tour-Entfernen + -Auswahl erfolgten vor dem Dialog), Mitarbeiter bleibt erhalten.
   await expect(page.getByTestId("badge-tour")).toBeVisible();
-  await expect(page.getByTestId("badge-tour")).toContainText(sourceTour.name);
-  await expect(page.getByTestId(`badge-appointment-employee-${employee.id}`)).toBeVisible();
+  await expect(page.getByTestId("badge-tour")).toContainText(targetTour.name);
+  await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
 });

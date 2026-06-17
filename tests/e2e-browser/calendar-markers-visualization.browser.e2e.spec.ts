@@ -135,8 +135,11 @@ test("Admin bearbeitet, deaktiviert und reaktiviert gesiedete Feiertage mit Kale
   await navigateStandaloneMonthToDate(page, "2026-05-01");
   const monthMarker = page.getByTestId("calendar-marker-header-2026-05-01");
   await expect.poll(async () => monthMarker.getAttribute("data-marker-header-variant")).toBe("ft");
+  // Hover-Popover wie in der adaptiven Anzeige (Test 3): Breiten-Varianten durchschalten, dann hovern
+  await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 180, "full");
+  await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 44, "ft");
   await monthMarker.hover();
-  await expect(page.getByRole("dialog").last()).toContainText("Maifeiertag Browser");
+  await expect(page.getByRole("dialog")).toContainText("Maifeiertag Browser");
 });
 
 test("Visualisierungs-Toggle steuert globale Hintergrundintensität", async ({ page }) => {

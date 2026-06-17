@@ -63,8 +63,14 @@ test("employee form switches from appointments list to utilization view and show
   await expect(appointmentCard).toBeVisible();
   const appointmentBar = page.getByTestId(`appointment-bar-${appointment.id}`).first();
   await expect(appointmentBar).toBeVisible();
+  await appointmentBar.scrollIntoViewIfNeeded();
+  // cursor-Mode-HoverPreview: betreten und zusätzlich im Element bewegen, damit das Vorschaupanel öffnet
   await appointmentBar.hover();
-  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  const barBox = await appointmentBar.boundingBox();
+  if (barBox) {
+    await page.mouse.move(barBox.x + barBox.width / 2 + 3, barBox.y + barBox.height / 2);
+  }
+  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
   await expect(previewPanel).toBeVisible();
 
   await expect(previewPanel).toContainText("09:30");

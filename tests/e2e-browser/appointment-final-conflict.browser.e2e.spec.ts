@@ -26,11 +26,11 @@ import {
   createAppointmentFixture,
   createEmployeeFixture,
   createProjectFixture,
+  createRawAppointmentFixture,
   createTourFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
-  addEmployeeViaPickerDialog,
   cutAndPasteAppointment,
   dismissFinalConflictDialog,
   dispatchWeekViewDrop,
@@ -59,18 +59,22 @@ test("FC-01: Finaler Konfliktdialog erscheint beim Formularspeichern – betroff
   const tour = await createTourFixture("#225566");
   const employee = await createEmployeeFixture("FC-01-EMP");
 
-  // Konflikttermin: selber Mitarbeiter, selbes Datum
-  await createAppointmentFixture({
+  // Zieltermin zuerst per Service anlegen — noch kein Konflikt.
+  const targetAppointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekSecondDate,
     tourId: tour.id,
     employeeIds: [employee.id],
   });
 
-  const targetAppointment = await createAppointmentFixture({
+  // Konflikttermin direkt per Repository einfügen (umgeht den API-Konfliktcheck).
+  // Die DB enthält damit zwei Termine am selben Tag mit demselben Mitarbeiter.
+  await createRawAppointmentFixture({
     projectId: project.id,
-    startDate: week.weekStartDate,
+    startDate: week.weekSecondDate,
+    title: "FC-01-CONFLICT",
     tourId: tour.id,
+    employeeIds: [employee.id],
   });
 
   const before = await snapshotAppointment(targetAppointment.id);
@@ -78,12 +82,8 @@ test("FC-01: Finaler Konfliktdialog erscheint beim Formularspeichern – betroff
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 1);
 
-  // Datum auf den konfliktbehafteten Tag verschieben
-  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
-
-  // Mitarbeiter über den Picker-Dialog hinzufügen
-  await addEmployeeViaPickerDialog(page, employee.id);
-
+  // Ohne Änderungen speichern — Preview wird übersprungen (shouldLoadResourcePreview = false),
+  // der PATCH erkennt den DB-Konflikt → finaler Konfliktdialog erscheint direkt.
   await page.getByTestId("button-save-appointment").click();
 
   await expectFinalConflictDialog(page, [employee.id]);
@@ -126,12 +126,13 @@ test("FC-02: Finaler Konfliktdialog bei Drag & Drop – Terminkarte verbleibt am
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 2);
+  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
 
   const dropped = await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekSecondDate, tour.id);
   expect(dropped).toBe(true);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 
   // Terminkarte noch am Ursprungsort sichtbar
   await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
@@ -171,8 +172,8 @@ test("FC-03: Finaler Konfliktdialog bei Cut & Paste – Termin bleibt am Ursprun
 
   await cutAndPasteAppointment(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employee.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 
   // Termin nicht verschwunden
   await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
@@ -208,9 +209,10 @@ test("FC-04: Finaler Konfliktdialog zeigt alle konfliktbehafteten Mitarbeiter na
   await loginAsAdmin(page);
   await navigateToWeekView(page);
   await navigateWeekOffset(page, 4);
+  await expect(page.getByTestId(`week-appointment-panel-${sourceAppointment.id}`)).toBeVisible();
 
   await dispatchWeekViewDrop(page, sourceAppointment.id, week.weekSecondDate, tour.id);
 
-  await expectFinalConflictDialog(page, [employeeA.id, employeeB.id]);
-  await dismissFinalConflictDialog(page);
+  await expectFinalConflictDialog(page, [employeeA.id, employeeB.id], "dialog-calendar-move-final-conflict");
+  await dismissFinalConflictDialog(page, "dialog-calendar-move-final-conflict");
 });

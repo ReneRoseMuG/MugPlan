@@ -49,30 +49,36 @@ test.beforeAll(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function openTourWeekPlanningPanel(page: import("@playwright/test").Page, tourId: number) {
-  await page.getByTestId(`week-tour-header-${tourId}`).click();
-  await expect(page.getByTestId(`week-tour-planning-panel-${tourId}`)).toBeVisible();
+  // KW-Plan-Spalte (Wochenplanung) im Wochen-View einblenden; Zielwoche ist nach Navigation die erste sichtbare
+  await page.getByTestId("switch-week-personnel-column").click();
+  await expect(page.getByTestId(`week-personnel-column-tour-${tourId}`).first()).toBeVisible();
+  // Personalspalte erweitern, falls eingeklappt (Einklapp-Zustand kann aus vorherigem Test persistieren)
+  const addButton = page.getByTestId(`button-add-week-personnel-tour-${tourId}`).first();
+  if (!(await addButton.isVisible())) {
+    await page.getByTestId(`button-week-personnel-column-toggle-tour-${tourId}`).first().click();
+  }
+  await expect(addButton).toBeVisible();
 }
 
 async function removeEmployeeFromWeekPlan(page: import("@playwright/test").Page, tourId: number, employeeId: number) {
-  const panel = page.getByTestId(`week-tour-planning-panel-${tourId}`);
-  await panel.getByTestId(`week-planning-employee-remove-${employeeId}`).click();
+  await page.getByTestId(`week-personnel-employee-tour-${tourId}-${employeeId}-remove`).first().click();
 }
 
 async function getWeekPlanRemoveDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-remove");
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
   return dialog;
 }
 
 async function confirmWeekPlanRemoveDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-remove");
-  await dialog.getByTestId("button-week-plan-remove-confirm").click();
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(dialog).toBeHidden();
 }
 
 async function cancelWeekPlanRemoveDialog(page: import("@playwright/test").Page) {
-  const dialog = page.getByTestId("dialog-week-plan-remove");
-  await dialog.getByTestId("button-week-plan-remove-cancel").click();
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -96,16 +102,13 @@ test("WR-01: Mitarbeiter ohne Termine in der KW aus Wochenplanung entfernen – 
 
   const dialog = await getWeekPlanRemoveDialog(page);
 
-  // Keine Terminliste — Mitarbeiter hat keine Termine in der KW
-  await expect(dialog.getByTestId("week-plan-remove-affected-appointments")).toHaveCount(0);
+  // Keine betroffenen Termine — Mitarbeiter hat keine Termine in der KW
+  await expect(dialog.getByTestId(/^tour-employee-cascade-row-/)).toHaveCount(0);
 
   await confirmWeekPlanRemoveDialog(page);
 
   // Mitarbeiter-Badge nicht mehr in der Wochenplanung
-  await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
-  ).toHaveCount(0);
+  await expect(page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`)).toHaveCount(0);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

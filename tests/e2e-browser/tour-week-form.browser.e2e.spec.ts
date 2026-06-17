@@ -551,8 +551,8 @@ test("tour scope week form filters appointments by KW, keeps week notes isolated
   await expect(cascadeDialog).toBeVisible();
   await expect(cascadeDialog.getByTestId(`tour-employee-cascade-row-${currentAppointmentA}`)).toBeVisible();
   await expect(cascadeDialog.getByTestId(`tour-employee-cascade-row-${currentAppointmentB}`)).toBeVisible();
-  await cascadeDialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await cascadeDialog.getByTestId(`tour-employee-cascade-checkbox-${currentAppointmentA}`).click();
+  // Kein "Alle abwählen"-Button: beide Termine sind vorausgewählt, daher Termin B abwählen, damit nur A übernommen wird
+  await cascadeDialog.getByTestId(`tour-employee-cascade-checkbox-${currentAppointmentB}`).click();
   await cascadeDialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(cascadeDialog).toHaveCount(0);
 

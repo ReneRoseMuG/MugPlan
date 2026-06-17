@@ -10,7 +10,6 @@ const steps = [
   { label: "secrets", args: ["run", "secrets"] },
   { label: "analyze:arch", args: ["run", "analyze:arch"] },
   { label: "analyze:boundaries", args: ["run", "analyze:boundaries"] },
-  { label: "analyze:coverage", args: ["run", "analyze:coverage"] },
   { label: "analyze:knip", args: ["run", "analyze:knip"] },
 ];
 

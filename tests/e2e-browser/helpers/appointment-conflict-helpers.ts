@@ -100,8 +100,8 @@ export async function snapshotAppointment(appointmentId: number): Promise<Appoin
     .where(eq(appointmentEmployees.appointmentId, appointmentId));
 
   return {
-    startDate: appt?.startDate ?? null,
-    endDate: appt?.endDate ?? null,
+    startDate: appt?.startDate != null ? new Date(appt.startDate).toISOString().slice(0, 10) : null,
+    endDate: appt?.endDate != null ? new Date(appt.endDate).toISOString().slice(0, 10) : null,
     tourId: appt?.tourId ?? null,
     employeeIds: empRows.map((r) => r.employeeId).sort((a, b) => a - b),
   };
@@ -280,8 +280,9 @@ export async function cutAndPasteAppointment(
 export async function expectFinalConflictDialog(
   page: Page,
   conflictingEmployeeIds?: number[],
+  testId = "dialog-appointment-final-conflict",
 ): Promise<void> {
-  const dialog = page.getByTestId("dialog-appointment-final-conflict");
+  const dialog = page.getByTestId(testId);
   await expect(dialog).toBeVisible();
 
   if (conflictingEmployeeIds && conflictingEmployeeIds.length > 0) {
@@ -295,9 +296,9 @@ export async function expectFinalConflictDialog(
 }
 
 /** Schließt den finalen Konfliktdialog. */
-export async function dismissFinalConflictDialog(page: Page): Promise<void> {
+export async function dismissFinalConflictDialog(page: Page, testId = "dialog-appointment-final-conflict"): Promise<void> {
   await page.getByTestId("button-appointment-final-conflict-close").click();
-  await expect(page.getByTestId("dialog-appointment-final-conflict")).toBeHidden();
+  await expect(page.getByTestId(testId)).toBeHidden();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

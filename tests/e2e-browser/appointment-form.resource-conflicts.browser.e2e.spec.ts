@@ -3,13 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Termin speichern ohne Mitarbeiter: kein Ressourcendialog, direktes Speichern.
- * - Termin speichern mit neuem Mitarbeiter ohne Konflikt: Save-Review-Dialog, Mitarbeiter übernommen.
+ * - Termin speichern mit neuem Mitarbeiter ohne Konflikt und ohne KW-Plan: kein Dialog, direktes Speichern, Mitarbeiter übernommen.
  * - Termin speichern mit Mitarbeiter und Terminkonflikt: finaler Konfliktdialog nach Bestätigung.
  * - Termin speichern mit zwei Mitarbeitern, einer mit Konflikt: Dialog zeigt nur betroffenen.
- * - Datumswechsel zu belegtem Datum mit Mitarbeiter: Konflikt erkannt, Termin unverändert.
+ * - Datumswechsel zu belegtem Datum mit Mitarbeiter: Save-Review entfernt Konflikt-Mitarbeiter, Termin auf neues Datum ohne Mitarbeiter.
  * - Datumswechsel zu freiem Datum: Termin verschoben, kein Konflikt.
- * - Mitarbeiter manuell hinzufügen (Picker): erscheint im Save-Review-Dialog.
- * - Mitarbeiter entfernen: im Review-Dialog als entfernt angezeigt.
+ * - Mitarbeiter manuell hinzufügen (Picker): wird direkt gespeichert wenn kein Konflikt und kein KW-Plan vorliegt.
+ * - Konflikt-Mitarbeiter beim Datumswechsel: im Review-Dialog als zu entfernen angezeigt.
  * - Save-Review-Dialog abbrechen: keine Mutation.
  * - Mehrere Schritte im Save-Review-Dialog: alle Schritte durchlaufen.
  * - Mitarbeiter beim Tour-Wechsel übernehmen, dann Konflikt: finaler Dialog blockiert.
@@ -27,10 +27,9 @@
  * Das Terminformular-Speichern mit Ressourcenprüfung über alle Einstiegspfade absichern.
  */
 import { expect, test } from "./fixtures";
-import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
-import { appointments } from "../../shared/schema";
+import { appointmentEmployees } from "../../shared/schema";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
@@ -98,10 +97,10 @@ test("AF-01: Termin ohne Mitarbeiter speichern – Save-Review-Dialog zeigt 'Kei
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-02: Neuer Mitarbeiter ohne Konflikt → Save-Review-Dialog, Übernahme bestätigt
+// AF-02: Neuer Mitarbeiter ohne Konflikt → kein Dialog, direktes Speichern
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-02: Neuer Mitarbeiter ohne Terminkonflikt im Formular – Save-Review-Dialog erscheint, Mitarbeiter nach Bestätigung übernommen", async ({ page }) => {
+test("AF-02: Neuer Mitarbeiter ohne Terminkonflikt im Formular – direkt gespeichert ohne Dialog, Mitarbeiter übernommen", async ({ page }) => {
   const week = resolveWeek(2);
   const project = await createProjectFixture({ prefix: "AF-02" });
   const tour = await createTourFixture("#22bb77");
@@ -118,39 +117,53 @@ test("AF-02: Neuer Mitarbeiter ohne Terminkonflikt im Formular – Save-Review-D
 
   await addEmployeeViaPickerDialog(page, employee.id);
 
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${appointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
+
   await page.getByTestId("button-save-appointment").click();
 
-  await confirmSaveReviewDialog(page);
+  // Kein Save-Review-Dialog: kein Konflikt, kein KW-Plan → direktes Speichern
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
-  const [updated] = await db
-    .select({ startDate: appointments.startDate })
-    .from(appointments)
-    .where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekStartDate);
+  const after = await snapshotAppointment(appointment.id);
+  expect(after.employeeIds).toEqual([employee.id]);
+  expect(after.startDate).toBe(week.weekStartDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-03: Mitarbeiter mit Terminkonflikt → finaler Konfliktdialog nach Bestätigung
+// AF-03: Mitarbeiter mit Terminkonflikt → finaler Konfliktdialog beim Speichern
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdialog nach Bestätigung, Termin unverändert", async ({ page }) => {
+test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdialog beim Speichern, Termin unverändert", async ({ page }) => {
   const week = resolveWeek(3);
   const project = await createProjectFixture({ prefix: "AF-03" });
   const tour = await createTourFixture("#33cc77");
   const employee = await createEmployeeFixture("AF-03-EMP");
 
-  // Konflikttermin: selber Mitarbeiter, selbes Datum
+  // Konflikttermin: selber Mitarbeiter, selbes Datum (via Service, kein Konflikt beim ersten Insert)
   await createAppointmentFixture({
     projectId: project.id,
-    startDate: week.weekSecondDate,
+    startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [employee.id],
   });
 
+  // Zieltermin: zunächst ohne Mitarbeiter (kein Konfliktcheck beim Anlegen)
   const targetAppointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
+  });
+
+  // Mitarbeiter direkt in DB eintragen (bypasses Konfliktcheck) – beide Termine teilen nun denselben Mitarbeiter
+  await db.insert(appointmentEmployees).values({
+    appointmentId: targetAppointment.id,
+    employeeId: employee.id,
   });
 
   const before = await snapshotAppointment(targetAppointment.id);
@@ -158,16 +171,9 @@ test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdial
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 3);
 
-  // Datum auf Konflikttag setzen
-  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
-
-  // Mitarbeiter hinzufügen
-  await addEmployeeViaPickerDialog(page, employee.id);
-
+  // Kein Save-Review-Dialog: keine Änderungen → direkt speichern → Server meldet EMPLOYEE_OVERLAP_CONFLICT
   await page.getByTestId("button-save-appointment").click();
 
-  // Save-Review-Dialog durchlaufen, danach folgt immer der finale Konfliktdialog
-  await confirmSaveReviewDialog(page);
   await expectFinalConflictDialog(page, [employee.id]);
   await dismissFinalConflictDialog(page);
 
@@ -178,38 +184,39 @@ test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdial
 // AF-04: Zwei Mitarbeiter, einer mit Konflikt → Dialog zeigt nur Konflikt-Mitarbeiter
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-04: Zwei Mitarbeiter hinzufügen, einer mit Konflikt – Finaler Dialog zeigt nur betroffenen Mitarbeiter", async ({ page }) => {
+test("AF-04: Zwei Mitarbeiter, einer mit Konflikt – Finaler Dialog zeigt nur betroffenen Mitarbeiter", async ({ page }) => {
   const week = resolveWeek(4);
   const project = await createProjectFixture({ prefix: "AF-04" });
   const tour = await createTourFixture("#44dd77");
   const freeEmployee = await createEmployeeFixture("AF-04-FREE");
   const conflictEmployee = await createEmployeeFixture("AF-04-CONFLICT");
 
-  // Konflikt: conflictEmployee am Zieldatum belegt
+  // Konflikt: conflictEmployee am weekStartDate belegt (via Service, kein Konflikt beim ersten Insert)
   await createAppointmentFixture({
     projectId: project.id,
-    startDate: week.weekSecondDate,
+    startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [conflictEmployee.id],
   });
 
+  // Zieltermin zunächst ohne Mitarbeiter
   const targetAppointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
   });
 
+  // Beide Mitarbeiter direkt in DB eintragen (bypasses Konfliktcheck)
+  await db.insert(appointmentEmployees).values([
+    { appointmentId: targetAppointment.id, employeeId: freeEmployee.id },
+    { appointmentId: targetAppointment.id, employeeId: conflictEmployee.id },
+  ]);
+
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 4);
 
-  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
-
-  await addEmployeeViaPickerDialog(page, freeEmployee.id);
-  await addEmployeeViaPickerDialog(page, conflictEmployee.id);
-
+  // Kein Save-Review-Dialog: keine Änderungen → direktes Speichern → Server meldet nur conflictEmployee
   await page.getByTestId("button-save-appointment").click();
-
-  await confirmSaveReviewDialog(page);
 
   // Finaler Konfliktdialog zeigt nur conflictEmployee
   const dialog = page.getByTestId("dialog-appointment-final-conflict");
@@ -221,10 +228,10 @@ test("AF-04: Zwei Mitarbeiter hinzufügen, einer mit Konflikt – Finaler Dialog
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-05: Datumswechsel zu belegtem Datum → Konflikt erkannt, Termin unverändert
+// AF-05: Datumswechsel zu belegtem Datum → Save-Review entfernt Konflikt-Mitarbeiter
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-05: Datumswechsel zu belegtem Datum im Formular – Konflikt erkannt, Termin unverändert", async ({ page }) => {
+test("AF-05: Datumswechsel zu belegtem Datum im Formular – Save-Review entfernt Konflikt-Mitarbeiter, Termin auf neues Datum ohne Mitarbeiter", async ({ page }) => {
   const week = resolveWeek(5);
   const project = await createProjectFixture({ prefix: "AF-05" });
   const tour = await createTourFixture("#55ee77");
@@ -245,28 +252,41 @@ test("AF-05: Datumswechsel zu belegtem Datum im Formular – Konflikt erkannt, T
     employeeIds: [employee.id],
   });
 
-  const before = await snapshotAppointment(targetAppointment.id);
-
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 5);
 
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${targetAppointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
+
   await page.getByTestId("button-save-appointment").click();
 
+  // Save-Review-Dialog erscheint (Konflikt erkannt) und entfernt beim Bestätigen den Konflikt-Mitarbeiter
   await confirmSaveReviewDialog(page);
 
-  await expectFinalConflictDialog(page, [employee.id]);
-  await dismissFinalConflictDialog(page);
+  // Auf abgeschlossenen PATCH warten, bevor der DB-Zustand geprüft wird
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
-  await expectAppointmentUnchanged(targetAppointment.id, before);
+  // Kein finaler Konfliktdialog: Konflikt wird durch Entfernen des Mitarbeiters gelöst
+  await expect(page.getByTestId("dialog-appointment-final-conflict")).toHaveCount(0);
+
+  // Termin auf neues Datum verschoben, Konflikt-Mitarbeiter automatisch entfernt
+  const after = await snapshotAppointment(targetAppointment.id);
+  expect(after.startDate).toBe(week.weekSecondDate);
+  expect(after.employeeIds).toEqual([]);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-06: Datumswechsel zu freiem Datum → Termin verschoben, kein Konflikt
+// AF-06: Datumswechsel zu freiem Datum → Termin verschoben, kein Dialog
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-06: Datumswechsel zu freiem Datum im Formular – Termin verschoben, kein Konfliktdialog", async ({ page }) => {
+test("AF-06: Datumswechsel zu freiem Datum im Formular – direkt verschoben ohne Dialog, Mitarbeiter übernommen", async ({ page }) => {
   const week = resolveWeek(6);
   const project = await createProjectFixture({ prefix: "AF-06" });
   const tour = await createTourFixture("#66ff77");
@@ -284,18 +304,26 @@ test("AF-06: Datumswechsel zu freiem Datum im Formular – Termin verschoben, ke
 
   await page.getByTestId("input-start-date").fill(week.weekSecondDate);
 
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${appointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
+
   await page.getByTestId("button-save-appointment").click();
 
-  await confirmSaveReviewDialog(page);
+  // Kein Save-Review-Dialog: freies Datum, kein Konflikt, kein KW-Plan → direktes Speichern
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
 
   // Kein finaler Konfliktdialog
   await expect(page.getByTestId("dialog-appointment-final-conflict")).toHaveCount(0);
 
-  const [updated] = await db
-    .select({ startDate: appointments.startDate })
-    .from(appointments)
-    .where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekSecondDate);
+  // Termin auf neues Datum verschoben, Mitarbeiter übernommen (kein Konflikt)
+  const after = await snapshotAppointment(appointment.id);
+  expect(after.startDate).toBe(week.weekSecondDate);
+  expect(after.employeeIds).toEqual([employee.id]);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,6 +335,14 @@ test("AF-07: Save-Review-Dialog abbrechen – Termin vollständig unverändert",
   const project = await createProjectFixture({ prefix: "AF-07" });
   const tour = await createTourFixture("#77aa77");
   const employee = await createEmployeeFixture("AF-07-EMP");
+
+  // Konflikttermin am Zieldatum → Datumswechsel löst den Save-Review-Dialog aus
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: week.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [employee.id],
+  });
 
   const appointment = await createAppointmentFixture({
     projectId: project.id,
@@ -329,14 +365,22 @@ test("AF-07: Save-Review-Dialog abbrechen – Termin vollständig unverändert",
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AF-08: Mitarbeiter entfernen → im Review-Dialog als entfernt gelistet
+// AF-08: Konflikt-Mitarbeiter im Review-Dialog als zu entfernen gelistet
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("AF-08: Mitarbeiter im Formular entfernen – im Save-Review-Dialog als entfernt aufgeführt", async ({ page }) => {
+test("AF-08: Konflikt-Mitarbeiter wird im Save-Review-Dialog als zu entfernen angezeigt", async ({ page }) => {
   const week = resolveWeek(8);
   const project = await createProjectFixture({ prefix: "AF-08" });
   const tour = await createTourFixture("#88bb77");
   const employee = await createEmployeeFixture("AF-08-EMP");
+
+  // Konflikttermin am Zieldatum → Datumswechsel macht den Mitarbeiter konfliktbehaftet
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: week.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [employee.id],
+  });
 
   const appointment = await createAppointmentFixture({
     projectId: project.id,
@@ -348,16 +392,17 @@ test("AF-08: Mitarbeiter im Formular entfernen – im Save-Review-Dialog als ent
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 8);
 
-  // Mitarbeiter entfernen
-  await page.getByTestId(`badge-appointment-employee-${employee.id}-remove`).click();
-
+  // Datumswechsel zum belegten Datum → Ressourcenschritt mit Konflikt-Mitarbeiter
+  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
   await page.getByTestId("button-save-appointment").click();
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
 
-  // Entfernter Mitarbeiter im Review-Dialog
+  // Konflikt-Mitarbeiter im Ressourcenschritt als "zu entfernen" gelistet
+  await expect(dialog.getByTestId("appointment-save-review-step-resources")).toBeVisible();
   await expect(dialog.getByTestId(`badge-appointment-save-review-employee-${employee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("entfernt");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,34 +413,58 @@ test("AF-09: Save-Review-Dialog mit mehreren Schritten – vollständiger Durchl
   const week = resolveWeek(9);
   const project = await createProjectFixture({ prefix: "AF-09" });
   const tour = await createTourFixture("#99cc77");
-  const employeeA = await createEmployeeFixture("AF-09-EMP-A");
-  const employeeB = await createEmployeeFixture("AF-09-EMP-B");
+  const employee = await createEmployeeFixture("AF-09-EMP");
+
+  // Konflikttermin am Zieldatum → Ressourcenschritt
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: week.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [employee.id],
+  });
 
   const appointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
-    employeeIds: [employeeA.id],
+    employeeIds: [employee.id],
   });
+
+  // Notiz → Notizschritt (zusammen mit Datumswechsel)
+  await createAppointmentNoteFixture(appointment.id, "AF-09-NOTE");
 
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 9);
 
-  // Zweiten Mitarbeiter hinzufügen → mehrere Review-Schritte
-  await addEmployeeViaPickerDialog(page, employeeB.id);
+  // Datumswechsel zum belegten Datum → Ressourcen- und Notizschritt
+  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
+
+  const patchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/appointments/${appointment.id}`) &&
+      response.request().method() === "PATCH",
+    { timeout: 10_000 },
+  );
 
   await page.getByTestId("button-save-appointment").click();
 
+  // Mehrere Schritte: "Weiter" zeigt an, dass es nicht der letzte Schritt ist
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("button-appointment-save-review-next")).toBeVisible();
+
+  // Alle Schritte vollständig durchlaufen und bestätigen
   await confirmSaveReviewDialog(page);
 
-  // Kein Konfliktdialog
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
+
+  // Kein finaler Konfliktdialog (Konflikt-Mitarbeiter wurde entfernt)
   await expect(page.getByTestId("dialog-appointment-final-conflict")).toHaveCount(0);
 
-  const [updated] = await db
-    .select({ startDate: appointments.startDate })
-    .from(appointments)
-    .where(eq(appointments.id, appointment.id));
-  expect(updated.startDate).toBe(week.weekStartDate);
+  // Termin auf neues Datum gespeichert
+  const after = await snapshotAppointment(appointment.id);
+  expect(after.startDate).toBe(week.weekSecondDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -418,6 +487,8 @@ test("AF-10: Termin mit Notizen speichern – Notizschritt erscheint im Save-Rev
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, appointment.id, 10);
 
+  // Datumswechsel → Notizschritt erscheint (Notiz vorhanden + Zeitbezug geändert)
+  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
   await page.getByTestId("button-save-appointment").click();
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
@@ -448,7 +519,7 @@ test("AF-11: Termin ohne Mitarbeiter im Save-Review-Dialog – Schritt 'Keine Mi
   await openAppointmentFormInWeekView(page, appointment.id, 11);
 
   // Mitarbeiter entfernen → Termin ohne Mitarbeiter
-  await page.getByTestId(`badge-appointment-employee-${employee.id}-remove`).click();
+  await page.getByTestId(`badge-employee-${employee.id}-remove`).click();
   await page.getByTestId("button-save-appointment").click();
 
   const dialog = page.getByTestId("dialog-appointment-save-review");
@@ -468,28 +539,32 @@ test("AF-12: Finaler Konfliktdialog im Formular – kein 'trotzdem speichern', n
   const tour = await createTourFixture("#cc33ff");
   const employee = await createEmployeeFixture("AF-12-EMP");
 
+  // Konflikttermin via Service (erster Insert, kein Konflikt)
   await createAppointmentFixture({
     projectId: project.id,
-    startDate: week.weekSecondDate,
+    startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [employee.id],
   });
 
+  // Zieltermin zunächst ohne Mitarbeiter
   const targetAppointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
   });
 
+  // Mitarbeiter direkt in DB eintragen (bypasses Konfliktcheck)
+  await db.insert(appointmentEmployees).values({
+    appointmentId: targetAppointment.id,
+    employeeId: employee.id,
+  });
+
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 12);
 
-  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
-
-  await addEmployeeViaPickerDialog(page, employee.id);
-
+  // Kein Form-Change → direktes Speichern → Server meldet Konflikt
   await page.getByTestId("button-save-appointment").click();
-  await confirmSaveReviewDialog(page);
 
   const dialog = page.getByTestId("dialog-appointment-final-conflict");
   await expect(dialog).toBeVisible();
