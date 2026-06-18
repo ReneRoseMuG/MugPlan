@@ -268,6 +268,40 @@ export function resolveInitialAppointmentEmployeeSelection(items: AppointmentEmp
     .map((item) => item.employeeId);
 }
 
+// Bildet die serverseitig konfliktannotierten Preview-Items auf Picker-Mitarbeiter ab.
+// Es bleiben bewusst alle Items erhalten (auch nicht zuweisbare), damit der Picker sie
+// sichtbar gesperrt anzeigen kann, statt sie stillschweigend auszublenden.
+export function mapAppointmentPreviewToPickerEmployees(items: AppointmentEmployeePreviewItem[]): Employee[] {
+  return items.map((item) => ({
+    id: item.employeeId,
+    firstName: "",
+    lastName: item.employeeName,
+    fullName: item.employeeName,
+    phone: null,
+    email: null,
+    exitDate: null,
+    isActive: true,
+    version: 0,
+    teamId: null,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  } as Employee));
+}
+
+// Sperrgründe für nicht zuweisbare Mitarbeiter (Zeitkonflikt oder bereits zugewiesen).
+export function buildAppointmentAssignIneligibleReasons(
+  items: AppointmentEmployeePreviewItem[],
+): Record<number, string> {
+  const reasons: Record<number, string> = {};
+  for (const item of items) {
+    if (item.selectable) continue;
+    reasons[item.employeeId] = item.status === "already_present"
+      ? "Bereits diesem Termin zugewiesen"
+      : "Überschneidung mit bestehendem Termin";
+  }
+  return reasons;
+}
+
 export function resolveVisibleWeekStartFromScroll(params: {
   baseWeekStart: Date;
   weekStarts: Date[];
@@ -3577,40 +3611,65 @@ export function CalendarWeekView({
         onSkip={() => setNoteSuggestionDialog(null)}
         onConfirm={handleCreateAppointmentNoteFromSuggestion}
       />
-      <TourEmployeeCascadeDialog
-        open={appointmentEmployeeDialog !== null}
-        variant="appointment"
-        title={appointmentEmployeeDialog?.title ?? "Mitarbeiter zuweisen"}
-        description={appointmentEmployeeDialog?.description ?? ""}
-        previewItems={appointmentEmployeeDialog?.previewItems ?? []}
-        selectedIds={appointmentEmployeeDialog?.selectedIds ?? []}
-        employeeId={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.employeeId : undefined}
-        employeeName={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.previewItems[0]?.employeeName : undefined}
-        infoText={appointmentEmployeeDialog?.action === "remove" ? "wird vom Termin entfernt" : undefined}
-        isSubmitting={assignAppointmentEmployeesMutation.isPending || removeAppointmentEmployeeMutation.isPending}
-        onSelectedIdsChange={(ids) => {
-          setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
-        }}
-        onConfirm={() => {
-          if (!appointmentEmployeeDialog) return;
-          if (appointmentEmployeeDialog.action === "remove" && typeof appointmentEmployeeDialog.employeeId === "number") {
-            removeAppointmentEmployeeMutation.mutate({
-              appointmentId: appointmentEmployeeDialog.appointmentId,
-              employeeId: appointmentEmployeeDialog.employeeId,
-            });
-            return;
-          }
-          assignAppointmentEmployeesMutation.mutate({
-            appointmentId: appointmentEmployeeDialog.appointmentId,
-            employeeIds: Array.from(new Set([
-              ...appointmentEmployeeDialog.currentEmployeeIds,
-              ...appointmentEmployeeDialog.selectedIds,
-            ])),
-          });
-        }}
-        onClose={() => setAppointmentEmployeeDialog(null)}
-        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Bestätigen" : "Zuweisen"}
-      />
+      {appointmentEmployeeDialog?.action === "assign" ? (
+        <Dialog open onOpenChange={(open) => { if (!open) setAppointmentEmployeeDialog(null); }}>
+          <DialogContent hideClose className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+            <EmployeePickerDialogList
+              employees={mapAppointmentPreviewToPickerEmployees(appointmentEmployeeDialog.previewItems)}
+              teams={[]}
+              tours={[]}
+              title={appointmentEmployeeDialog.title}
+              selectionMode="multiple"
+              viewModeSettingKey="appointmentEmployeePicker.viewMode"
+              ineligibleReasonById={buildAppointmentAssignIneligibleReasons(appointmentEmployeeDialog.previewItems)}
+              defaultSelectedEmployeeIds={appointmentEmployeeDialog.selectedIds}
+              isLoading={assignAppointmentEmployeesMutation.isPending}
+              onSelectEmployee={(employeeId) => {
+                if (!appointmentEmployeeDialog) return;
+                assignAppointmentEmployeesMutation.mutate({
+                  appointmentId: appointmentEmployeeDialog.appointmentId,
+                  employeeIds: Array.from(new Set([...appointmentEmployeeDialog.currentEmployeeIds, employeeId])),
+                });
+              }}
+              onConfirmSelection={(employeeIds) => {
+                if (!appointmentEmployeeDialog) return;
+                assignAppointmentEmployeesMutation.mutate({
+                  appointmentId: appointmentEmployeeDialog.appointmentId,
+                  employeeIds: Array.from(new Set([...appointmentEmployeeDialog.currentEmployeeIds, ...employeeIds])),
+                });
+              }}
+              onClose={() => setAppointmentEmployeeDialog(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <TourEmployeeCascadeDialog
+          open={appointmentEmployeeDialog !== null}
+          variant="appointment"
+          title={appointmentEmployeeDialog?.title ?? "Mitarbeiter entfernen"}
+          description={appointmentEmployeeDialog?.description ?? ""}
+          previewItems={appointmentEmployeeDialog?.previewItems ?? []}
+          selectedIds={appointmentEmployeeDialog?.selectedIds ?? []}
+          employeeId={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.employeeId : undefined}
+          employeeName={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.previewItems[0]?.employeeName : undefined}
+          infoText={appointmentEmployeeDialog?.action === "remove" ? "wird vom Termin entfernt" : undefined}
+          isSubmitting={removeAppointmentEmployeeMutation.isPending}
+          onSelectedIdsChange={(ids) => {
+            setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
+          }}
+          onConfirm={() => {
+            if (!appointmentEmployeeDialog) return;
+            if (appointmentEmployeeDialog.action === "remove" && typeof appointmentEmployeeDialog.employeeId === "number") {
+              removeAppointmentEmployeeMutation.mutate({
+                appointmentId: appointmentEmployeeDialog.appointmentId,
+                employeeId: appointmentEmployeeDialog.employeeId,
+              });
+            }
+          }}
+          onClose={() => setAppointmentEmployeeDialog(null)}
+          confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Bestätigen" : "Zuweisen"}
+        />
+      )}
       <WorkflowNoteRemovalDialog
         open={noteRemovalDialog !== null}
         description={`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}“ ebenfalls entfernt werden?`}

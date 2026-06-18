@@ -268,22 +268,43 @@ async function assertWeekUniqueAssignment(
   return { existingAssignmentId: existingAssignment.assignmentId };
 }
 
-async function assertEmployeeHasNoAbsenceInWeek(
+// Liefert die Mitarbeiter, die an ALLEN fünf Werktagen (Mo–Fr) der Woche abwesend sind.
+// Teil-Abwesenheit zählt hier bewusst nicht – einzelne Abwesenheitstage werden erst beim
+// Buchen auf die einzelnen Termine als Tageskonflikt behandelt.
+async function listFullyAbsentEmployeeIdsForWorkweek(
+  employeeIds: number[],
+  weekStart: Date,
+  tx?: Parameters<typeof appointmentsRepository.listEmployeeIdsWithAbsenceOverlapTx>[0],
+): Promise<Set<number>> {
+  if (employeeIds.length === 0) return new Set<number>();
+
+  let stillFullyAbsent = new Set(employeeIds);
+  for (let dayOffset = 0; dayOffset < 5; dayOffset += 1) {
+    if (stillFullyAbsent.size === 0) break;
+    const day = addDays(weekStart, dayOffset);
+    const candidateIds = Array.from(stillFullyAbsent);
+    const absentThatDay = new Set(
+      tx
+        ? await appointmentsRepository.listEmployeeIdsWithAbsenceOverlapTx(tx, { employeeIds: candidateIds, startDate: day, endDate: day })
+        : await appointmentsRepository.listEmployeeIdsWithAbsenceOverlap({ employeeIds: candidateIds, startDate: day, endDate: day }),
+    );
+    stillFullyAbsent = new Set(candidateIds.filter((id) => absentThatDay.has(id)));
+  }
+  return stillFullyAbsent;
+}
+
+async function assertEmployeeNotFullyAbsentInWorkweek(
   employeeId: number,
   isoYear: number,
   isoWeek: number,
 ): Promise<void> {
   const week = resolveIsoWeekWindow(isoYear, isoWeek);
-  const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlap({
-    employeeIds: [employeeId],
-    startDate: week.weekStart,
-    endDate: week.weekEnd,
-  });
-  if (absentEmployeeIds.includes(employeeId)) {
+  const fullyAbsent = await listFullyAbsentEmployeeIdsForWorkweek([employeeId], week.weekStart);
+  if (fullyAbsent.has(employeeId)) {
     throw new TourWeekEmployeesError(
       409,
       "BUSINESS_CONFLICT",
-      `Mitarbeiter ist in KW ${isoWeek}/${isoYear} abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
+      `Mitarbeiter ist in KW ${isoWeek}/${isoYear} an allen Werktagen abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
     );
   }
 }
@@ -313,44 +334,6 @@ async function listWeekAppointments(tourId: number, isoYear: number, isoWeek: nu
     week,
     appointments: await filterCancelledAppointments(rows),
   };
-}
-
-async function isEmployeeFullyAvailableForWeekAppointments(
-  employeeId: number,
-  appointments: tourWeekEmployeesRepository.TourWeekAppointmentRow[],
-): Promise<boolean> {
-  if (appointments.length === 0) return true;
-
-  const appointmentIds = appointments.map((row) => row.appointmentId);
-  const assignedAppointmentIds = new Set(
-    await tourWeekEmployeesRepository.listAssignedAppointmentIdsForEmployee(employeeId, appointmentIds),
-  );
-
-  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    for (const appointment of appointments) {
-      if (assignedAppointmentIds.has(appointment.appointmentId)) {
-        continue;
-      }
-
-      const startDate = toDateOnlyString(appointment.startDate);
-      if (!startDate) {
-        throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Termin ohne Startdatum");
-      }
-
-      const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
-        employeeIds: [employeeId],
-        startDate: parseDateOnly(startDate),
-        endDate: appointment.endDate ? parseDateOnly(toDateOnlyString(appointment.endDate) ?? startDate) : null,
-        startTimeHour: parseStartTimeHour(appointment.startTime),
-      });
-
-      if (conflictEmployees.length > 0) {
-        return false;
-      }
-    }
-
-    return true;
-  });
 }
 
 type TourWeekMember = {
@@ -794,8 +777,8 @@ export async function listAvailableWeekEmployees(
   if (!supportsWeekPlanningForTour(tour)) {
     return [];
   }
-  resolveIsoWeekWindow(params.isoYear, params.isoWeek);
 
+  const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   const [activeEmployees, assignedEmployeeIds] = await Promise.all([
     employeesRepository.getEmployees("active"),
     tourWeekEmployeesRepository.listAssignedEmployeeIdsByWeek(params.isoYear, params.isoWeek),
@@ -803,24 +786,16 @@ export async function listAvailableWeekEmployees(
 
   const assignedEmployeeIdSet = new Set(assignedEmployeeIds);
   const assignedCandidates = activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
-  const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
-  const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlap({
-    employeeIds: assignedCandidates.map((employee) => employee.id),
-    startDate: week.weekStart,
-    endDate: week.weekEnd,
-  });
-  const absentEmployeeIdSet = new Set(absentEmployeeIds);
-  const candidates = assignedCandidates.filter((employee) => !absentEmployeeIdSet.has(employee.id));
-  const { appointments } = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
-  const availableEmployees: Employee[] = [];
 
-  for (const employee of candidates) {
-    if (await isEmployeeFullyAvailableForWeekAppointments(employee.id, appointments)) {
-      availableEmployees.push(employee);
-    }
-  }
+  // Neue Regel: Nur Mitarbeiter, die an ALLEN fünf Werktagen abwesend sind, werden ausgeschlossen.
+  // Teil-Abwesenheit und Termin-Überschneidungen werden hier bewusst NICHT mehr gefiltert –
+  // das passiert tagesgenau erst beim Buchen auf die einzelnen Termine.
+  const fullyAbsentEmployeeIds = await listFullyAbsentEmployeeIdsForWorkweek(
+    assignedCandidates.map((employee) => employee.id),
+    week.weekStart,
+  );
 
-  return availableEmployees;
+  return assignedCandidates.filter((employee) => !fullyAbsentEmployeeIds.has(employee.id));
 }
 
 export async function previewAddWeekEmployee(
@@ -836,7 +811,7 @@ export async function previewAddWeekEmployee(
   await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
   const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   await assertWeekUniqueAssignment(tourId, params.employeeId, params.isoYear, params.isoWeek);
-  await assertEmployeeHasNoAbsenceInWeek(params.employeeId, params.isoYear, params.isoWeek);
+  await assertEmployeeNotFullyAbsentInWorkweek(params.employeeId, params.isoYear, params.isoWeek);
 
   const { appointments } = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
   const items = await buildAddPreviewItems(params.employeeId, appointments);
@@ -883,16 +858,12 @@ export async function executeAddWeekEmployee(
       isoWeek: params.isoWeek,
     });
 
-    const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlapTx(tx, {
-      employeeIds: [params.employeeId!],
-      startDate: week.weekStart,
-      endDate: week.weekEnd,
-    });
-    if (absentEmployeeIds.includes(params.employeeId!)) {
+    const fullyAbsentEmployeeIds = await listFullyAbsentEmployeeIdsForWorkweek([params.employeeId!], week.weekStart, tx);
+    if (fullyAbsentEmployeeIds.has(params.employeeId!)) {
       throw new TourWeekEmployeesError(
         409,
         "BUSINESS_CONFLICT",
-        `Mitarbeiter ist in KW ${params.isoWeek}/${params.isoYear} abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
+        `Mitarbeiter ist in KW ${params.isoWeek}/${params.isoYear} an allen Werktagen abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
       );
     }
 

@@ -266,6 +266,21 @@ type CreateAppointmentNoteMutationVariables = {
 
 type AppointmentWeekEmployeePreviewResponse = AppointmentResourcePreviewResponse;
 
+// Wandelt die Server-Konfliktvorschau in Sperrgründe für die Mitarbeiter-Auswahlliste um.
+// Nicht auswählbare Mitarbeiter bleiben sichtbar, werden aber mit Grund gesperrt.
+function buildEmployeePickerConflictReasons(
+  items: AppointmentWeekEmployeePreviewResponse["items"],
+): Record<number, string> {
+  const reasons: Record<number, string> = {};
+  for (const item of items) {
+    if (item.selectable) continue;
+    reasons[item.employeeId] = item.status === "already_present"
+      ? "Bereits diesem Termin zugewiesen"
+      : "Überschneidung mit bestehendem Termin";
+  }
+  return reasons;
+}
+
 type AppointmentWeekPreviewDialogState = {
   open: boolean;
   title: string;
@@ -655,6 +670,10 @@ export function AppointmentForm({
     });
 
   const [userRole] = useState(() => getStoredUserRole());
+  // Konfliktinfos für die Mitarbeiter-Auswahlliste. Bewusst nach allen übrigen useState-Hooks
+  // deklariert, damit die Hook-Reihenfolge stabil bleibt (ein Test adressiert useState nach Position).
+  const [employeePickerConflictReasons, setEmployeePickerConflictReasons] = useState<Record<number, string>>({});
+  const [employeePickerConflictLoading, setEmployeePickerConflictLoading] = useState(false);
   const isAdmin = userRole === "ADMIN";
   const isReader = isReaderRole(userRole);
   const canManageAppointmentTags = !isReader && (isAdmin || userRole === "DISPATCHER");
@@ -1337,6 +1356,25 @@ export function AppointmentForm({
       existingEmployeeIds,
     });
     return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
+  };
+
+  // Öffnet die Mitarbeiter-Auswahlliste und lädt – sofern eine Tour gewählt ist – im
+  // Hintergrund die Konfliktvorschau, damit belegte Mitarbeiter gesperrt angezeigt werden.
+  const handleOpenEmployeePicker = () => {
+    setEmployeePickerConflictReasons({});
+    setEmployeePickerOpen(true);
+    if (!selectedTourId) return;
+    setEmployeePickerConflictLoading(true);
+    void (async () => {
+      try {
+        const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
+        setEmployeePickerConflictReasons(buildEmployeePickerConflictReasons(preview.items));
+      } catch {
+        setEmployeePickerConflictReasons({});
+      } finally {
+        setEmployeePickerConflictLoading(false);
+      }
+    })();
   };
 
   const loadAppointmentTourChangePreview = async (overrides?: {
@@ -3227,7 +3265,7 @@ export function AppointmentForm({
             isLocked={isMutationLocked}
             readOnly={isReadOnlyView}
             onAssignTeam={handleAssignTeam}
-            onAddEmployee={() => setEmployeePickerOpen(true)}
+            onAddEmployee={handleOpenEmployeePicker}
             onRemoveEmployee={removeEmployee}
             tours={tours}
             tourMembersById={tourMembersById}
@@ -3488,7 +3526,8 @@ export function AppointmentForm({
             employees={availableEmployees}
             teams={teams}
             tours={tours}
-            isLoading={employeesLoading}
+            ineligibleReasonById={employeePickerConflictReasons}
+            isLoading={employeesLoading || employeePickerConflictLoading}
             title="Mitarbeiter auswählen"
             selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"

@@ -7,7 +7,7 @@
  * - Laufende Wochen sind für Admins und Disponenten editierbar; vergangene Wochen bleiben über die echte API schreibgeschützt.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
  * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Prüfung für Konfliktfälle.
- * - Abwesende Mitarbeiter werden auch ohne Ziel-Termine in der Tour-KW-Verfügbarkeit berücksichtigt und direkte API-Mutationen werden blockiert.
+ * - Nur an allen fünf Werktagen abwesende Mitarbeiter werden aus Tour-KW-Verfügbarkeit und Aufnahme ausgeschlossen; Teil-Abwesenheit und Termin-Überschneidungen bleiben aufnehmbar und werden erst beim Buchen tagesgenau behandelt.
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
  * - Wiederholte Add-Executes für dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
@@ -560,7 +560,7 @@ describe("tourWeekEmployees integration", () => {
     expect(response.headers["cache-control"]).toContain("no-store");
   });
 
-  it("filters the available week employee picker to employees conflict-free across all real tour appointments of the target ISO week", async () => {
+  it("includes employees with appointment conflicts in the available picker because conflicts are handled when booking, not when adding to the roster", async () => {
     const admin = await loginAdmin();
     const targetTour = await createTourFixture("#117799");
     const otherTour = await createTourFixture("#991177");
@@ -617,24 +617,34 @@ describe("tourWeekEmployees integration", () => {
 
         expect(availableEmployeeIds).toContain(freeEmployee.id);
         expect(availableEmployeeIds).toContain(outsideWeekConflictEmployee.id);
-        expect(availableEmployeeIds).not.toContain(sameDayConflictEmployee.id);
-        expect(availableEmployeeIds).not.toContain(multiDayConflictEmployee.id);
+        // Neue Regel: Termin-Überschneidungen schließen NICHT mehr aus der Aufnahme-Liste aus –
+        // sie werden erst beim Buchen auf den einzelnen Termin als Tageskonflikt behandelt.
+        expect(availableEmployeeIds).toContain(sameDayConflictEmployee.id);
+        expect(availableEmployeeIds).toContain(multiDayConflictEmployee.id);
       });
   });
 
-  it("filters employees with an overlapping absence from the available picker even when the tour week has no appointments", async () => {
+  it("keeps partially absent employees in the available picker and only excludes employees absent on every weekday", async () => {
     const admin = await loginAdmin();
     const targetTour = await createTourFixture("#0f766e");
     const targetWeek = resolveNextEditableWeekDates();
+    const fullWeekEndDate = format(addDays(parseISO(targetWeek.weekStartDate), 4), "yyyy-MM-dd");
     const freeEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-FREE");
-    const absentEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-BLOCKED");
+    const partiallyAbsentEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-PARTIAL");
+    const fullyAbsentEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-FULL");
     const outsideWeekAbsenceEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-OUTSIDE");
 
-    await createEmployeeAppointmentAbsence(absentEmployee.id, {
+    await createEmployeeAppointmentAbsence(partiallyAbsentEmployee.id, {
       absenceType: "vacation",
       startDate: targetWeek.weekStartDate,
       endDate: targetWeek.weekMidDate,
-      note: `TWE-ABSENCE-PICKER-${absentEmployee.id}`,
+      note: `TWE-ABSENCE-PICKER-PARTIAL-${partiallyAbsentEmployee.id}`,
+    }, "ADMIN");
+    await createEmployeeAppointmentAbsence(fullyAbsentEmployee.id, {
+      absenceType: "vacation",
+      startDate: targetWeek.weekStartDate,
+      endDate: fullWeekEndDate,
+      note: `TWE-ABSENCE-PICKER-FULL-${fullyAbsentEmployee.id}`,
     }, "ADMIN");
     await createEmployeeAppointmentAbsence(outsideWeekAbsenceEmployee.id, {
       absenceType: "vacation",
@@ -651,20 +661,24 @@ describe("tourWeekEmployees integration", () => {
 
         expect(availableEmployeeIds).toContain(freeEmployee.id);
         expect(availableEmployeeIds).toContain(outsideWeekAbsenceEmployee.id);
-        expect(availableEmployeeIds).not.toContain(absentEmployee.id);
+        // Neue Regel: Teil-Abwesenheit (Mo–Do) schließt nicht aus.
+        expect(availableEmployeeIds).toContain(partiallyAbsentEmployee.id);
+        // Nur wer an allen fünf Werktagen (Mo–Fr) abwesend ist, fliegt raus.
+        expect(availableEmployeeIds).not.toContain(fullyAbsentEmployee.id);
       });
   });
 
-  it("rejects direct Tour-KW add preview and execute when the employee is absent in that ISO week", async () => {
+  it("rejects direct Tour-KW add preview and execute only when the employee is absent on every weekday of that ISO week", async () => {
     const admin = await loginAdmin();
     const targetTour = await createTourFixture("#0f766e");
     const absentEmployee = await createEmployeeFixture("TWE-ABSENCE-DIRECT-BLOCKED");
     const targetWeek = resolveNextEditableWeekDates();
+    const fullWeekEndDate = format(addDays(parseISO(targetWeek.weekStartDate), 4), "yyyy-MM-dd");
 
     await createEmployeeAppointmentAbsence(absentEmployee.id, {
       absenceType: "sick",
       startDate: targetWeek.weekStartDate,
-      endDate: targetWeek.weekMidDate,
+      endDate: fullWeekEndDate,
       note: `TWE-ABSENCE-DIRECT-${absentEmployee.id}`,
     }, "ADMIN");
 
@@ -705,6 +719,50 @@ describe("tourWeekEmployees integration", () => {
         eq(tourWeekEmployees.employeeId, absentEmployee.id),
       ));
     expect(assignments).toEqual([]);
+  });
+
+  it("allows adding a partially absent employee to the Tour-KW roster (per-day absences are handled when booking)", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#0f766e");
+    const partiallyAbsentEmployee = await createEmployeeFixture("TWE-ABSENCE-PARTIAL-ALLOWED");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await createEmployeeAppointmentAbsence(partiallyAbsentEmployee.id, {
+      absenceType: "vacation",
+      startDate: targetWeek.weekStartDate,
+      endDate: targetWeek.weekMidDate,
+      note: `TWE-ABSENCE-PARTIAL-ALLOWED-${partiallyAbsentEmployee.id}`,
+    }, "ADMIN");
+
+    await admin
+      .post(`/api/tours/${targetTour.id}/week-employees/add/preview`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: partiallyAbsentEmployee.id,
+      })
+      .expect(200);
+
+    await admin
+      .post(`/api/tours/${targetTour.id}/week-employees/add`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: partiallyAbsentEmployee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(200);
+
+    const assignments = await db
+      .select()
+      .from(tourWeekEmployees)
+      .where(and(
+        eq(tourWeekEmployees.tourId, targetTour.id),
+        eq(tourWeekEmployees.isoYear, targetWeek.isoYear),
+        eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
+        eq(tourWeekEmployees.employeeId, partiallyAbsentEmployee.id),
+      ));
+    expect(assignments).toHaveLength(1);
   });
 
   it("allows admins and dispatchers to edit the current ISO week while past weeks and readers stay locked", async () => {

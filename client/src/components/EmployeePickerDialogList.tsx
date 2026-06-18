@@ -45,6 +45,13 @@ export interface EmployeePickerDialogListProps {
   employees: Employee[];
   teams?: Team[];
   tours?: Tour[];
+  /**
+   * Optionale Eignungsannotation: bildet Mitarbeiter-IDs auf einen Grund ab, warum
+   * sie nicht auswählbar sind (z. B. Terminüberschneidung). Annotierte Mitarbeiter
+   * bleiben sichtbar, werden aber gesperrt dargestellt und können nicht ausgewählt
+   * werden. Fehlt die Annotation, verhält sich der Picker unverändert.
+   */
+  ineligibleReasonById?: Readonly<Record<number, string>>;
   selectedEmployeeId?: number | null;
   selectedEmployeeIds?: number[];
   defaultSelectedEmployeeIds?: number[];
@@ -63,6 +70,7 @@ export function EmployeePickerDialogList({
   employees,
   teams = [],
   tours: _tours = [],
+  ineligibleReasonById = {},
   selectedEmployeeId = null,
   selectedEmployeeIds,
   defaultSelectedEmployeeIds,
@@ -83,6 +91,16 @@ export function EmployeePickerDialogList({
     () => new Set(employees.map((employee) => employee.id)),
     [employees],
   );
+  const ineligibleReasonByIdMap = useMemo(() => {
+    const result = new Map<number, string>();
+    for (const [key, reason] of Object.entries(ineligibleReasonById)) {
+      const employeeId = Number(key);
+      if (!Number.isInteger(employeeId)) continue;
+      if (typeof reason !== "string" || reason.trim().length === 0) continue;
+      result.set(employeeId, reason.trim());
+    }
+    return result;
+  }, [ineligibleReasonById]);
   const isSelectionControlled = selectedEmployeeIds !== undefined;
   const resolvedViewMode = parseEmployeePickerViewMode(
     isMultipleSelection && viewModeSettingKey
@@ -170,6 +188,7 @@ export function EmployeePickerDialogList({
   };
 
   const toggleEmployeeSelection = (employeeId: number, checked: boolean) => {
+    if (ineligibleReasonByIdMap.has(employeeId)) return;
     if (checked) {
       if (activeSelectedEmployeeIds.includes(employeeId)) return;
       setNextSelectedEmployeeIds([...activeSelectedEmployeeIds, employeeId]);
@@ -250,19 +269,33 @@ export function EmployeePickerDialogList({
               <div className="overflow-hidden rounded-lg border border-border bg-card">
                 {rows.map((employee, index) => {
                   const isChecked = activeSelectedEmployeeIds.includes(employee.id);
+                  const ineligibleReason = ineligibleReasonByIdMap.get(employee.id);
+                  const ineligible = ineligibleReason !== undefined;
                   return (
                     <label
                       key={employee.id}
-                      className={`flex cursor-pointer items-center justify-between gap-3 px-4 py-3 ${index > 0 ? "border-t border-border" : ""}`}
+                      aria-disabled={ineligible || undefined}
+                      className={`flex items-center justify-between gap-3 px-4 py-3 ${index > 0 ? "border-t border-border" : ""} ${ineligible ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                       data-testid={`employee-picker-list-row-${employee.id}`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <Checkbox
                           checked={isChecked}
+                          disabled={ineligible}
                           onCheckedChange={(checked) => toggleEmployeeSelection(employee.id, checked === true)}
                           data-testid={`employee-picker-checkbox-${employee.id}`}
                         />
-                        <span className="truncate text-sm font-medium text-foreground">{employee.fullName}</span>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-sm font-medium text-foreground">{employee.fullName}</span>
+                          {ineligible ? (
+                            <span
+                              className="truncate text-xs text-amber-600"
+                              data-testid={`employee-picker-ineligible-reason-${employee.id}`}
+                            >
+                              {ineligibleReason}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                       {employee.teamId && teamNameById.get(employee.teamId) ? (
                         <Badge variant="secondary" className="text-xs">
@@ -290,6 +323,8 @@ export function EmployeePickerDialogList({
             {rows.map((employee) => {
               const teamName = employee.teamId ? teamNameById.get(employee.teamId) ?? null : null;
               const isSelected = selectedEmployeeId === employee.id || activeSelectedEmployeeIds.includes(employee.id);
+              const ineligibleReason = ineligibleReasonByIdMap.get(employee.id);
+              const ineligible = ineligibleReason !== undefined;
 
               return (
                 <EntityCard
@@ -297,11 +332,19 @@ export function EmployeePickerDialogList({
                   testId={`employee-picker-card-${employee.id}`}
                   title={employee.fullName}
                   icon={<Users className="w-4 h-4" />}
-                  className={isSelected ? "ring-1 ring-primary/30 border-primary/40" : ""}
-                  onClick={() => onSelectEmployee?.(employee.id)}
-                  onDoubleClick={() => onSelectEmployee?.(employee.id)}
+                  className={`${ineligible ? "employee-picker-card-ineligible cursor-not-allowed opacity-60" : ""} ${isSelected ? "ring-1 ring-primary/30 border-primary/40" : ""}`.trim()}
+                  onClick={ineligible ? undefined : () => onSelectEmployee?.(employee.id)}
+                  onDoubleClick={ineligible ? undefined : () => onSelectEmployee?.(employee.id)}
                 >
                   <div className="space-y-2 text-sm">
+                    {ineligible ? (
+                      <div
+                        className="text-xs font-medium text-amber-600"
+                        data-testid={`employee-picker-ineligible-reason-${employee.id}`}
+                      >
+                        {ineligibleReason}
+                      </div>
+                    ) : null}
                     {employee.phone && (
                       <div className="flex items-center gap-1 text-slate-600">
                         <Phone className="w-3 h-3" />
