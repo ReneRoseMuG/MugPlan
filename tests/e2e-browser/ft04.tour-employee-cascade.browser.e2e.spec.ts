@@ -148,7 +148,7 @@ test("prefills the next free KW and keeps duplicate/min/max validation intact", 
   await expect(insertedWeekCard).toBeVisible();
 });
 
-test("hides employees with appointment conflicts from the week planning picker", async ({ page }) => {
+test("offers employees with appointment conflicts in the week planning picker (conflict is handled when booking)", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const tour = await createTourFixture("#335577");
   const project = await createProjectFixture({ prefix: "FT04-BROWSER", name: "FT04 Browser Projekt" });
@@ -187,9 +187,10 @@ test("hides employees with appointment conflicts from the week planning picker",
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
 
+  // Neue Regel: der belegte Mitarbeiter wird jetzt angeboten (Konflikt erst beim Buchen).
   await expect.poll(async () => {
     return page.getByTestId(`employee-picker-card-${employee.id}`).count();
-  }).toBe(0);
+  }).toBe(1);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/tours/${tour.id}/week-employees`);

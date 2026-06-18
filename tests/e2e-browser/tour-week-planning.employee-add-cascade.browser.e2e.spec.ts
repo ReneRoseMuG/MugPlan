@@ -5,10 +5,10 @@
  * - KW-Plan-Spalte im Wochen-View einblenden/erweitern, Mitarbeiter über den Picker hinzufügen.
  * - Mitarbeiter ohne Terminüberschneidung: Cascade-Dialog zeigt Termine als übernehmbar, Zuweisung bestätigt.
  * - Tour ohne Termine in der KW: Cascade-Dialog ohne Terminliste, direkt bestätigbar.
- * - Belegter Mitarbeiter (Konflikt an einem oder mehreren Tagen): im Picker nicht angeboten (proaktive Konfliktvermeidung).
+ * - Belegter Mitarbeiter (Konflikt an einem oder mehreren Tagen): wird im Picker angeboten; der Konflikt zeigt sich tagesgenau erst beim Buchen auf die Termine.
  * - Vorschau-/Cascade-Dialog abbrechen: Wochenplanung unverändert.
  * - Bereits eingetragener Mitarbeiter: im Picker nicht erneut angeboten.
- * - Mehrere Mitarbeiter: freie werden übernommen, belegte nicht angeboten.
+ * - Mehrere Mitarbeiter: freie werden übernommen, belegte werden angeboten und beim Buchen als Konflikt markiert.
  *
  * Fehlerfälle:
  * - Cascade-Dialog erscheint nicht trotz Hinzufügen.
@@ -150,10 +150,10 @@ test("WA-02: Mitarbeiter zu Tour mit Termin ohne Überschneidung hinzufügen –
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag → im Picker nicht angeboten
+// WA-03: Belegter Mitarbeiter (Konflikt an einem Tag) → wird angeboten, Konflikt erst beim Buchen
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
+test("WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag – wird angeboten und beim Buchen als Konflikt markiert", async ({ page }) => {
   const week = resolveWeek(3);
   const project = await createProjectFixture({ prefix: "WA-03" });
   const tour = await createTourFixture("#33cc66");
@@ -168,8 +168,8 @@ test("WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag – wird im Wochenpl
     employeeIds: [employee.id],
   });
 
-  // Termin in der Ziel-Tour, damit der belegte Mitarbeiter für die Tour-Woche nicht verfügbar ist
-  await createAppointmentFixture({
+  // Termin in der Ziel-Tour am selben Tag
+  const appointmentMonday = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
@@ -182,16 +182,19 @@ test("WA-03: Belegter Mitarbeiter mit Konflikt an einem Tag – wird im Wochenpl
 
   await openTourWeekPlanningPanel(page, tour.id);
 
-  // Belegter Mitarbeiter wird im Wochenplan-Picker nicht angeboten (proaktive Konfliktvermeidung)
+  // Neue Regel: belegter Mitarbeiter wird angeboten; der Konflikt zeigt sich erst beim Buchen.
   await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
-  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(1);
+  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointmentMonday.id}`)).toContainText("Überschneidung mit bestehendem Termin");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-04: Mitarbeiter mit Konflikten an mehreren Tagen → im Picker nicht angeboten
+// WA-04: Mitarbeiter mit Konflikten an mehreren Tagen → wird angeboten, beide Tage Konflikt beim Buchen
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-04: Mitarbeiter mit Konflikten an mehreren Tagen – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
+test("WA-04: Mitarbeiter mit Konflikten an mehreren Tagen – wird angeboten und beim Buchen an beiden Tagen als Konflikt markiert", async ({ page }) => {
   const week = resolveWeek(4);
   const project = await createProjectFixture({ prefix: "WA-04" });
   const tour = await createTourFixture("#44dd66");
@@ -212,14 +215,14 @@ test("WA-04: Mitarbeiter mit Konflikten an mehreren Tagen – wird im Wochenplan
     employeeIds: [employee.id],
   });
 
-  // Zwei Termine in Ziel-Tour, damit der an beiden Tagen belegte Mitarbeiter für die Tour-Woche nicht verfügbar ist
-  await createAppointmentFixture({
+  // Zwei Termine in der Ziel-Tour (Montag und Dienstag)
+  const appointmentMonday = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [],
   });
-  await createAppointmentFixture({
+  const appointmentTuesday = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekSecondDate,
     tourId: tour.id,
@@ -232,16 +235,20 @@ test("WA-04: Mitarbeiter mit Konflikten an mehreren Tagen – wird im Wochenplan
 
   await openTourWeekPlanningPanel(page, tour.id);
 
-  // An mehreren Tagen belegter Mitarbeiter wird im Wochenplan-Picker nicht angeboten
+  // Neue Regel: angeboten; beim Buchen sind beide belegten Tage Konflikte.
   await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
-  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(1);
+  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointmentMonday.id}`)).toContainText("Überschneidung mit bestehendem Termin");
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointmentTuesday.id}`)).toContainText("Überschneidung mit bestehendem Termin");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen → im Picker nicht angeboten
+// WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen → angeboten; Montag gesperrt, Dienstag buchbar
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen – wird im Wochenplan-Picker nicht angeboten", async ({ page }) => {
+test("WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen – wird angeboten; Montag gesperrt, Dienstag buchbar", async ({ page }) => {
   const week = resolveWeek(5);
   const project = await createProjectFixture({ prefix: "WA-05" });
   const tour = await createTourFixture("#55ee66");
@@ -257,13 +264,13 @@ test("WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen – wird im Wo
   });
 
   // Montag-Termin (Konflikt für den Mitarbeiter) und Dienstag-Termin (frei) in der Ziel-Tour
-  await createAppointmentFixture({
+  const appointmentMonday = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekStartDate,
     tourId: tour.id,
     employeeIds: [],
   });
-  await createAppointmentFixture({
+  const appointmentTuesday = await createAppointmentFixture({
     projectId: project.id,
     startDate: week.weekSecondDate,
     tourId: tour.id,
@@ -276,9 +283,13 @@ test("WA-05: Mitarbeiter mit Konflikt an einem von mehreren Tagen – wird im Wo
 
   await openTourWeekPlanningPanel(page, tour.id);
 
-  // Mitarbeiter ist an einem Wochentag belegt → für die Tour-Woche nicht vollständig verfügbar, daher nicht angeboten
+  // Neue Regel: angeboten; beim Buchen ist Montag ein Konflikt, Dienstag aber buchbar (tagesgenau).
   await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
-  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(1);
+  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointmentMonday.id}`)).toContainText("Überschneidung mit bestehendem Termin");
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointmentTuesday.id}`)).toContainText("Wird zum Termin hinzugefügt");
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -341,7 +352,7 @@ test("WA-07: Bereits eingetragener Mitarbeiter wird nicht erneut angeboten – H
 // WA-08: Mehrere Mitarbeiter — freier wird angeboten/übernommen, belegter nicht angeboten
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("WA-08: Zwei Mitarbeiter – freier wird übernommen, belegter im Picker nicht angeboten", async ({ page }) => {
+test("WA-08: Zwei Mitarbeiter – freier wird übernommen, belegter wird angeboten und beim Buchen als Konflikt markiert", async ({ page }) => {
   const week = resolveWeek(8);
   const project = await createProjectFixture({ prefix: "WA-08" });
   const tour = await createTourFixture("#88bb66");
@@ -377,7 +388,11 @@ test("WA-08: Zwei Mitarbeiter – freier wird übernommen, belegter im Picker ni
   await expect(dialogFree.getByTestId(`tour-employee-cascade-status-${appointment.id}`)).toContainText("Wird zum Termin hinzugefügt");
   await confirmWeekPlanPreviewDialog(page);
 
-  // conflictEmployee ist am Termin belegt → wird im Picker nicht angeboten
+  // conflictEmployee ist am Montag belegt → wird jetzt im Picker angeboten;
+  // der Konflikt zeigt sich erst beim Buchen auf den Termin.
   await page.getByTestId(`button-add-week-personnel-tour-${tour.id}`).first().click();
-  await expect(page.getByTestId(`employee-picker-card-${conflictEmployee.id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`employee-picker-card-${conflictEmployee.id}`)).toHaveCount(1);
+  await page.getByTestId(`employee-picker-card-${conflictEmployee.id}`).dblclick();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
+  await expect(page.getByTestId(`tour-employee-cascade-status-${appointment.id}`)).toContainText("Überschneidung mit bestehendem Termin");
 });

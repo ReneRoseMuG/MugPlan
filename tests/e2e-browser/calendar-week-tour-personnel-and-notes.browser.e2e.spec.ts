@@ -423,7 +423,8 @@ test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termi
 
   await targetSection.getByTestId(`button-add-week-personnel-tour-${tour.id}`).click();
   await expect(page.getByTestId(`employee-picker-card-${availableEmployee.id}`)).toBeVisible();
-  await expect(page.getByTestId(`employee-picker-card-${conflictingEmployee.id}`)).toHaveCount(0);
+  // Neue Regel: der belegte Mitarbeiter wird jetzt angeboten (Konflikt erst beim Buchen).
+  await expect(page.getByTestId(`employee-picker-card-${conflictingEmployee.id}`)).toBeVisible();
   await page.getByTestId(`employee-picker-card-${availableEmployee.id}`).dblclick();
 
   await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
