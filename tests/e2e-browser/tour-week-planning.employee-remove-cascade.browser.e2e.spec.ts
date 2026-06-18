@@ -140,7 +140,7 @@ test("WR-02: Mitarbeiter mit einem Termin in der KW entfernen – Termin im Dial
   const dialog = await getWeekPlanRemoveDialog(page);
 
   // Termin im Dialog sichtbar
-  await expect(dialog.getByTestId(`week-plan-remove-appointment-${appointment.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${appointment.id}`)).toBeVisible();
 
   await confirmWeekPlanRemoveDialog(page);
 
@@ -192,8 +192,8 @@ test("WR-03: Mitarbeiter mit mehreren Terminen in der KW entfernen – alle betr
   const dialog = await getWeekPlanRemoveDialog(page);
 
   // Beide Termine aufgelistet
-  await expect(dialog.getByTestId(`week-plan-remove-appointment-${appointmentA.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`week-plan-remove-appointment-${appointmentB.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${appointmentA.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${appointmentB.id}`)).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,8 +227,7 @@ test("WR-04: Entfernen-Dialog abbrechen – Wochenplanung und Termindaten unver�
 
   // Mitarbeiter-Badge noch in der Wochenplanung
   await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-badge-${employee.id}`),
+    page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}`).first(),
   ).toBeVisible();
 
   // Mitarbeiter-Verknüpfung in DB erhalten
@@ -283,8 +282,8 @@ test("WR-05: Mitarbeiter aus Wochenplanung entfernen – Termin in anderer KW bl
   const dialog = await getWeekPlanRemoveDialog(page);
 
   // Nur Termin der aktuellen KW im Dialog
-  await expect(dialog.getByTestId(`week-plan-remove-appointment-${thisWeekAppointment.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`week-plan-remove-appointment-${otherWeekAppointment.id}`)).toHaveCount(0);
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${thisWeekAppointment.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-row-${otherWeekAppointment.id}`)).toHaveCount(0);
 
   await confirmWeekPlanRemoveDialog(page);
 
@@ -339,8 +338,7 @@ test("WR-06: Mitarbeiter ohne Wochenplanung-Eintrag – kein Entfernen-Button im
 
   // Kein Entfernen-Button für diesen Mitarbeiter (nicht in Wochenplanung)
   await expect(
-    page.getByTestId(`week-tour-planning-panel-${tour.id}`)
-      .getByTestId(`week-planning-employee-remove-${employee.id}`),
+    page.getByTestId(`week-personnel-employee-tour-${tour.id}-${employee.id}-remove`),
   ).toHaveCount(0);
 });
 
