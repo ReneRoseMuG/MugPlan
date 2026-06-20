@@ -162,6 +162,7 @@ Serverauflösung in `server/services/userSettingsService.ts`:
 
 Registry in `server/settings/registry.ts` enthält valide Keys, Typen, Allowed Scopes und Validatoren.
 Aktive globale Settings steuern u. a. Backup-Aktivierung, 2FA-Pflicht sowie Kalender- und UI-Defaults.
+USER-scoped Settings werden benutzerspezifisch persistiert (Beispiele: Lane-Kollaps, Kachel-Körper-Modus, Abwesenheits-Lane-Sichtbarkeit, Kopfzeilen-Textfarbe pro Tour `calendar.tourHeaderTextColors`).
 
 ### 5.6 Backup und CalDAV
 

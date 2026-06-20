@@ -18,6 +18,12 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => undefined,
+  useSettings: () => ({ setSetting: vi.fn() }),
+}));
+
 import { CalendarAppointmentCompactBar } from "../../../client/src/components/calendar/CalendarAppointmentCompactBar";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 

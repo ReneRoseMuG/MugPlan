@@ -37,6 +37,7 @@ export type UserSettingKey =
   | "calendar.weekInlineNotes.visible"
   | "calendar.weekPersonnelColumn.collapsed"
   | "calendar.monthFitPage"
+  | "calendar.tourHeaderTextColors"
   | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
@@ -67,6 +68,7 @@ type UserSettingValueByKey = {
   "calendar.weekInlineNotes.visible": boolean;
   "calendar.weekPersonnelColumn.collapsed": boolean;
   "calendar.monthFitPage": boolean;
+  "calendar.tourHeaderTextColors": Record<string, string>;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
 
@@ -75,6 +77,13 @@ export function resolveWeekTileBodyMode(value: unknown): UserSettingValueByKey["
     return value;
   }
   return "semiexpanded";
+}
+
+export function resolveTourHeaderTextColors(value: unknown): Record<string, string> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, string>;
+  }
+  return {};
 }
 
 export function resolveCalendarMarkerVisualizationStyle(value: unknown): CalendarMarkerVisualizationStyle {
@@ -209,6 +218,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.markerVisualizationStyle") {
       return resolveCalendarMarkerVisualizationStyle(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.tourHeaderTextColors") {
+      return resolveTourHeaderTextColors(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.categoryLayout") {
       return resolveCategoryLayoutConfig(setting?.resolvedValue) as UserSettingValueByKey[K];

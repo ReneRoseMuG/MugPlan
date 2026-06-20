@@ -1,4 +1,5 @@
 import { HoverPreview } from "@/components/ui/hover-preview";
+import { useSetting } from "@/hooks/useSettings";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
@@ -75,7 +76,10 @@ export function CalendarAppointmentCompactBar({
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
   const isCancelled = appointment.isCancelled;
+  const tourHeaderTextColors = useSetting("calendar.tourHeaderTextColors") ?? {};
   const textColor = (() => {
+    const userColor = appointment.tourId != null ? tourHeaderTextColors[String(appointment.tourId)] : undefined;
+    if (userColor) return userColor;
     if (!backgroundColor.startsWith("#")) return "#1a1a1a";
     const r = parseInt(backgroundColor.slice(1, 3), 16);
     const g = parseInt(backgroundColor.slice(3, 5), 16);

@@ -17,6 +17,11 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => undefined,
+  useSettings: () => ({ setSetting: vi.fn() }),
+}));
+
 vi.mock("@/components/ui/hover-preview", () => ({
   HoverPreview: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));

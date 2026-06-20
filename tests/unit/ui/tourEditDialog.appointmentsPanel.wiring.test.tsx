@@ -34,6 +34,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 
 vi.mock("@/hooks/useSettings", () => ({
   useSetting: () => 960,
+  useSettings: () => ({ setSetting: vi.fn() }),
 }));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({

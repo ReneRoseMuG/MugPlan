@@ -17,6 +17,7 @@ export function CalendarWeekAppointmentPanelHeader({
   customerNumber,
   postalCode,
   color,
+  textColor,
   isBlocked = false,
   startDate,
   endDate,
@@ -27,6 +28,7 @@ export function CalendarWeekAppointmentPanelHeader({
   customerNumber: string;
   postalCode: string | null;
   color: string;
+  textColor?: string;
   isBlocked?: boolean;
   startDate: string;
   endDate: string | null;
@@ -59,7 +61,7 @@ export function CalendarWeekAppointmentPanelHeader({
       className="box-border rounded-t-md rounded-b-none border px-2 py-1"
       style={{
         backgroundColor: color,
-        color: "#ffffff",
+        color: textColor ?? "#ffffff",
         borderColor: "rgba(255,255,255,0.22)",
         minHeight: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
         height: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,

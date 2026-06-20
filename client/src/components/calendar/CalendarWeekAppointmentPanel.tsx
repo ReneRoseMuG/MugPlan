@@ -27,6 +27,7 @@ import {
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
+import { useSetting } from "@/hooks/useSettings";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -188,6 +189,7 @@ export function CalendarWeekAppointmentPanel({
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const tourHeaderTextColors = useSetting("calendar.tourHeaderTextColors") ?? {};
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -730,6 +732,7 @@ export function CalendarWeekAppointmentPanel({
               customerNumber={appointment.customer.customerNumber}
               postalCode={appointment.customer.postalCode}
               color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+              textColor={appointment.tourId != null ? tourHeaderTextColors[String(appointment.tourId)] : undefined}
               isBlocked={isBlocked}
               startDate={appointment.startDate}
               endDate={appointment.endDate}

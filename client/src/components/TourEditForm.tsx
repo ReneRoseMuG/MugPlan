@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Toggle } from "@/components/ui/toggle";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
-import { useSetting } from "@/hooks/useSettings";
+import { useSetting, useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { isAbsenceTourName } from "@shared/absenceAppointments";
@@ -129,7 +129,9 @@ export function TourEditForm({
   onOpenTourWeek,
 }: TourEditFormProps) {
   const { toast } = useToast();
+  const { setSetting } = useSettings();
   const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
+  const tourHeaderTextColors = useSetting("calendar.tourHeaderTextColors") ?? {};
   const [userRole] = useState(readStoredUserRole);
   const isWeekPlanningSupported = !isCreate && !isUnsupportedWeekPlanningTourName(tour?.name);
   const canAccessJournal = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
@@ -147,6 +149,7 @@ export function TourEditForm({
   }, []);
   const [selectedName, setSelectedName] = useState<string>(() => tour?.name ?? defaultName);
   const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
+  const [selectedHeaderTextColor, setSelectedHeaderTextColor] = useState<string | undefined>(undefined);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
@@ -163,6 +166,13 @@ export function TourEditForm({
   useEffect(() => {
     setSelectedColor(tour?.color ?? defaultColor);
   }, [defaultColor, tour?.color, tour?.id]);
+
+  useEffect(() => {
+    if (isCreate) return;
+    setSelectedHeaderTextColor(
+      tour?.id != null ? (tourHeaderTextColors[String(tour.id)] || undefined) : undefined,
+    );
+  }, [isCreate, tour?.id, tourHeaderTextColors]);
 
   useEffect(() => {
     if (activeTab !== "wochenplanung") return;
@@ -329,6 +339,16 @@ export function TourEditForm({
   const handleSubmit = async () => {
     if (readOnly) return;
     await onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
+    if (!isCreate && tour?.id != null) {
+      const tourIdStr = String(tour.id);
+      const updated = { ...tourHeaderTextColors };
+      if (selectedHeaderTextColor !== undefined) {
+        updated[tourIdStr] = selectedHeaderTextColor;
+      } else {
+        delete updated[tourIdStr];
+      }
+      await setSetting({ key: "calendar.tourHeaderTextColors", scopeType: "USER", value: updated }).catch(() => undefined);
+    }
   };
   const showWeekInsertAction = !isCreate && activeTab === "wochenplanung" && isWeekPlanningSupported;
   const showDeleteAction = !isCreate && canDelete && tour && onDelete;
@@ -518,6 +538,51 @@ export function TourEditForm({
                   disabled={isSaving || readOnly}
                 />
               </div>
+
+              {!isCreate && (
+                <div className="sub-panel space-y-3">
+                  <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
+                    Kopfzeilen-Textfarbe
+                  </h3>
+                  {selectedHeaderTextColor !== undefined ? (
+                    <div className="space-y-2">
+                      <ColorSelectButton
+                        color={selectedHeaderTextColor}
+                        onChange={setSelectedHeaderTextColor}
+                        label="Textfarbe"
+                        testId="button-tour-header-text-color-picker"
+                        disabled={isSaving || readOnly}
+                      />
+                      {!readOnly && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto px-0 py-0 text-xs text-muted-foreground"
+                          onClick={() => setSelectedHeaderTextColor(undefined)}
+                          disabled={isSaving}
+                          data-testid="button-tour-header-text-color-reset"
+                        >
+                          Zurücksetzen
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    !readOnly && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedHeaderTextColor("#ffffff")}
+                        disabled={isSaving}
+                        data-testid="button-tour-header-text-color-enable"
+                      >
+                        Textfarbe festlegen
+                      </Button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           </TabsContent>
 

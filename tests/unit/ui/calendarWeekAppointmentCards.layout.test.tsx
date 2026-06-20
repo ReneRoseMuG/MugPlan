@@ -103,6 +103,11 @@ vi.mock("../../../client/src/components/ui/dropdown-menu", () => ({
   }) => <button type="button" {...props}>{children}</button>,
 }));
 
+vi.mock("../../../client/src/hooks/useSettings", () => ({
+  useSetting: () => undefined,
+  useSettings: () => ({ setSetting: vi.fn() }),
+}));
+
 function createAppointment(overrides: Partial<CalendarAppointment> = {}): CalendarAppointment {
   return {
     id: 42,

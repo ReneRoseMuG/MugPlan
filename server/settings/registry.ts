@@ -611,6 +611,20 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: isValidPositiveIntegerArray,
   },
+  tourHeaderTextColors: {
+    key: "calendar.tourHeaderTextColors",
+    label: "Touren Kopfzeilen-Textfarben",
+    description: "Benutzerspezifische Textfarbe für Terminkarten-Kopfzeilen und Terminbalken je Tour (Map von Tour-ID auf Hex-Farbcode).",
+    type: "json",
+    defaultValue: {} as Record<string, string>,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is Record<string, string> => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+      return Object.entries(value as Record<string, unknown>).every(
+        ([k, v]) => /^\d+$/.test(k) && typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v),
+      );
+    },
+  },
 } as const satisfies Record<string, SettingDefinition>;
 
 export type UserSettingKey = keyof typeof userSettingsRegistry;

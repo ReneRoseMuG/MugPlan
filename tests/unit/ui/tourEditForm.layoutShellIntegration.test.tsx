@@ -4,7 +4,9 @@
  * Abgedeckte Regeln:
  * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich, Sidebar und Footer.
  * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
+ * - Im Create-Modus wird der Kopfzeilen-Textfarb-Picker nicht gezeigt (kein tourId vorhanden).
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Wochenplanung wird ueber die Abfrage gerendert.
+ * - Im Edit-Modus zeigt das Formular die Schaltflaecheche zum Festlegen der Kopfzeilen-Textfarbe.
  * - Der Wochenplan-Mitarbeiterpicker bleibt im Tourformular als bulk-faehiger Listen-/Board-Picker verdrahtet.
  * - Fachlich nicht planbare System-Touren zeigen keinen Wochenplanungs-Tab.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
@@ -13,6 +15,7 @@
  * - Das Tourformular verliert die erwartete Sidebar oder rendert die Shell-Struktur unvollständig.
  * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Wochenplanung verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
+ * - Der Kopfzeilen-Textfarb-Picker erscheint im Create-Modus oder fehlt im Edit-Modus.
  * - Der KW-Picker verliert die Listenansicht oder die Sammelauswahl-Verdrahtung.
  * - Fachlich nicht planbare System-Touren wirken mit leerer Wochenliste wie ein Lade- oder Datenfehler.
  * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
@@ -38,6 +41,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 
 vi.mock("@/hooks/useSettings", () => ({
   useSetting: () => 960,
+  useSettings: () => ({ setSetting: vi.fn() }),
 }));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({
@@ -255,6 +259,8 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("text-tour-generated-name-hint");
     expect(markup).toContain("Neue Tour");
     expect(markup).toContain("button-tour-color-picker");
+    expect(markup).not.toContain("button-tour-header-text-color-enable");
+    expect(markup).not.toContain("button-tour-header-text-color-reset");
     expect(markup).not.toContain("button-add-tour-member");
     expect(markup).not.toContain("tour-members-section-header");
     expect(markup).not.toContain("Keine Mitarbeiter zugewiesen");
@@ -298,6 +304,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("input-tour-name");
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
+    expect(markup).toContain("button-tour-header-text-color-enable");
     expect(markup).toContain("tab-tour-wochenplanung");
     expect(markup).toContain("card-tour-week-2099-6");
     expect(markup).toContain("button-add-tour-week-member-2099-6");
