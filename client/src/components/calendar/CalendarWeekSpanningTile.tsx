@@ -47,6 +47,7 @@ import {
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { CalendarWeekInlineNotes, type CalendarWeekInlineNote } from "./CalendarWeekInlineNotes";
+import { useSetting } from "@/hooks/useSettings";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -187,6 +188,8 @@ export function CalendarWeekSpanningTile({
 }: CalendarWeekSpanningTileProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const tourHeaderTextColors = useSetting("calendar.tourHeaderTextColors") ?? {};
+  const textColor = appointment.tourId != null ? tourHeaderTextColors[String(appointment.tourId)] : undefined;
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -802,7 +805,7 @@ export function CalendarWeekSpanningTile({
           gridRow: 1,
           gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))`,
           backgroundColor: appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR,
-          color: "#ffffff",
+          color: textColor ?? "#ffffff",
           borderColor: "rgba(255,255,255,0.18)",
           minHeight: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
           height: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
