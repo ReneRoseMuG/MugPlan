@@ -281,5 +281,5 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       customerAttachmentsCount: 1,
       totalAttachmentsCount: 1,
     });
-  });
+  }, 15000);
 });

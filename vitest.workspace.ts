@@ -31,6 +31,11 @@ export default mergeConfig(
             // CLI-Flag --fileParallelism auf Root-Ebene erzwungen (package.json). Integration/E2E
             // laufen als separate Invocations weiter seriell (Basis-Config fileParallelism=false).
             // Tests innerhalb einer Datei bleiben seriell (sequence.concurrent=false).
+            // AP-fix: testTimeout auf 30 s erhoeht, weil der erste vi.importActual()-Lauf auf
+            // einem Cold-Vite-Cache (nach Quellaenderungen) 5-11 s dauern kann. Das Standard-
+            // Limit von 5000 ms fuehrt dann zu Timeouts und zu Leaked-Render-Korruption in
+            // Folgetests. Nach dem ersten Lauf (Warm-Cache) sind alle Importe < 200 ms.
+            testTimeout: 30000,
           },
         }),
         defineProject({
