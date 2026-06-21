@@ -185,6 +185,40 @@ export async function listAssignedEmployeeIdsByWeek(
   return rows.map((row) => Number(row.employeeId));
 }
 
+/**
+ * Liefert pro in der KW verplantem Mitarbeiter die Namen der Tour(en), in denen er
+ * zugewiesen ist. Grundlage für die Eignungsanzeige im Wochen-Mitarbeiter-Picker:
+ * verplante Mitarbeiter bleiben sichtbar und tragen den Grund "Bereits verplant: <Tour>".
+ */
+export async function listAssignedEmployeeTourNamesByWeek(
+  isoYear: number,
+  isoWeek: number,
+): Promise<Map<number, string[]>> {
+  const rows = await db
+    .select({
+      employeeId: tourWeekEmployees.employeeId,
+      tourName: tours.name,
+    })
+    .from(tourWeekEmployees)
+    .innerJoin(tours, eq(tours.id, tourWeekEmployees.tourId))
+    .where(and(
+      eq(tourWeekEmployees.isoYear, isoYear),
+      eq(tourWeekEmployees.isoWeek, isoWeek),
+    ))
+    .orderBy(asc(tourWeekEmployees.employeeId));
+
+  const tourNamesByEmployeeId = new Map<number, string[]>();
+  for (const row of rows) {
+    const employeeId = Number(row.employeeId);
+    const existing = tourNamesByEmployeeId.get(employeeId) ?? [];
+    if (!existing.includes(row.tourName)) {
+      existing.push(row.tourName);
+    }
+    tourNamesByEmployeeId.set(employeeId, existing);
+  }
+  return tourNamesByEmployeeId;
+}
+
 export async function getAssignmentById(
   assignmentId: number,
 ): Promise<TourWeekEmployeeAssignmentRow | null> {

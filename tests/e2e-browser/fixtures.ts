@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { test as base } from "@playwright/test";
+import { test as base, type BrowserContext } from "@playwright/test";
 import { workerDatabaseUrl } from "../helpers/workerDatabase";
+import { adminAuthStatePath } from "../helpers/globalAuthSetup";
 
 /**
  * AP05/AP07 (MS-64): Worker-bewusste Playwright-Fixtures fuer parallele Browser-Tests.
@@ -45,11 +46,28 @@ if (PARALLEL) {
   process.env.MYSQL_DATABASE_URL = workerDatabaseUrl(index, baseUrl);
 }
 
-export const test = base.extend({
+export const test = base.extend<{ context: BrowserContext }>({
   // baseURL auf den Server-Port des parallelIndex zeigen lassen. Im seriellen Modus ist
   // parallelIndex 0 -> PORT_BASE (identisch zur bisherigen Konfiguration).
   baseURL: async ({}, use, testInfo) => {
     await use(`http://127.0.0.1:${PORT_BASE + testInfo.parallelIndex}`);
+  },
+
+  // AP-auth-opt: Jeder Browser-Kontext erhaelt den Worker-spezifischen Admin-storageState,
+  // sofern globalAuthSetup die Datei angelegt hat. Dadurch entfaellt der Login-Durchlauf
+  // in >90 % der Tests (loginAsAdmin short-circuits auf sichtbare Sidebar). Fuer
+  // READER/DISPATCHER erkennt loginAsRole den Role-Mismatch und meldet sauber ab.
+  // Fallback: storageState-Datei fehlt -> kein storageState -> normaler Login-Ablauf.
+  context: async ({ browser, baseURL }, use, testInfo) => {
+    const authPath = adminAuthStatePath(testInfo.parallelIndex);
+    const storageState = fs.existsSync(authPath) ? authPath : undefined;
+    const ctx = await browser.newContext({
+      ...(testInfo.project.use as Record<string, unknown>),
+      baseURL,
+      ...(storageState ? { storageState } : {}),
+    });
+    await use(ctx);
+    await ctx.close();
   },
 });
 

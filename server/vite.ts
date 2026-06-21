@@ -15,9 +15,15 @@ export async function setupVite(server: Server, app: Express) {
     allowedHosts: true as const,
   };
 
+  // Paralleler Browser-Testmodus: jeder Worker-Server nutzt einen eigenen Vite-cacheDir, damit die
+  // gleichzeitig startenden Server nicht um denselben node_modules/.vite/deps konkurrieren
+  // (Rename-Race -> EPERM -> der error-Logger unten ruft process.exit(1) -> Server-Crash).
+  // Ohne die Env-Variable (Normalbetrieb, serieller Test) bleibt der Vite-Default erhalten.
+  const workerViteCacheDir = process.env.MUGPLAN_VITE_CACHE_DIR;
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
+    ...(workerViteCacheDir ? { cacheDir: workerViteCacheDir } : {}),
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {

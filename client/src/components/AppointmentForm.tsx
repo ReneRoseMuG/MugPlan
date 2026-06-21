@@ -274,9 +274,13 @@ function buildEmployeePickerConflictReasons(
   const reasons: Record<number, string> = {};
   for (const item of items) {
     if (item.selectable) continue;
-    reasons[item.employeeId] = item.status === "already_present"
-      ? "Bereits diesem Termin zugewiesen"
-      : "Überschneidung mit bestehendem Termin";
+    if (item.status === "already_present") {
+      reasons[item.employeeId] = "Bereits diesem Termin zugewiesen";
+    } else if (item.conflictReason === "ON_LEAVE") {
+      reasons[item.employeeId] = "Im Urlaub / abwesend";
+    } else {
+      reasons[item.employeeId] = "Überschneidung mit bestehendem Termin";
+    }
   }
   return reasons;
 }

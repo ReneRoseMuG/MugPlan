@@ -2,10 +2,10 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { addWeeks, endOfISOWeek, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, ListChecks, Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Employee, Note, Team, Tour } from "@shared/schema";
+import type { Note, Team, Tour } from "@shared/schema";
 import { CalendarWeekNotesButton } from "@/components/calendar/CalendarWeekNotesButton";
 import { CalendarWeekTourLaneHeaderBar } from "@/components/calendar/CalendarWeekTourLaneHeaderBar";
-import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { EmployeePickerDialogList, buildIneligibleReasonById, type EmployeeWithEligibility } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData, type TourWeekCardMember } from "@/components/TourWeekCard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -161,7 +161,7 @@ export function TourWeekPlanningView({
     },
   });
 
-  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<Employee[]>({
+  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<EmployeeWithEligibility[]>({
     queryKey: pendingWeekSelection
       ? [`/api/tours/${pendingWeekSelection.tourId}/week-employees/available`, pendingWeekSelection.isoYear, pendingWeekSelection.isoWeek]
       : ["/api/tours/week-employees/available", "idle"],
@@ -176,7 +176,7 @@ export function TourWeekPlanningView({
         credentials: "include",
       });
       if (!response.ok) throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
-      return response.json() as Promise<Employee[]>;
+      return response.json() as Promise<EmployeeWithEligibility[]>;
     },
   });
 
@@ -539,6 +539,7 @@ export function TourWeekPlanningView({
             employees={availableEmployees}
             teams={[] as Team[]}
             tours={[]}
+            ineligibleReasonById={buildIneligibleReasonById(availableEmployees)}
             isLoading={availableEmployeesLoading}
             selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"

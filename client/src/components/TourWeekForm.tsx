@@ -4,7 +4,7 @@ import { LayoutList, Lock, LockOpen, Route, ScrollText, Users, X } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
-import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { EmployeePickerDialogList, buildIneligibleReasonById, type EmployeeWithEligibility } from "@/components/EmployeePickerDialogList";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { NotesSection } from "@/components/NotesSection";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { invalidateTourWeekQueries } from "@/lib/tour-week-queries";
-import type { Employee, Note, Team } from "@shared/schema";
+import type { Note, Team } from "@shared/schema";
 import type { TourWeekCardData, TourWeekCardMember } from "@/components/TourWeekCard";
 
 type EmployeeWeekPlanResponse = Array<TourWeekCardData & {
@@ -128,7 +128,7 @@ export function TourWeekForm({
     enabled: employeePickerOpen && isTourScope,
   });
 
-  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<Employee[]>({
+  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<EmployeeWithEligibility[]>({
     queryKey: [`/api/tours/${resolvedWeek.tourId}/week-employees/available`, resolvedWeek.isoYear, resolvedWeek.isoWeek],
     enabled: employeePickerOpen && isTourScope && !resolvedWeek.isBlocked && !resolvedWeek.isLocked,
     queryFn: async () => {
@@ -142,7 +142,7 @@ export function TourWeekForm({
       if (!response.ok) {
         throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
       }
-      return response.json() as Promise<Employee[]>;
+      return response.json() as Promise<EmployeeWithEligibility[]>;
     },
   });
 
@@ -464,6 +464,7 @@ export function TourWeekForm({
             employees={availableEmployees}
             teams={teams}
             tours={[]}
+            ineligibleReasonById={buildIneligibleReasonById(availableEmployees)}
             isLoading={availableEmployeesLoading}
             title="Mitarbeiter auswählen"
             selectionMode="multiple"

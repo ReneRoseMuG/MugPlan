@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Toggle } from "@/components/ui/toggle";
-import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { EmployeePickerDialogList, buildIneligibleReasonById, type EmployeeWithEligibility } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
@@ -226,7 +226,7 @@ export function TourEditForm({
     setPendingWeekScrollTarget(null);
   }, [nextAvailableWeek?.isoWeek, nextEditableWeek.isoWeek, tour?.id]);
 
-  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<Employee[]>({
+  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<EmployeeWithEligibility[]>({
     queryKey: [
       `/api/tours/${tour?.id}/week-employees/available`,
       pendingWeekSelection?.isoYear ?? null,
@@ -245,7 +245,7 @@ export function TourEditForm({
       if (!response.ok) {
         throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
       }
-      return response.json() as Promise<Employee[]>;
+      return response.json() as Promise<EmployeeWithEligibility[]>;
     },
   });
 
@@ -804,6 +804,7 @@ export function TourEditForm({
               employees={availableEmployees}
               teams={[]}
               tours={[]}
+              ineligibleReasonById={buildIneligibleReasonById(availableEmployees)}
               isLoading={availableEmployeesLoading}
               selectionMode="multiple"
               viewModeSettingKey="appointmentEmployeePicker.viewMode"

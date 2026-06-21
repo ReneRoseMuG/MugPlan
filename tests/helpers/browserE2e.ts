@@ -80,6 +80,28 @@ export async function loginAsRole(page: Page, roleCode: BrowserRoleCode) {
     ? { username: "test-admin", password: "test-admin-password" }
     : await ensureBrowserRoleUser(roleCode);
 
+  // AP-auth-opt: Prueft ob bereits eine gueltige Session der richtigen Rolle vorliegt
+  // (z. B. via globalAuthSetup-storageState). Short-circuit auf ~0.5 s statt ~3 s Login.
+  // Bei falschem Role-Code wird sauber abgemeldet und dann neu eingeloggt.
+  try {
+    const sessionResp = await page.request.get("/api/auth/session");
+    if (sessionResp.ok()) {
+      const session = await sessionResp.json() as { roleCode?: string };
+      if (session.roleCode === roleCode) {
+        if (!(await isVisible(page.getByTestId("sidebar")))) {
+          await page.goto("/");
+        }
+        await expect(page.getByTestId("sidebar")).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId("nav-termine")).toBeVisible({ timeout: 15_000 });
+        return;
+      }
+      // Eingeloggt als falsche Rolle → abmelden, dann weiter mit normalem Login
+      await page.request.post("/api/auth/logout");
+    }
+  } catch {
+    // Netzwerkfehler oder noch kein Server erreichbar → normaler Login-Ablauf
+  }
+
   try {
     await page.goto("/");
   } catch (error) {

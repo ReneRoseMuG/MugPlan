@@ -16,13 +16,15 @@
  * Abgedeckte Regeln:
  * - Der Wochenkalender-Picker lädt verfügbare Tour-KW-Mitarbeiter beim Öffnen frisch über /available.
  * - Ein Wechsel zu einer anderen KW und zurück darf keinen frischen /available-Request durch React-Query-Cache unterdrücken.
+ * - Bereits in der KW verplante Mitarbeiter erscheinen im Picker sichtbar, aber gesperrt mit Begründung (Tour); freie Mitarbeiter bleiben ohne Sperrmarker auswählbar.
  *
  * Fehlerfälle:
  * - Das zweite Öffnen des Pickers zeigt stale Daten aus einem frischen React-Query-Cache.
  * - Der freie Mitarbeiter fehlt in der API-Antwort oder in der sichtbaren Picker-Liste.
+ * - Ein bereits verplanter Mitarbeiter verschwindet kommentarlos aus dem Picker, statt sichtbar mit Grund gesperrt zu werden.
  *
  * Ziel:
- * Den Wochenkalender-Picker gegen stale /available-Daten nach KW-Wechsel absichern.
+ * Den Wochenkalender-Picker gegen stale /available-Daten nach KW-Wechsel absichern und die Eignungsanzeige (Sperrgrund) end-to-end belegen.
  */
 import { expect, test, type Page, type Response } from "./fixtures";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
@@ -164,4 +166,54 @@ test("öffnet den Wochenkalender-Picker nach KW-Wechsel mit frischem available-R
   const secondAvailableResponse = await secondAvailableResponsePromise;
   await expectAvailableEmployeeIds(secondAvailableResponse, availableEmployee.id);
   await expect(page.getByTestId(`employee-picker-card-${availableEmployee.id}`)).toBeVisible();
+});
+
+test("zeigt bereits in der KW verplante Mitarbeiter im Wochenkalender-Picker gesperrt mit Tour-Begründung", async ({ page }) => {
+  const targetWeek = resolveTargetWeek();
+  const tour = await createTourFixture("#117799");
+  const otherTour = await createTourFixture("#991177");
+  const project = await createProjectFixture({ prefix: "TWE-PICKER-ELIG" });
+  const freeEmployee = await createEmployeeFixture("TWE-PICKER-ELIG-FREE");
+  const assignedEmployee = await createEmployeeFixture("TWE-PICKER-ELIG-ASSIGNED");
+
+  await createRawAppointmentFixture({
+    projectId: project.id,
+    startDate: targetWeek.weekStartDate,
+    title: "TWE Picker Eligibility Termin",
+    tourId: tour.id,
+    employeeIds: [],
+  });
+
+  await loginAsAdmin(page);
+
+  // assignedEmployee in einer ANDEREN Tour derselben KW verplanen (echte API, geteilte Session).
+  // Durch die KW-Unique-Regel ist er damit im Picker der Ziel-Tour gesperrt.
+  const assignResponse = await page.request.post(`/api/tours/${otherTour.id}/week-employees/add`, {
+    data: {
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      employeeId: assignedEmployee.id,
+      selectedAppointmentIds: [],
+    },
+  });
+  expect(assignResponse.status()).toBe(200);
+
+  await openStandaloneWeek(page, targetWeek);
+  await expect(getWeekSection(page, targetWeek.weekStartDate)).toBeVisible();
+
+  const addButton = await ensureWeekPersonnelColumnExpanded(page, targetWeek.weekStartDate, tour.id);
+  const availableResponsePromise = waitForAvailableResponse(page, tour.id);
+  await addButton.click();
+  await availableResponsePromise;
+
+  // Freier Mitarbeiter: sichtbar und auswählbar, ohne Sperrmarker.
+  await expect(page.getByTestId(`employee-picker-card-${freeEmployee.id}`)).toBeVisible();
+  await expect(page.getByTestId(`employee-picker-ineligible-reason-${freeEmployee.id}`)).toHaveCount(0);
+
+  // Bereits verplanter Mitarbeiter: sichtbar (nicht ausgeblendet), aber gesperrt mit Tour-Begründung.
+  await expect(page.getByTestId(`employee-picker-card-${assignedEmployee.id}`)).toBeVisible();
+  const assignedReason = page.getByTestId(`employee-picker-ineligible-reason-${assignedEmployee.id}`);
+  await expect(assignedReason).toBeVisible();
+  await expect(assignedReason).toContainText("Bereits verplant");
+  await expect(assignedReason).toContainText(otherTour.name);
 });

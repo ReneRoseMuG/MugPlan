@@ -7,7 +7,8 @@
  * - Laufende Wochen sind für Admins und Disponenten editierbar; vergangene Wochen bleiben über die echte API schreibgeschützt.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
  * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Prüfung für Konfliktfälle.
- * - Nur an allen fünf Werktagen abwesende Mitarbeiter werden aus Tour-KW-Verfügbarkeit und Aufnahme ausgeschlossen; Teil-Abwesenheit und Termin-Überschneidungen bleiben aufnehmbar und werden erst beim Buchen tagesgenau behandelt.
+ * - Die Termin-Mitarbeiterzuweisung (assignment-preview) zeigt konfligierende Mitarbeiter sichtbar gesperrt mit differenziertem Grund (Abwesenheit/Urlaub als ON_LEAVE vs. Terminkonflikt als EMPLOYEE_OVERLAP) statt sie auszublenden.
+ * - In der Tour-KW-Verfügbarkeitsliste bleiben bereits verplante und an allen fünf Werktagen abwesende Mitarbeiter sichtbar, werden aber mit Sperrgrund (ineligibleReason) annotiert; inaktive Mitarbeiter erscheinen nicht. Die direkte Aufnahme (add preview/execute) bleibt für ganztägig Abwesende blockiert. Teil-Abwesenheit und Termin-Überschneidungen sperren nicht und werden erst beim Buchen tagesgenau behandelt.
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
  * - Wiederholte Add-Executes für dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
@@ -24,6 +25,7 @@
  * - Vollkonflikte verhindern fälschlich die Wochenzuordnung für künftige Termine.
  * - Leere Remove-Previews blockieren das Loeschen der Wochenzuordnung.
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
+ * - Konfligierende Mitarbeiter verschwinden kommentarlos aus der Zuweisungsliste oder ein Urlaub wird als generischer Terminkonflikt statt als Abwesenheit ausgewiesen.
  * - Abwesenheiten in einer leeren Tour-KW werden still ignoriert und erlauben eine fachlich falsche Wochenzuordnung.
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
  * - Parallele Terminbearbeitungen können Wochenplan-Mutationen still überschreiben.
@@ -459,7 +461,7 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
-  it("filters the available week employee picker server-side to active and unassigned employees of the target ISO week", async () => {
+  it("returns active employees and locks those already assigned in the target ISO week with a tour-specific reason while omitting inactive employees", async () => {
     const admin = await loginAdmin();
     const targetTour = await createTourFixture("#117799");
     const otherTour = await createTourFixture("#991177");
@@ -493,12 +495,23 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
       .expect(200)
       .expect((res) => {
-        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+        const rows = res.body as Array<{ id: number; ineligibleReason: string | null }>;
+        const rowById = new Map(rows.map((row) => [row.id, row]));
 
-        expect(availableEmployeeIds).toContain(freeEmployee.id);
-        expect(availableEmployeeIds).not.toContain(sameWeekSameTourEmployee.id);
-        expect(availableEmployeeIds).not.toContain(sameWeekOtherTourEmployee.id);
-        expect(availableEmployeeIds).not.toContain(inactiveEmployee.id);
+        // Freier Mitarbeiter: sichtbar und auswaehlbar (kein Sperrgrund).
+        expect(rowById.get(freeEmployee.id)).toBeDefined();
+        expect(rowById.get(freeEmployee.id)?.ineligibleReason).toBeNull();
+
+        // Bereits in der KW verplant (gleiche Tour): sichtbar, aber gesperrt mit Tour-Grund.
+        expect(rowById.get(sameWeekSameTourEmployee.id)?.ineligibleReason).toContain("Bereits verplant");
+        expect(rowById.get(sameWeekSameTourEmployee.id)?.ineligibleReason).toContain(targetTour.name);
+
+        // Bereits in der KW verplant (andere Tour): KW-Unique-Regel greift tour-uebergreifend.
+        expect(rowById.get(sameWeekOtherTourEmployee.id)?.ineligibleReason).toContain("Bereits verplant");
+        expect(rowById.get(sameWeekOtherTourEmployee.id)?.ineligibleReason).toContain(otherTour.name);
+
+        // Inaktiver Mitarbeiter: erscheint weiterhin gar nicht in der Liste.
+        expect(rowById.has(inactiveEmployee.id)).toBe(false);
       });
   });
 
@@ -613,7 +626,9 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
       .expect(200)
       .expect((res) => {
-        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+        const rows = res.body as Array<{ id: number; ineligibleReason: string | null }>;
+        const availableEmployeeIds = rows.map((row) => row.id);
+        const rowById = new Map(rows.map((row) => [row.id, row]));
 
         expect(availableEmployeeIds).toContain(freeEmployee.id);
         expect(availableEmployeeIds).toContain(outsideWeekConflictEmployee.id);
@@ -621,10 +636,14 @@ describe("tourWeekEmployees integration", () => {
         // sie werden erst beim Buchen auf den einzelnen Termin als Tageskonflikt behandelt.
         expect(availableEmployeeIds).toContain(sameDayConflictEmployee.id);
         expect(availableEmployeeIds).toContain(multiDayConflictEmployee.id);
+        // Verstaerkt: Eine reine Termin-Ueberschneidung erzeugt KEINEN Sperrgrund –
+        // gesperrt wird nur bei KW-Verplanung oder Vollabwesenheit.
+        expect(rowById.get(sameDayConflictEmployee.id)?.ineligibleReason).toBeNull();
+        expect(rowById.get(multiDayConflictEmployee.id)?.ineligibleReason).toBeNull();
       });
   });
 
-  it("keeps partially absent employees in the available picker and only excludes employees absent on every weekday", async () => {
+  it("shows partially absent employees as eligible and locks fully absent employees with a reason in the available picker", async () => {
     const admin = await loginAdmin();
     const targetTour = await createTourFixture("#0f766e");
     const targetWeek = resolveNextEditableWeekDates();
@@ -657,14 +676,19 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
       .expect(200)
       .expect((res) => {
-        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+        const rows = res.body as Array<{ id: number; ineligibleReason: string | null }>;
+        const rowById = new Map(rows.map((row) => [row.id, row]));
 
-        expect(availableEmployeeIds).toContain(freeEmployee.id);
-        expect(availableEmployeeIds).toContain(outsideWeekAbsenceEmployee.id);
-        // Neue Regel: Teil-Abwesenheit (Mo–Do) schließt nicht aus.
-        expect(availableEmployeeIds).toContain(partiallyAbsentEmployee.id);
-        // Nur wer an allen fünf Werktagen (Mo–Fr) abwesend ist, fliegt raus.
-        expect(availableEmployeeIds).not.toContain(fullyAbsentEmployee.id);
+        // Frei und auswaehlbar.
+        expect(rowById.get(freeEmployee.id)?.ineligibleReason).toBeNull();
+        // Abwesenheit ausserhalb der KW sperrt nicht.
+        expect(rowById.get(outsideWeekAbsenceEmployee.id)?.ineligibleReason).toBeNull();
+        // Teil-Abwesenheit (Mo–Do) sperrt nicht – sichtbar und auswaehlbar.
+        expect(rowById.get(partiallyAbsentEmployee.id)).toBeDefined();
+        expect(rowById.get(partiallyAbsentEmployee.id)?.ineligibleReason).toBeNull();
+        // Nur wer an allen fünf Werktagen (Mo–Fr) abwesend ist, bleibt sichtbar, aber gesperrt mit Grund.
+        expect(rowById.get(fullyAbsentEmployee.id)).toBeDefined();
+        expect(rowById.get(fullyAbsentEmployee.id)?.ineligibleReason).toBe("Ganze Woche abwesend");
       });
   });
 
@@ -1169,7 +1193,7 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
-  it("adds conflict-free active employees to calendar assignment previews when requested", async () => {
+  it("includes active employees in calendar assignment previews and locks conflicting ones with a reason", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#335588");
     const project = await createProjectFixture({ prefix: "TWE-CALENDAR-PREVIEW" });
@@ -1219,13 +1243,21 @@ describe("tourWeekEmployees integration", () => {
             source: "available",
           }),
         ]));
-        expect(res.body.items).not.toEqual(expect.arrayContaining([
-          expect.objectContaining({ employeeId: conflictEmployee.id, source: "available" }),
-        ]));
+        // Neu: Der konfligierende Mitarbeiter wird nicht mehr ausgeblendet, sondern sichtbar
+        // gesperrt mit Terminkonflikt-Grund.
+        const items = res.body.items as Array<Record<string, unknown>>;
+        const conflictItem = items.find((item) => item.employeeId === conflictEmployee.id);
+        expect(conflictItem).toMatchObject({
+          employeeId: conflictEmployee.id,
+          status: "conflict",
+          selectable: false,
+          conflictReason: "EMPLOYEE_OVERLAP",
+          source: "available",
+        });
       });
   });
 
-  it("returns conflict-free active employees when no tour week employees exist", async () => {
+  it("includes active employees and locks conflicting ones with a reason when no tour week employees exist", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#338855");
     const project = await createProjectFixture({ prefix: "TWE-CALENDAR-FALLBACK" });
@@ -1260,9 +1292,74 @@ describe("tourWeekEmployees integration", () => {
             source: "available",
           }),
         ]));
-        expect(res.body.items).not.toEqual(expect.arrayContaining([
-          expect.objectContaining({ employeeId: conflictEmployee.id }),
-        ]));
+        // Neu: Konfligierender Mitarbeiter sichtbar gesperrt statt ausgeblendet.
+        const items = res.body.items as Array<Record<string, unknown>>;
+        const conflictItem = items.find((item) => item.employeeId === conflictEmployee.id);
+        expect(conflictItem).toMatchObject({
+          employeeId: conflictEmployee.id,
+          status: "conflict",
+          selectable: false,
+          conflictReason: "EMPLOYEE_OVERLAP",
+        });
+      });
+  });
+
+  it("locks an absent employee in the assignment preview with an absence reason instead of a generic overlap", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#0ea5e9");
+    const targetDate = getRelativeBerlinDate(26);
+    const freeEmployee = await createEmployeeFixture("TWE-ASSIGN-ABSENCE-FREE");
+    const absentEmployee = await createEmployeeFixture("TWE-ASSIGN-ABSENCE-ON-LEAVE");
+    const overlapEmployee = await createEmployeeFixture("TWE-ASSIGN-ABSENCE-OVERLAP");
+    const project = await createProjectFixture({ prefix: "TWE-ASSIGN-ABSENCE" });
+    await seedWeekPlanNoise("TWE-ASSIGN-ABSENCE", targetDate);
+
+    // Urlaub am Zieltag (als ganztaegiger Abwesenheits-Tour-Termin gespeichert).
+    await createEmployeeAppointmentAbsence(absentEmployee.id, {
+      absenceType: "vacation",
+      startDate: targetDate,
+      endDate: targetDate,
+      note: `TWE-ASSIGN-ABSENCE-ON-LEAVE-${absentEmployee.id}`,
+    }, "ADMIN");
+
+    // Normaler kollidierender Termin am Zieltag.
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetDate,
+      startTime: null,
+      employeeIds: [overlapEmployee.id],
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+        includeAvailableEmployees: true,
+      })
+      .expect(200)
+      .expect((res) => {
+        const items = res.body.items as Array<Record<string, unknown>>;
+        const itemById = new Map(items.map((item) => [item.employeeId as number, item]));
+
+        // Freier Mitarbeiter: auswaehlbar, kein Sperrgrund.
+        expect(itemById.get(freeEmployee.id)).toMatchObject({ selectable: true, conflictReason: null });
+
+        // Urlaub: gesperrt mit Abwesenheitsgrund (ON_LEAVE), nicht generischer Terminkonflikt.
+        expect(itemById.get(absentEmployee.id)).toMatchObject({
+          status: "conflict",
+          selectable: false,
+          conflictReason: "ON_LEAVE",
+        });
+
+        // Normaler Terminkonflikt: gesperrt mit EMPLOYEE_OVERLAP (Gegenbeispiel zur Abwesenheit).
+        expect(itemById.get(overlapEmployee.id)).toMatchObject({
+          status: "conflict",
+          selectable: false,
+          conflictReason: "EMPLOYEE_OVERLAP",
+        });
       });
   });
 

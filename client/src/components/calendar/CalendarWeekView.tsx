@@ -72,7 +72,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
-import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { EmployeePickerDialogList, buildIneligibleReasonById, type EmployeeWithEligibility } from "@/components/EmployeePickerDialogList";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { Employee, Note, NoteTemplate, Team, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
@@ -288,16 +288,20 @@ export function mapAppointmentPreviewToPickerEmployees(items: AppointmentEmploye
   } as Employee));
 }
 
-// Sperrgründe für nicht zuweisbare Mitarbeiter (Zeitkonflikt oder bereits zugewiesen).
+// Sperrgründe für nicht zuweisbare Mitarbeiter: bereits zugewiesen, abwesend/Urlaub oder Terminkonflikt.
 export function buildAppointmentAssignIneligibleReasons(
   items: AppointmentEmployeePreviewItem[],
 ): Record<number, string> {
   const reasons: Record<number, string> = {};
   for (const item of items) {
     if (item.selectable) continue;
-    reasons[item.employeeId] = item.status === "already_present"
-      ? "Bereits diesem Termin zugewiesen"
-      : "Überschneidung mit bestehendem Termin";
+    if (item.status === "already_present") {
+      reasons[item.employeeId] = "Bereits diesem Termin zugewiesen";
+    } else if (item.conflictReason === "ON_LEAVE") {
+      reasons[item.employeeId] = "Im Urlaub / abwesend";
+    } else {
+      reasons[item.employeeId] = "Überschneidung mit bestehendem Termin";
+    }
   }
   return reasons;
 }
@@ -946,7 +950,7 @@ export function CalendarWeekView({
     queryKey: ["/api/teams"],
     enabled: weekPersonnelPicker !== null,
   });
-  const { data: availableWeekEmployees = [], isLoading: availableWeekEmployeesLoading } = useQuery<Employee[]>({
+  const { data: availableWeekEmployees = [], isLoading: availableWeekEmployeesLoading } = useQuery<EmployeeWithEligibility[]>({
     queryKey: weekPersonnelPicker
       ? [`/api/tours/${weekPersonnelPicker.tourId}/week-employees/available`, weekPersonnelPicker.isoYear, weekPersonnelPicker.isoWeek]
       : ["/api/tours/week-employees/available", "idle"],
@@ -964,7 +968,7 @@ export function CalendarWeekView({
       if (!response.ok) {
         throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
       }
-      return response.json() as Promise<Employee[]>;
+      return response.json() as Promise<EmployeeWithEligibility[]>;
     },
   });
   const absenceTourColor = useMemo(
@@ -3476,6 +3480,7 @@ export function CalendarWeekView({
             employees={availableWeekEmployees}
             teams={pickerTeams}
             tours={[]}
+            ineligibleReasonById={buildIneligibleReasonById(availableWeekEmployees)}
             isLoading={availableWeekEmployeesLoading || previewAddWeekEmployeeMutation.isPending}
             title={weekPersonnelPicker ? `Mitarbeiter auswählen - ${weekPersonnelPicker.weekLabel}` : "Mitarbeiter auswählen"}
             selectionMode="multiple"

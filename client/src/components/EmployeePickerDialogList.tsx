@@ -14,6 +14,29 @@ import { useSettings } from "@/hooks/useSettings";
 type EmployeePickerViewMode = "board" | "list";
 export type EmployeePickerSelectionMode = "single" | "multiple";
 
+/**
+ * Mitarbeiter inkl. optionaler Sperrbegründung, wie ihn der Wochen-Verfügbarkeits-Endpunkt
+ * liefert. `ineligibleReason` ist null für auswählbare Mitarbeiter.
+ */
+export type EmployeeWithEligibility = Employee & { ineligibleReason: string | null };
+
+/**
+ * Baut aus einer Mitarbeiterliste mit optionaler Sperrbegründung die `ineligibleReasonById`-Map
+ * für den Picker. Nur Einträge mit nicht-leerem Grund werden übernommen.
+ */
+export function buildIneligibleReasonById(
+  employeesWithEligibility: ReadonlyArray<{ id: number; ineligibleReason?: string | null }>,
+): Record<number, string> {
+  const reasonById: Record<number, string> = {};
+  for (const employee of employeesWithEligibility) {
+    const reason = employee.ineligibleReason;
+    if (typeof reason === "string" && reason.trim().length > 0) {
+      reasonById[employee.id] = reason.trim();
+    }
+  }
+  return reasonById;
+}
+
 function parseEmployeePickerViewMode(value: unknown): EmployeePickerViewMode {
   return value === "list" ? "list" : "board";
 }

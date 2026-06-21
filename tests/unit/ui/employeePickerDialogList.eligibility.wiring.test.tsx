@@ -9,6 +9,8 @@
  *   bleibt wirkungslos, und im Board fehlt jegliches Klick-Wiring.
  * - Verfügbare Mitarbeiter bleiben uneingeschränkt auswählbar.
  * - Ohne Annotation verhält sich der Picker unverändert (rückwärtskompatibel).
+ * - `buildIneligibleReasonById` leitet die Sperrgrund-Map aus der Mitarbeiterliste ab
+ *   (nur nicht-leere, getrimmte Gründe; freie Mitarbeiter bleiben außen vor).
  *
  * Fehlerfälle:
  * - Ein gesperrter Mitarbeiter würde stillschweigend ausgeblendet (Nutzer sucht ihn vergeblich).
@@ -161,7 +163,7 @@ vi.mock("@/components/ui/toggle-group", () => ({
   ),
 }));
 
-import { EmployeePickerDialogList } from "../../../client/src/components/EmployeePickerDialogList";
+import { EmployeePickerDialogList, buildIneligibleReasonById } from "../../../client/src/components/EmployeePickerDialogList";
 
 const employees: Employee[] = [
   {
@@ -289,5 +291,35 @@ describe("MS-58 UI: EmployeePickerDialogList eligibility wiring", () => {
     expect(markup).not.toContain("employee-picker-ineligible-reason");
     expect(markup).not.toContain("employee-picker-card-ineligible");
     expect(checkboxCalls.every((entry) => entry.disabled === false)).toBe(true);
+  });
+});
+
+describe("MS-58 UI: buildIneligibleReasonById", () => {
+  it("übernimmt nur nicht-leere Sperrgründe (getrimmt) und lässt freie Mitarbeiter außen vor", () => {
+    const reasonById = buildIneligibleReasonById([
+      { id: 10, ineligibleReason: "Bereits verplant: Tour 2" },
+      { id: 11, ineligibleReason: "Ganze Woche abwesend" },
+      { id: 12, ineligibleReason: null },
+      { id: 13, ineligibleReason: "   " },
+      { id: 14, ineligibleReason: "  Bereits verplant: Tour 5  " },
+    ]);
+
+    expect(reasonById).toEqual({
+      10: "Bereits verplant: Tour 2",
+      11: "Ganze Woche abwesend",
+      14: "Bereits verplant: Tour 5",
+    });
+    // Gegenbeispiele: freier MA (null) und reiner Whitespace erzeugen keinen Sperreintrag.
+    expect(reasonById[12]).toBeUndefined();
+    expect(reasonById[13]).toBeUndefined();
+  });
+
+  it("ergibt eine leere Map, wenn kein Mitarbeiter gesperrt ist", () => {
+    const reasonById = buildIneligibleReasonById([
+      { id: 1, ineligibleReason: null },
+      { id: 2, ineligibleReason: null },
+    ]);
+
+    expect(reasonById).toEqual({});
   });
 });

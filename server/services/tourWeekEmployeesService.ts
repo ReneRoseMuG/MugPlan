@@ -502,18 +502,31 @@ async function buildAvailableEmployeePreviewItemsTx(
     startTimeHour: parseStartTimeHour(params.startTime),
     excludeAppointmentId: params.appointmentId,
   });
-  const conflictingEmployeeIds = new Set(conflictingEmployees.map((employee) => employee.id));
+  const conflictByEmployeeId = new Map(conflictingEmployees.map((employee) => [employee.id, employee]));
 
-  return candidates
-    .filter((employee) => !conflictingEmployeeIds.has(employee.id))
-    .map((employee) => ({
+  // Eignungsanzeige: konfligierende Mitarbeiter bleiben sichtbar, werden aber gesperrt mit Grund
+  // (Abwesenheit/Urlaub vs. kollidierender Termin) – statt aus der Liste entfernt zu werden.
+  return candidates.map((employee) => {
+    const conflict = conflictByEmployeeId.get(employee.id);
+    if (conflict) {
+      return {
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        status: "conflict" as const,
+        selectable: false,
+        conflictReason: conflict.isAbsence ? "ON_LEAVE" : "EMPLOYEE_OVERLAP",
+        source: "available" as const,
+      };
+    }
+    return {
       employeeId: employee.id,
       employeeName: employee.fullName,
       status: "will_add" as const,
       selectable: true,
       conflictReason: null,
       source: "available" as const,
-    }));
+    };
+  });
 }
 
 async function buildAppointmentEmployeePreview(
@@ -659,13 +672,14 @@ async function buildAppointmentEmployeePreview(
         excludeAppointmentId: params.appointmentId,
       });
 
-      const hasConflict = conflictEmployees.length > 0;
+      const conflict = conflictEmployees[0];
+      const hasConflict = conflict !== undefined;
       nextItems.push({
         employeeId: assignment.employeeId,
         employeeName: assignment.fullName,
         status: hasConflict ? "conflict" : "will_add",
         selectable: !hasConflict,
-        conflictReason: hasConflict ? "EMPLOYEE_OVERLAP" : null,
+        conflictReason: hasConflict ? (conflict.isAbsence ? "ON_LEAVE" : "EMPLOYEE_OVERLAP") : null,
         source: "week_plan",
       });
     }
@@ -769,33 +783,42 @@ export async function listWeekEmployeesByTour(tourId: number, roleKey?: WeekPlan
   return enrichTourWeekCards(items);
 }
 
+export type WeekEmployeeAvailability = Employee & { ineligibleReason: string | null };
+
 export async function listAvailableWeekEmployees(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
-) {
+): Promise<WeekEmployeeAvailability[]> {
   const tour = await requireTour(tourId);
   if (!supportsWeekPlanningForTour(tour)) {
     return [];
   }
 
   const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
-  const [activeEmployees, assignedEmployeeIds] = await Promise.all([
+  const [activeEmployees, assignedTourNamesByEmployeeId] = await Promise.all([
     employeesRepository.getEmployees("active"),
-    tourWeekEmployeesRepository.listAssignedEmployeeIdsByWeek(params.isoYear, params.isoWeek),
+    tourWeekEmployeesRepository.listAssignedEmployeeTourNamesByWeek(params.isoYear, params.isoWeek),
   ]);
 
-  const assignedEmployeeIdSet = new Set(assignedEmployeeIds);
-  const assignedCandidates = activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
-
-  // Neue Regel: Nur Mitarbeiter, die an ALLEN fünf Werktagen abwesend sind, werden ausgeschlossen.
-  // Teil-Abwesenheit und Termin-Überschneidungen werden hier bewusst NICHT mehr gefiltert –
-  // das passiert tagesgenau erst beim Buchen auf die einzelnen Termine.
+  // Eignungsanzeige statt Filterung: Bereits in der KW verplante und ganztägig (alle fünf
+  // Werktage) abwesende Mitarbeiter bleiben sichtbar, werden aber mit Grund gesperrt. Inaktive
+  // Mitarbeiter erscheinen weiterhin gar nicht. Termin-Überschneidungen und Teil-Abwesenheit
+  // schließen NICHT aus – sie werden tagesgenau erst beim Buchen behandelt.
   const fullyAbsentEmployeeIds = await listFullyAbsentEmployeeIdsForWorkweek(
-    assignedCandidates.map((employee) => employee.id),
+    activeEmployees.map((employee) => employee.id),
     week.weekStart,
   );
 
-  return assignedCandidates.filter((employee) => !fullyAbsentEmployeeIds.has(employee.id));
+  return activeEmployees.map((employee) => {
+    const assignedTourNames = assignedTourNamesByEmployeeId.get(employee.id);
+    let ineligibleReason: string | null = null;
+    if (assignedTourNames && assignedTourNames.length > 0) {
+      ineligibleReason = `Bereits verplant: ${assignedTourNames.join(", ")}`;
+    } else if (fullyAbsentEmployeeIds.has(employee.id)) {
+      ineligibleReason = "Ganze Woche abwesend";
+    }
+    return { ...employee, ineligibleReason };
+  });
 }
 
 export async function previewAddWeekEmployee(

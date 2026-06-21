@@ -51,6 +51,9 @@ function parallelWebServers(): WebServerConfig {
       ATTACHMENT_STORAGE_PATH: storage.uploadsPath,
       BACKUP_BASE_PATH: storage.backupsPath,
       CORRECTION_WORKFLOW_OUTPUT_DIR: storage.correctionWorkflowsPath,
+      // Eigener Vite-Dep-Cache je Worker: verhindert das Rename-Race der gleichzeitig startenden
+      // middlewareMode-Server um den gemeinsamen node_modules/.vite (EPERM -> Server-Crash).
+      MUGPLAN_VITE_CACHE_DIR: path.resolve(process.cwd(), "node_modules", `.vite-w${index}`),
     } as Record<string, string>;
 
     return {
@@ -65,6 +68,7 @@ function parallelWebServers(): WebServerConfig {
 
 export default defineConfig({
   testDir: "tests/e2e-browser",
+  globalSetup: "./tests/helpers/globalAuthSetup",
   timeout: 120_000,
   expect: {
     timeout: 10_000,

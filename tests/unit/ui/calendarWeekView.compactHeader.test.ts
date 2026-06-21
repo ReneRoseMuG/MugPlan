@@ -81,19 +81,21 @@ describe("CalendarWeekView appointment assign picker mapping", () => {
     { employeeId: 11, employeeName: "Mia Woche", status: "will_add", selectable: true, conflictReason: null, source: "week_plan" },
     { employeeId: 12, employeeName: "Tom Konflikt", status: "conflict", selectable: false, conflictReason: "EMPLOYEE_OVERLAP", source: "available" },
     { employeeId: 13, employeeName: "Bea Bestand", status: "already_present", selectable: false, conflictReason: null, source: "week_plan" },
+    { employeeId: 14, employeeName: "Uwe Urlaub", status: "conflict", selectable: false, conflictReason: "ON_LEAVE", source: "available" },
   ];
 
   it("hält jeden Preview-Mitarbeiter im Picker sichtbar (kein stilles Ausblenden)", () => {
     const employees = mapAppointmentPreviewToPickerEmployees(previewItems);
-    expect(employees.map((employee) => employee.id)).toEqual([11, 12, 13]);
-    expect(employees.map((employee) => employee.fullName)).toEqual(["Mia Woche", "Tom Konflikt", "Bea Bestand"]);
+    expect(employees.map((employee) => employee.id)).toEqual([11, 12, 13, 14]);
+    expect(employees.map((employee) => employee.fullName)).toEqual(["Mia Woche", "Tom Konflikt", "Bea Bestand", "Uwe Urlaub"]);
     expect(employees.every((employee) => employee.isActive)).toBe(true);
   });
 
-  it("sperrt nur nicht zuweisbare Mitarbeiter mit einem lesbaren Grund", () => {
+  it("sperrt nicht zuweisbare Mitarbeiter mit differenziertem Grund (Abwesenheit vs. Terminkonflikt vs. bereits zugewiesen)", () => {
     expect(buildAppointmentAssignIneligibleReasons(previewItems)).toEqual({
       12: "Überschneidung mit bestehendem Termin",
       13: "Bereits diesem Termin zugewiesen",
+      14: "Im Urlaub / abwesend",
     });
   });
 

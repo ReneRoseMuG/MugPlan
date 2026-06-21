@@ -3356,7 +3356,9 @@ export const api = {
       path: "/api/tours/:tourId/week-employees/available",
       input: tourWeekAvailabilityInputSchema,
       responses: {
-        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        // Eignungsanzeige: Liefert alle aktiven Mitarbeiter inkl. der in der KW gesperrten
+        // (verplant / ganze Woche abwesend). ineligibleReason ist null für auswählbare.
+        200: z.array(z.custom<typeof employees.$inferSelect & { ineligibleReason: string | null }>()),
         404: errorSchemas.notFound,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },

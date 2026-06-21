@@ -472,7 +472,7 @@ export async function getConflictingEmployeesTx(
     excludeAppointmentId?: number;
     forceAllDayOverlap?: boolean;
   },
-): Promise<Array<{ id: number; fullName: string }>> {
+): Promise<Array<{ id: number; fullName: string; isAbsence: boolean }>> {
   const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
   if (normalizedEmployeeIds.length === 0) return [];
 
@@ -505,6 +505,9 @@ export async function getConflictingEmployeesTx(
     .select({
       id: employees.id,
       fullName: employees.fullName,
+      // Markiert, ob mindestens einer der kollidierenden Termine ein Abwesenheits-Tour-Termin
+      // (Urlaub/Abwesenheit) ist. Grundlage für eine differenzierte Sperrbegründung im Picker.
+      isAbsence: sql<number>`max(case when ${buildAbsenceTourCondition()} then 1 else 0 end)`,
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
@@ -513,7 +516,7 @@ export async function getConflictingEmployeesTx(
     .groupBy(employees.id, employees.fullName)
     .orderBy(asc(employees.id));
 
-  return rows.map((row) => ({ id: row.id, fullName: row.fullName }));
+  return rows.map((row) => ({ id: row.id, fullName: row.fullName, isAbsence: Number(row.isAbsence) === 1 }));
 }
 
 export async function listEmployeeIdsWithAbsenceOverlap(params: {
