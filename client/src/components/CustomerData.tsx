@@ -13,6 +13,7 @@ import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { CustomerAttachmentsPanel, type PendingCustomerAttachmentItem } from "@/components/CustomerAttachmentsPanel";
+import { CustomerAddressesPanel } from "@/components/CustomerAddressesPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -950,7 +951,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  Adresse
+                  Rechnungsadresse
                 </h3>
                 <div className="space-y-2">
                   <Label htmlFor="addressLine1" data-testid="label-addressline1">Straße</Label>
@@ -1005,6 +1006,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
                   />
                 </div>
               </div>
+
+              {isEditMode && typeof customerId === "number" ? (
+                <CustomerAddressesPanel customerId={customerId} isReadOnly={isReadOnlyView} />
+              ) : null}
 
               {!isEditMode && !isReadOnlyView ? (
                 <DocumentExtractionDropzone

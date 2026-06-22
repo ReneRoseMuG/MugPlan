@@ -202,6 +202,10 @@ Das Projektdatenmodell umfasst zusätzlich:
 
 `server/services/monitoringService.ts` wertet aktive Trigger aus und liefert eine aggregierte Übersicht für Disponenten und Admins. Aktive Trigger: `TR-01` (Mindestzahl Mitarbeiter), `TR-02` (Geparkt). Trigger-Definitionen, Namen und Farben sind zentral in `shared/monitoring.ts` gepflegt. Der Schwellwert für TR-01 wird über das globale Setting `monitoring.tr01.minimumEmployees` konfiguriert. Disponenten erhalten Lesezugriff auf `/api/monitoring`; die Admin-Konfiguration unter `/api/admin/monitoring/config` ist nur für Admins zugänglich.
 
+### 5.11 Kundenadressen und wirksame Lieferadresse (MS-68/FT09)
+
+`server/repositories/effectiveDeliveryAddress.ts` löst die wirksame Lieferadresse je Kunde auf (Lieferadresse, sonst Rechnungsadresse) und stellt einen Spaltenselektor bereit, mit dem alle bestehenden Projektionen (Termine/Kalender, Sidebar, Tour-Druck, Reports, Projekt-Board, Export, Kundenliste) die wirksame Lieferadresse unter unveränderten DTO-Feldnamen ausgeben. Das Kundenformular bearbeitet weiter die flachen Adressfelder als Rechnungsadresse; `customersRepository.createCustomer`/`updateCustomerWithVersion` spiegeln diese transaktional in eine `customer_address`-Rechnungsadress-Zeile (Write-Through). Die Pflichtkategorien Rechnungs-/Lieferadresse werden im Bootstrap (`ensureMasterDataDefaults`) idempotent sichergestellt. CRUD über `customerAddressesService`/`customerAddressesController` mit Contracts unter `api.customerAddresses` und `api.addressCategories`; Frontend-Adressmutationen lösen `invalidateTagProjectionQueries()` aus, sodass die Konsumenten unmittelbar den neuen Stand zeigen. Der Adresskategorie-Katalog wird im Stammdatenbereich gepflegt (`AddressCategoryManagementPage`, Tab „Adresskategorien"); die geschützten Pflichtkategorien sind dort read-only.
+
 ## 6. Frontend-Implementierung
 
 ### 6.1 Hauptorchestrierung
@@ -394,6 +398,11 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - `/api/projects` und `/api/projects/list` unterstützen serverseitig neben Text-, Scope- und Tagfiltern auch `articleProductIds` und `articleComponentIds`. Produkt-IDs bilden die Artikellisten-Kategorie `Sauna`; Komponenten werden über ihre Stammdatenkategorie den festen Artikellistenfeldern zugeordnet. Innerhalb einer Artikellisten-Kategorie gilt ODER, zwischen unterschiedlichen Kategorien gilt UND.
 - `/api/appointments/list` unterstützt serverseitig die Filter `employeeId`, `projectId`, `customerId`, `tourId`, `projectTitle`, `customerLastName`, `customerNumber`, `orderNumber`, `tagIds`, `dateFrom` und `dateTo`
 - Textfilter in der Terminliste werden serverseitig über Projekt- und Kundenfelder ausgewertet; UI-Filter dienen nur als Eingabeoberfläche
+
+### Kundenadressen und Adresskategorien (MS-68/FT09)
+
+- `/api/customers/:customerId/addresses` (Liste): für alle Rollen lesbar, die den Kunden sehen; bei nicht-Admins gilt die Aktiv-Sichtbarkeit des Kunden. Anlegen, Ändern und Entfernen sind nur für `DISPONENT` und `ADMIN` zulässig; `LESER` bleibt read-only. Die systemgepflegte Rechnungsadress-Zeile ist über das Adress-CRUD geschützt (nicht löschbar, nicht direkt änderbar) und wird ausschließlich über das Kundenformular gepflegt.
+- `/api/address-categories`: Lesen ist für berechtigte Rollen möglich; Anlegen, Ändern und Löschen sind `ADMIN`-only. Die geschützten Pflichtkategorien Rechnungs- und Lieferadresse können weder umbenannt/deaktiviert noch gelöscht werden; eine in Verwendung befindliche Kategorie ist nicht löschbar.
 
 ---
 

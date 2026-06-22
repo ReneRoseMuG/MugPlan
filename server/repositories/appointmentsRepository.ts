@@ -38,6 +38,7 @@ import {
   getCustomerTagsByCustomerIds as getCustomerTagsByCustomerIdsMap,
   getProjectTagsByProjectIds as getProjectTagsByProjectIdsMap,
 } from "./tagRelationsRepository";
+import { customerSelectWithEffectiveAddress } from "./effectiveDeliveryAddress";
 
 const logPrefix = "[appointments-repo]";
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -850,7 +851,7 @@ export async function listSidebarAppointmentsByProjectFromDate(projectId: number
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)
@@ -869,7 +870,7 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointmentEmployees)
@@ -895,7 +896,7 @@ export async function listSidebarAppointmentsByEmployeeScope(employeeId: number,
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointmentEmployees)
@@ -921,7 +922,7 @@ export async function listSidebarAppointmentsByCustomerScope(customerId: number,
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)
@@ -940,7 +941,7 @@ export async function listSidebarAppointmentsByTourFromDate(tourId: number, from
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)
@@ -959,7 +960,7 @@ export async function listAppointmentsByTourForDateRange(tourId: number, fromDat
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)
@@ -1009,7 +1010,7 @@ export async function listAppointmentsForCalendarRange({
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)
@@ -1202,7 +1203,7 @@ export async function listAppointmentsForList(
       appointment: appointments,
       project: projects,
       projectOrder,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       tour: tours,
     })
     .from(appointments)

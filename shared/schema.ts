@@ -102,6 +102,106 @@ export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
+// Adressverwaltung (Erweiterung MS-68, FT 09)
+// Stabile Rollen-Kennungen der geschützten Pflichtkategorien.
+export const ADDRESS_ROLE_BILLING = "BILLING";
+export const ADDRESS_ROLE_DELIVERY = "DELIVERY";
+
+// Editierbarer Katalog der Adresskategorien. Die beiden Einträge mit roleKey
+// BILLING (Rechnungsadresse) und DELIVERY (Lieferadresse) sind geschützte
+// Pflichteinträge, auf denen die Auflösung der wirksamen Lieferadresse beruht.
+export const addressCategories = mysqlTable("address_category", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  roleKey: varchar("role_key", { length: 32 }),
+  isProtected: boolean("is_protected").notNull().default(false),
+  sortOrder: int("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  nameUnique: uniqueIndex("uq_address_category_name").on(table.name),
+  // NULL-roleKeys gelten in MySQL als verschieden -> nur je eine Rolle global.
+  roleUnique: uniqueIndex("uq_address_category_role").on(table.roleKey),
+}));
+
+// Mehrere strukturierte Adressen je Kunde, jede genau einer Kategorie zugeordnet.
+export const customerAddresses = mysqlTable("customer_address", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  customerId: bigint("customer_id", { mode: "number" })
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade", onUpdate: "restrict" }),
+  categoryId: bigint("category_id", { mode: "number" })
+    .notNull()
+    .references(() => addressCategories.id, { onDelete: "restrict", onUpdate: "restrict" }),
+  addressLine1: varchar("address_line1", { length: 255 }),
+  addressLine2: varchar("address_line2", { length: 255 }),
+  postalCode: varchar("postal_code", { length: 255 }),
+  city: varchar("city", { length: 255 }),
+  country: varchar("country", { length: 255 }),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  // Höchstens eine Adresse je Kategorie und Kunde -> genau eine Rechnungs-,
+  // höchstens eine Lieferadresse je Kunde.
+  customerCategoryUnique: uniqueIndex("uq_customer_address_customer_category").on(table.customerId, table.categoryId),
+  byCustomer: index("idx_customer_address_customer").on(table.customerId),
+  byCategory: index("idx_customer_address_category").on(table.categoryId),
+}));
+
+// Die wirksame Lieferadresse (Lieferadresse, sonst Rechnungsadresse) wird serverseitig
+// mit einem wiederverwendbaren Resolver (server/repositories/effectiveDeliveryAddress.ts)
+// aufgelöst -- bewusst keine DB-Sicht, da Test-DBs per Schema-Klon bereitgestellt werden.
+
+const addressRequiredTextSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return value;
+    return value.trim();
+  },
+  z.string().min(1),
+);
+
+// Pflichtfelder einer Adresse: mindestens Strasse, PLZ, Ort, Land (serverseitig).
+export const insertCustomerAddressSchema = z.object({
+  categoryId: z.number().int().positive(),
+  addressLine1: addressRequiredTextSchema,
+  addressLine2: customerOptionalTextSchema,
+  postalCode: addressRequiredTextSchema,
+  city: addressRequiredTextSchema,
+  country: addressRequiredTextSchema,
+});
+
+export const updateCustomerAddressSchema = z.object({
+  categoryId: z.number().int().positive().optional(),
+  addressLine1: addressRequiredTextSchema,
+  addressLine2: customerOptionalTextSchema,
+  postalCode: addressRequiredTextSchema,
+  city: addressRequiredTextSchema,
+  country: addressRequiredTextSchema,
+  version: z.number().int().positive(),
+});
+
+export const insertAddressCategorySchema = z.object({
+  name: addressRequiredTextSchema,
+  sortOrder: z.number().int().optional(),
+});
+
+export const updateAddressCategorySchema = z.object({
+  name: addressRequiredTextSchema.optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional(),
+  version: z.number().int().positive(),
+});
+
+export type AddressCategory = typeof addressCategories.$inferSelect;
+export type CustomerAddress = typeof customerAddresses.$inferSelect;
+export type InsertCustomerAddress = z.infer<typeof insertCustomerAddressSchema>;
+export type UpdateCustomerAddress = z.infer<typeof updateCustomerAddressSchema>;
+export type InsertAddressCategory = z.infer<typeof insertAddressCategorySchema>;
+export type UpdateAddressCategory = z.infer<typeof updateAddressCategorySchema>;
+
 export const tours = mysqlTable("tours", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),

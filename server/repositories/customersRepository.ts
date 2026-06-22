@@ -2,11 +2,14 @@ import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
+  addressCategories,
+  customerAddresses,
   customerNotes,
   customerAttachments,
   customers,
   projectOrder,
   projects,
+  ADDRESS_ROLE_BILLING,
   type Customer,
   type CustomerAttachment,
   type InsertCustomer,
@@ -15,6 +18,71 @@ import {
   type UpdateCustomer,
 } from "@shared/schema";
 import { getCustomerTagsByCustomerIds } from "./tagRelationsRepository";
+import { customerSelectWithEffectiveAddress } from "./effectiveDeliveryAddress";
+
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+type CustomerAddressFields = {
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  country?: string | null;
+};
+
+/**
+ * Schreibt die Rechnungsadress-Zeile (Kategorie roleKey=BILLING) eines Kunden in
+ * `customer_address` fort, damit sie die flachen Kundenadressfelder spiegelt (MS-68).
+ * Die flachen Felder bleiben das bearbeitete Original (Kundenformular); die wirksame
+ * Lieferadresse wird serverseitig aus `customer_address` aufgelöst. So bleiben beide
+ * konsistent (Write-Through), ohne dass das bestehende Formular geändert werden muss.
+ */
+async function syncBillingAddress(
+  tx: DbTx,
+  customerId: number,
+  fields: CustomerAddressFields,
+): Promise<void> {
+  const [billingCategory] = await tx
+    .select({ id: addressCategories.id })
+    .from(addressCategories)
+    .where(eq(addressCategories.roleKey, ADDRESS_ROLE_BILLING))
+    .limit(1);
+  if (!billingCategory) return;
+
+  const values = {
+    addressLine1: fields.addressLine1 ?? null,
+    addressLine2: fields.addressLine2 ?? null,
+    postalCode: fields.postalCode ?? null,
+    city: fields.city ?? null,
+    country: fields.country ?? null,
+  };
+
+  const [existing] = await tx
+    .select({ id: customerAddresses.id })
+    .from(customerAddresses)
+    .where(
+      and(
+        eq(customerAddresses.customerId, customerId),
+        eq(customerAddresses.categoryId, billingCategory.id),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await tx
+      .update(customerAddresses)
+      .set({ ...values, updatedAt: sql`now()`, version: sql`${customerAddresses.version} + 1` })
+      .where(eq(customerAddresses.id, existing.id));
+    return;
+  }
+
+  await tx.insert(customerAddresses).values({
+    customerId,
+    categoryId: billingCategory.id,
+    ...values,
+    version: 1,
+  });
+}
 
 export type CustomerWithTags = Customer & { tags: Tag[] };
 export type CustomerListItem = Customer & { notesCount: number; tags: Tag[] };
@@ -58,7 +126,7 @@ export async function getCustomers(
 ): Promise<CustomerListItem[]> {
   const conditions = buildCustomerFilterConditions({ scope, tagIds });
   const rows = await db
-    .select()
+    .select(customerSelectWithEffectiveAddress())
     .from(customers)
     .where(and(...conditions))
     .orderBy(customers.id);
@@ -167,7 +235,7 @@ export async function getCustomersPaged(params: {
   }
 
   const rows = await db
-    .select()
+    .select(customerSelectWithEffectiveAddress())
     .from(customers)
     .where(and(...conditions))
     .orderBy(asc(customers.customerNumber), asc(customers.id))
@@ -371,10 +439,13 @@ export async function getCustomersByExactNameParts(firstName: string, lastName: 
 }
 
 export async function createCustomer(data: InsertCustomer & { fullName: string | null }): Promise<Customer> {
-  const result = await db.insert(customers).values(data);
-  const insertId = (result as any)[0].insertId;
-  const [customer] = await db.select().from(customers).where(eq(customers.id, insertId));
-  return customer;
+  return db.transaction(async (tx) => {
+    const result = await tx.insert(customers).values(data);
+    const insertId = (result as any)[0].insertId;
+    await syncBillingAddress(tx, insertId, data);
+    const [customer] = await tx.select().from(customers).where(eq(customers.id, insertId));
+    return customer;
+  });
 }
 
 export async function updateCustomerWithVersion(
@@ -401,18 +472,30 @@ export async function updateCustomerWithVersion(
   if (data.city !== undefined) updateData.city = data.city;
   if (data.country !== undefined) updateData.country = data.country;
 
-  const result = await db
-    .update(customers)
-    .set(updateData)
-    .where(and(eq(customers.id, id), eq(customers.version, expectedVersion)));
+  const addressTouched =
+    data.addressLine1 !== undefined ||
+    data.addressLine2 !== undefined ||
+    data.postalCode !== undefined ||
+    data.city !== undefined ||
+    data.country !== undefined;
 
-  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
-  if (affectedRows === 0) {
-    return { kind: "version_conflict" };
-  }
+  return db.transaction(async (tx) => {
+    const result = await tx
+      .update(customers)
+      .set(updateData)
+      .where(and(eq(customers.id, id), eq(customers.version, expectedVersion)));
 
-  const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-  return { kind: "updated", customer };
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      return { kind: "version_conflict" };
+    }
+
+    const [customer] = await tx.select().from(customers).where(eq(customers.id, id));
+    if (addressTouched) {
+      await syncBillingAddress(tx, id, customer);
+    }
+    return { kind: "updated", customer };
+  });
 }
 
 export async function getCustomerAttachments(customerId: number): Promise<CustomerAttachment[]> {

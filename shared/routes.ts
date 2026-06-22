@@ -6,6 +6,8 @@ import {
   insertTourSchema, updateTourSchema, tours, 
   insertTeamSchema, updateTeamSchema, teams,
   insertCustomerSchema, updateCustomerSchema, customers,
+  insertCustomerAddressSchema, updateCustomerAddressSchema,
+  insertAddressCategorySchema, updateAddressCategorySchema,
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
   insertProjectSchema, updateProjectSchema,
@@ -175,6 +177,33 @@ const tagRelationItemSchema = z.object({
   relationVersion: z.number().int().min(1),
 });
 const tagPickerDomainSchema = z.enum(["appointment", "project", "customer", "employee"]);
+
+// MS-68: Adressverwaltung (FT 09)
+const customerAddressItemSchema = z.object({
+  id: z.number(),
+  customerId: z.number(),
+  categoryId: z.number(),
+  categoryName: z.string(),
+  roleKey: z.string().nullable(),
+  addressLine1: z.string().nullable(),
+  addressLine2: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  city: z.string().nullable(),
+  country: z.string().nullable(),
+  isSystemManaged: z.boolean(),
+  isEffectiveDelivery: z.boolean(),
+  version: z.number(),
+});
+
+const addressCategoryItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  roleKey: z.string().nullable(),
+  isProtected: z.boolean(),
+  sortOrder: z.number(),
+  isActive: z.boolean(),
+  version: z.number(),
+});
 
 const entityAppointmentsQuerySchema = z.object({
   scope: entityAppointmentsScopeSchema.default("upcoming"),
@@ -2430,6 +2459,96 @@ export const api = {
         responses: {
           200: z.array(entityAppointmentItemSchema),
         },
+      },
+    },
+  },
+  customerAddresses: {
+    list: {
+      method: "GET" as const,
+      path: "/api/customers/:customerId/addresses",
+      responses: {
+        200: z.array(customerAddressItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: "POST" as const,
+      path: "/api/customers/:customerId/addresses",
+      input: insertCustomerAddressSchema,
+      responses: {
+        201: customerAddressItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["ADDRESS_ROLE_CONFLICT", "ADDRESS_CATEGORY_PROTECTED", "ADDRESS_CATEGORY_IN_USE"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/customers/:customerId/addresses/:addressId",
+      input: updateCustomerAddressSchema,
+      responses: {
+        200: customerAddressItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "ADDRESS_PROTECTED", "ADDRESS_ROLE_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/customers/:customerId/addresses/:addressId",
+      input: z.object({ version: z.number().int().min(1) }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "ADDRESS_PROTECTED"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
+  addressCategories: {
+    list: {
+      method: "GET" as const,
+      path: "/api/address-categories",
+      responses: {
+        200: z.array(addressCategoryItemSchema),
+      },
+    },
+    create: {
+      method: "POST" as const,
+      path: "/api/address-categories",
+      input: insertAddressCategorySchema,
+      responses: {
+        201: addressCategoryItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        409: z.object({ code: z.literal("ADDRESS_CATEGORY_NAME_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/address-categories/:id",
+      input: updateAddressCategorySchema,
+      responses: {
+        200: addressCategoryItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "ADDRESS_CATEGORY_PROTECTED", "ADDRESS_CATEGORY_NAME_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/address-categories/:id",
+      input: z.object({ version: z.number().int().min(1) }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["ADDRESS_CATEGORY_PROTECTED", "ADDRESS_CATEGORY_IN_USE"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
