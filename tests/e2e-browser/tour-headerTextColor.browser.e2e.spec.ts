@@ -70,7 +70,9 @@ async function resetHeaderTextColor(page: Page) {
 
 async function readWeekAppointmentHeaderTextColor(locator: Locator): Promise<string> {
   return locator.evaluate((element) => {
-    const header = element.firstElementChild as HTMLElement | null;
+    // Der Header sitzt mehrere Ebenen tief (panelShell-Wrapper davor), daher gezielt
+    // ueber data-role lesen statt firstElementChild; header-date erbt die Header-Textfarbe.
+    const header = element.querySelector('[data-role="header-date"]') as HTMLElement | null;
     return header ? getComputedStyle(header).color : "";
   });
 }
