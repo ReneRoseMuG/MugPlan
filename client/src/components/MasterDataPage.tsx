@@ -1,12 +1,13 @@
 ﻿import { useMemo } from "react";
-import { Boxes, FileText, HelpCircle, Package, Tags } from "lucide-react";
+import { Boxes, FileText, HelpCircle, MapPin, Package, Tags } from "lucide-react";
 import { EntityFormWithTabsLayout } from "@/components/ui/entity-form-with-tabs-layout";
 import { ProductManagementPage } from "@/components/ProductManagementPage";
 import { TagManagementPage } from "@/components/TagManagementPage";
+import { AddressCategoryManagementPage } from "@/components/AddressCategoryManagementPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 
-export type MasterDataTabId = "products" | "tags" | "help-texts" | "note-templates";
+export type MasterDataTabId = "products" | "tags" | "address-categories" | "help-texts" | "note-templates";
 
 interface MasterDataPageProps {
   initialTabId?: MasterDataTabId;
@@ -32,6 +33,12 @@ export function MasterDataPage({
         label: "Tags",
         icon: <Tags className="h-4 w-4" />,
         content: <TagManagementPage />,
+      },
+      {
+        id: "address-categories",
+        label: "Adresskategorien",
+        icon: <MapPin className="h-4 w-4" />,
+        content: <AddressCategoryManagementPage />,
       },
       {
         id: "help-texts",

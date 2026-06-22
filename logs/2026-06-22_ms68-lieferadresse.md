@@ -28,9 +28,9 @@ nächsten Aktualisierung den neuen Stand.
 - **Schutzregeln:** Die Rechnungsadresse kann nicht entfernt werden (ein Kunde bleibt nie ohne
   Rechnungsadresse); die Pflichtkategorien Rechnungs-/Lieferadresse sind geschützt; Schreibrechte
   nur für Disponent/Admin, Leser nur lesend; Katalogpflege ist Admin-only.
-- **Folgeschritte (bewusst offen):** eine eigene Admin-Oberfläche zum Pflegen des
-  Adresskategorie-Katalogs (Backend ist fertig) sowie ein expliziter Reports-Integrationstest
-  (Reports nutzen denselben, bereits geprüften Resolver).
+- **Nachgezogen:** Admin-Oberfläche zum Pflegen des Adresskategorie-Katalogs (neuer Tab
+  „Adresskategorien" in den Stammdaten) sowie ein expliziter Reports-Integrationstest, der
+  belegt, dass die Vorlaufliste die wirksame Lieferadresse zeigt.
 
 ## Durchgeführte Prüfungen und Tests
 
@@ -57,4 +57,6 @@ sichtbar.
 
 Ein vollständiger Testlauf über alle Suiten (Unit/Integration/E2E/Browser) wurde noch nicht
 ausgeführt; geprüft wurden gezielt die betroffenen Bereiche. Auf Wunsch kann der volle Testlauf
-nachgezogen werden.
+nachgezogen werden. Der Abschlusskommentar an MS-68/PROJ-1 über das Projekt-Manager-MCP konnte
+nicht gesetzt werden (MCP zeitweise nicht erreichbar, „fetch failed"); dieses FS-Log bleibt
+maßgeblich und kann bei Bedarf nachgereicht werden.
