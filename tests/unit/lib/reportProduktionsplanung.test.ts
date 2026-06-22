@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Produktionsplanung fasst Mengen je Kategorie ueber identische Shortcodes zusammen, wenn Shortcodes aktiv sind.
  * - Ohne Shortcode oder bei deaktivierter Option bleiben Artikel getrennt.
+ * - Jede Item-Gruppe fuehrt die beitragenden Produkt-/Komponenten-IDs (itemIds) mit; bei Verdichtung mehrere IDs.
  * - reportCardReasonTags enthalten ausschliesslich die managed Gruende "Sondermaß", "Anmerkungen" und "Gespiegelt".
  *
  * Fehlerfaelle:
@@ -23,9 +24,9 @@ import {
 describe("reportProduktionsplanung helpers", () => {
   it("merges quantities by shortcode when enabled", () => {
     const result = buildGroupedProduktionsplanungCategoryGroups([
-      { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
-      { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
-      { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Gamma", shortCode: null, quantity: 1 },
+      { categoryId: 1, categoryName: "Produkte", itemId: 11, itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
+      { categoryId: 1, categoryName: "Produkte", itemId: 12, itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
+      { categoryId: 1, categoryName: "Produkte", itemId: 13, itemName: "Sauna Gamma", shortCode: null, quantity: 1 },
     ], true);
 
     expect(result).toEqual([
@@ -33,8 +34,8 @@ describe("reportProduktionsplanung helpers", () => {
         categoryId: 1,
         categoryName: "Produkte",
         items: [
-          { itemName: "SA", totalQuantity: 5 },
-          { itemName: "Sauna Gamma", totalQuantity: 1 },
+          { itemName: "SA", totalQuantity: 5, itemIds: [11, 12] },
+          { itemName: "Sauna Gamma", totalQuantity: 1, itemIds: [13] },
         ],
       },
     ]);
@@ -42,13 +43,13 @@ describe("reportProduktionsplanung helpers", () => {
 
   it("keeps items separate when shortcodes are disabled", () => {
     const result = buildGroupedProduktionsplanungCategoryGroups([
-      { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
-      { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
+      { categoryId: 1, categoryName: "Produkte", itemId: 21, itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
+      { categoryId: 1, categoryName: "Produkte", itemId: 22, itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
     ], false);
 
     expect(result[0]?.items).toEqual([
-      { itemName: "Sauna Alpha", totalQuantity: 2 },
-      { itemName: "Sauna Beta", totalQuantity: 3 },
+      { itemName: "Sauna Alpha", totalQuantity: 2, itemIds: [21] },
+      { itemName: "Sauna Beta", totalQuantity: 3, itemIds: [22] },
     ]);
   });
 

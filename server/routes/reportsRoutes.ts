@@ -10,5 +10,6 @@ router.get(api.reports.vorlaufliste.list.path, reportsController.listVorlauflist
 router.get(api.reports.vorlaufliste.printPreview.path, reportsController.getVorlauflistePrintPreview);
 router.get(api.reports.produktionsplanung.list.path, reportsController.listProduktionsplanung);
 router.get(api.reports.auftragsliste.list.path, reportsController.listAuftragsliste);
+router.get(api.reports.auftragslisteByItem.list.path, reportsController.listAuftragslisteByOrderItem);
 
 export default router;

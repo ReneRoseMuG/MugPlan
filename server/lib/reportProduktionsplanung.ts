@@ -8,6 +8,7 @@ import type { Tag } from "@shared/schema";
 export type GroupedProduktionsplanungItemInput = {
   categoryId: number;
   categoryName: string;
+  itemId: number;
   itemName: string;
   quantity: number;
   shortCode?: string | null;
@@ -19,13 +20,14 @@ export type GroupedProduktionsplanungCategoryGroup = {
   items: Array<{
     itemName: string;
     totalQuantity: number;
+    itemIds: number[];
   }>;
 };
 
 type GroupBucket = {
   categoryId: number;
   categoryName: string;
-  items: Map<string, { itemName: string; totalQuantity: number }>;
+  items: Map<string, { itemName: string; totalQuantity: number; itemIds: Set<number> }>;
 };
 
 export function resolveGroupedProduktionsplanungName(
@@ -53,17 +55,19 @@ export function buildGroupedProduktionsplanungCategoryGroups(
     const bucket = buckets.get(row.categoryId) ?? {
       categoryId: row.categoryId,
       categoryName: row.categoryName,
-      items: new Map<string, { itemName: string; totalQuantity: number }>(),
+      items: new Map<string, { itemName: string; totalQuantity: number; itemIds: Set<number> }>(),
     };
     const groupedName = resolveGroupedProduktionsplanungName(row.itemName, row.shortCode, useShortCodes);
     const existing = bucket.items.get(groupedName);
 
     if (existing) {
       existing.totalQuantity += row.quantity;
+      existing.itemIds.add(row.itemId);
     } else {
       bucket.items.set(groupedName, {
         itemName: groupedName,
         totalQuantity: row.quantity,
+        itemIds: new Set<number>([row.itemId]),
       });
     }
 
@@ -75,6 +79,11 @@ export function buildGroupedProduktionsplanungCategoryGroups(
       categoryId: bucket.categoryId,
       categoryName: bucket.categoryName,
       items: Array.from(bucket.items.values())
+        .map((item) => ({
+          itemName: item.itemName,
+          totalQuantity: item.totalQuantity,
+          itemIds: Array.from(item.itemIds).sort((left, right) => left - right),
+        }))
         .sort((left, right) => left.itemName.localeCompare(right.itemName, "de")),
     }))
     .sort((left, right) =>

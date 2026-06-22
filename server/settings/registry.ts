@@ -625,6 +625,15 @@ export const userSettingsRegistry = {
       );
     },
   },
+  revenueOverviewReportEmployeeIds: {
+    key: "revenueOverviewReport.employeeIds",
+    label: "Report Umsatzübersicht: ausgewählte Mitarbeiter",
+    description: "Zuletzt gewählte Mitarbeiter der Umsatzübersicht im Reports-Bereich (Mitarbeiter-IDs).",
+    type: "json",
+    defaultValue: [] as number[],
+    allowedScopes: ["USER"],
+    validate: isValidPositiveIntegerArray,
+  },
 } as const satisfies Record<string, SettingDefinition>;
 
 export type UserSettingKey = keyof typeof userSettingsRegistry;

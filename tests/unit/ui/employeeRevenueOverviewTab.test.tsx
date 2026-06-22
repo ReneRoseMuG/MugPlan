@@ -5,6 +5,7 @@
  * - Der Umsatz-Tab verdrahtet `TableView` mit Sticky-Header, Footer-Filter und Hover-Preview.
  * - Umsatzwerte werden im deutschen EUR-Format sichtbar weitergegeben.
  * - Der KW-Freitextfilter erkennt die vorgesehenen sichtbaren Token.
+ * - Je Wochenzeile gibt es eine Aktionsspalte mit „Aufträge zeigen"-Button (MS-52 TASK-226).
  *
  * Fehlerfälle:
  * - Das neue Tab verliert Sticky-Header oder Footer-Verdrahtung.
@@ -30,6 +31,10 @@ vi.mock("@/components/ui/table-view", () => ({
       </section>
     );
   },
+}));
+
+vi.mock("@/components/EmployeeRevenueWeekAppointmentsDialog", () => ({
+  EmployeeRevenueWeekAppointmentsDialog: () => null,
 }));
 
 import {
@@ -92,8 +97,12 @@ describe("employee revenue overview tab", () => {
       "KW/Jahr",
       "Anzahl Aufträge",
       "Umsatz",
+      "",
     ]);
     expect(renderToStaticMarkup(<>{columns[2]?.cell?.({ row: overview.weeks[0] })}</>)).toContain("3.500,50");
+    const actionsMarkup = renderToStaticMarkup(<>{columns[3]?.cell?.({ row: overview.weeks[0] })}</>);
+    expect(actionsMarkup).toContain("Aufträge zeigen");
+    expect(actionsMarkup).toContain("employee-revenue-overview-show-orders-2026-18");
 
     const rowPreviewRenderer = tableViewCalls[0]?.rowPreviewRenderer as ((row: typeof overview.weeks[number]) => {
       content: React.ReactNode;
