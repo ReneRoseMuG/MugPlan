@@ -5,6 +5,7 @@
  * - Das Mitarbeiterformular zeigt im Edit-Modus das Tab `Umsatz Übersicht`.
  * - Die Tabelle rendert aggregierte Wochenwerte und blendet Reklamationen/Dubletten sichtbar aus.
  * - KW-Filter und Hover-Preview funktionieren über den echten Browserpfad.
+ * - „Aufträge zeigen" je Wochenzeile öffnet den Termin-Dialog mit den einbezogenen Terminen (MS-52 TASK-226).
  *
  * Fehlerfälle:
  * - Das neue Tab fehlt oder zeigt falsche Wochen-/Summenwerte.
@@ -139,4 +140,11 @@ test("employee revenue overview renders filtered weekly revenue with hover previ
   await page.locator("#employee-revenue-week-filter").fill(`${revenueWeeks.second.isoWeek}/${revenueWeeks.second.isoYear}`);
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText(`KW ${String(revenueWeeks.second.isoWeek).padStart(2, "0")} / ${revenueWeeks.second.isoYear}`);
+
+  // „Aufträge zeigen" öffnet den Dialog mit genau den in die Woche einbezogenen Terminen.
+  await page.getByTestId(`employee-revenue-overview-show-orders-${revenueWeeks.second.isoYear}-${revenueWeeks.second.isoWeek}`).click();
+  const dialog = page.getByTestId("revenue-week-appointments-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Browser Umsatz Projekt B");
+  await expect(dialog).not.toContainText("Browser Reklamation");
 });

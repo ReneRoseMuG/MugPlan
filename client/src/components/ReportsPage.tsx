@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
-import { Columns3, FileText, LayoutGrid, Loader2, Table2 } from "lucide-react";
+import { Columns3, ExternalLink, FileText, LayoutGrid, Loader2, Table2 } from "lucide-react";
 import {
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
@@ -24,6 +24,7 @@ import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { ReportResultOverlayShell } from "@/components/reports/ReportResultOverlayShell";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
+import { RevenueOverviewReportPanel } from "@/components/reports/RevenueOverviewReportPanel";
 import {
   ProduktionsplanungCategoryLayoutEditor,
   type CategoryLayoutCategoryOption,
@@ -157,6 +158,9 @@ type SubmittedFilters = {
   tagIds: number[];
   saunaModels: string[];
   useShortCodes: boolean;
+  // Optionaler Absprung aus der Produktionsplanung: gefilterte Auftragsliste je Produkt-/Komponenten-Item.
+  auftragslisteItemType?: "product" | "component";
+  auftragslisteItemIds?: number[];
 };
 
 export type StandaloneReportLaunch = Omit<SubmittedFilters, "reportType"> & {
@@ -429,6 +433,23 @@ export function buildAuftragslisteReportUrl(params: AuftragslisteRequestParams):
   return `/api/reports/auftragsliste?${searchParams.toString()}`;
 }
 
+export function buildAuftragslisteByItemReportUrl(params: {
+  fromDate: string;
+  toDate?: string;
+  itemType: "product" | "component";
+  itemIds: number[];
+  useShortCodes: boolean;
+}): string {
+  const searchParams = new URLSearchParams({
+    fromDate: params.fromDate,
+    itemType: params.itemType,
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  for (const id of params.itemIds) searchParams.append("itemIds", String(id));
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  return `/api/reports/auftragsliste-by-item?${searchParams.toString()}`;
+}
+
 export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string {
   const searchParams = new URLSearchParams({
     reportType: params.reportType,
@@ -451,14 +472,17 @@ export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string
   if (params.printMode) searchParams.set("printMode", params.printMode);
   if (params.fontSize) searchParams.set("fontSize", params.fontSize);
   if (params.orientation) searchParams.set("orientation", params.orientation);
+  if (params.auftragslisteItemType) searchParams.set("itemType", params.auftragslisteItemType);
+  for (const id of params.auftragslisteItemIds ?? []) searchParams.append("itemIds", String(id));
   return `/standalone/reports?${searchParams.toString()}`;
 }
 
 function renderGroupedCategoryList(
-  groups: ReportProduktionsplanungResponse["productCategoryGroups"],
+  groups: Array<ReportProduktionsplanungResponse["productCategoryGroups"][number] & { itemType: "product" | "component" }>,
   layoutConfig: CategoryLayoutConfig,
   emptyText: string,
   testIdPrefix: string,
+  onOpenItemList: (params: { itemType: "product" | "component"; itemIds: number[]; itemName: string }) => void,
 ) {
   if (groups.length === 0) {
     return <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>;
@@ -487,9 +511,22 @@ function renderGroupedCategoryList(
                   data-testid={`${testIdPrefix}-category-${group.categoryId}-column-${columnIndex}`}
                 >
                   {columnItems.map((item) => (
-                    <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-4 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
-                      <span>{item.itemName}</span>
-                      <span className="font-medium">{item.totalQuantity}</span>
+                    <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
+                      <span className="min-w-0 truncate">{item.itemName}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="font-medium">{item.totalQuantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenItemList({ itemType: group.itemType, itemIds: item.itemIds ?? [], itemName: item.itemName })}
+                          disabled={(item.itemIds ?? []).length === 0}
+                          className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white p-1 text-slate-600 shadow-sm transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                          data-testid={`${testIdPrefix}-open-list-${group.categoryId}-${item.itemName}`}
+                          title="Liste öffnen"
+                          aria-label={`Liste öffnen: ${item.itemName}`}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -504,9 +541,22 @@ function renderGroupedCategoryList(
         <h5 className="text-sm font-semibold text-foreground">{group.categoryName}</h5>
         <div className="mt-3 space-y-2">
           {distributeSortedItemsIntoColumns(group.items, 1, (item) => item.itemName)[0]?.map((item) => (
-            <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-4 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
-              <span>{item.itemName}</span>
-              <span className="font-medium">{item.totalQuantity}</span>
+            <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
+              <span className="min-w-0 truncate">{item.itemName}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="font-medium">{item.totalQuantity}</span>
+                <button
+                  type="button"
+                  onClick={() => onOpenItemList({ itemType: group.itemType, itemIds: item.itemIds ?? [], itemName: item.itemName })}
+                  disabled={(item.itemIds ?? []).length === 0}
+                  className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white p-1 text-slate-600 shadow-sm transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                  data-testid={`${testIdPrefix}-open-list-${group.categoryId}-${item.itemName}`}
+                  title="Liste öffnen"
+                  aria-label={`Liste öffnen: ${item.itemName}`}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -739,6 +789,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       tagIds: standaloneLaunch.tagIds,
       saunaModels: standaloneLaunch.saunaModels,
       useShortCodes: standaloneLaunch.useShortCodes,
+      auftragslisteItemType: standaloneLaunch.auftragslisteItemType,
+      auftragslisteItemIds: standaloneLaunch.auftragslisteItemIds,
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
@@ -878,13 +930,24 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   } = useQuery<AuftragslisteResponse>({
     queryKey: ["reports-auftragsliste", submittedFilters, reportRequestId],
     enabled: submittedFilters?.reportType === "auftragsliste" && isReportOverlayOpen,
-    queryFn: async () => fetchJson(buildAuftragslisteReportUrl({
-      fromDate: submittedFilters!.fromDate,
-      toDate: submittedFilters?.toDate,
-      tagIds: submittedFilters?.tagIds ?? [],
-      saunaModels: submittedFilters?.saunaModels ?? [],
-      useShortCodes: submittedFilters?.useShortCodes ?? false,
-    }), { cache: "no-store" }),
+    queryFn: async () => fetchJson(
+      submittedFilters?.auftragslisteItemType && (submittedFilters?.auftragslisteItemIds?.length ?? 0) > 0
+        ? buildAuftragslisteByItemReportUrl({
+            fromDate: submittedFilters!.fromDate,
+            toDate: submittedFilters?.toDate,
+            itemType: submittedFilters.auftragslisteItemType,
+            itemIds: submittedFilters.auftragslisteItemIds ?? [],
+            useShortCodes: submittedFilters?.useShortCodes ?? false,
+          })
+        : buildAuftragslisteReportUrl({
+            fromDate: submittedFilters!.fromDate,
+            toDate: submittedFilters?.toDate,
+            tagIds: submittedFilters?.tagIds ?? [],
+            saunaModels: submittedFilters?.saunaModels ?? [],
+            useShortCodes: submittedFilters?.useShortCodes ?? false,
+          }),
+      { cache: "no-store" },
+    ),
   });
   const normalizedVorlauflisteError = isVorlauflisteError
     ? normalizeServerError(vorlauflisteError, { title: "Vorlaufliste konnte nicht geladen werden" })
@@ -1339,6 +1402,24 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     const launch = resolveStandaloneLaunch(reportType);
     if (!launch) return;
     window.open(buildStandaloneReportUrl(launch), "_blank");
+  };
+
+  // Absprung aus der Produktionsplanung: gefilterte Auftragsliste je Gruppe in separatem Browser-Tab.
+  const handleOpenItemAuftragsliste = (params: { itemType: "product" | "component"; itemIds: number[]; itemName: string }) => {
+    if (!submittedFilters || params.itemIds.length === 0) return;
+    window.open(buildStandaloneReportUrl({
+      reportType: "auftragsliste",
+      activeTab: "date",
+      fromDate: submittedFilters.fromDate,
+      toDate: submittedFilters.toDate,
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
+      useShortCodes: submittedFilters.useShortCodes,
+      auftragslisteItemType: params.itemType,
+      auftragslisteItemIds: params.itemIds,
+    }), "_blank");
   };
 
   const closeOverlay = () => {
@@ -1801,6 +1882,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   standaloneLaunch={standaloneLaunch?.reportType === "tourenplan" ? { ...standaloneLaunch, reportType: "tourenplan" as const } : null}
                   buildStandaloneReportUrl={buildStandaloneReportUrl}
                 />
+
+                <RevenueOverviewReportPanel overlayHost={reportOverlayHost} />
               </div>
             </div>
 
@@ -2121,12 +2204,13 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-categories">
                         {renderGroupedCategoryList(
                           [
-                            ...(produktionsplanungData?.productCategoryGroups ?? []),
-                            ...(produktionsplanungData?.componentCategoryGroups ?? []),
+                            ...(produktionsplanungData?.productCategoryGroups ?? []).map((group) => ({ ...group, itemType: "product" as const })),
+                            ...(produktionsplanungData?.componentCategoryGroups ?? []).map((group) => ({ ...group, itemType: "component" as const })),
                           ],
                           activeProduktionsplanungCategoryLayoutConfig,
                           "Keine passenden Kategorien im gewählten Zeitraum gefunden.",
                           "reports-produktionsplanung-categories",
+                          handleOpenItemAuftragsliste,
                         )}
                       </section>
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-project-cards">

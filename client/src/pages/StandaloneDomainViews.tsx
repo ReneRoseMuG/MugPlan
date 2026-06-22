@@ -64,6 +64,11 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
   const printMode = params.get("printMode");
   const fontSize = params.get("fontSize");
   const orientation = params.get("orientation");
+  const itemTypeParam = params.get("itemType");
+  const auftragslisteItemType = itemTypeParam === "product" || itemTypeParam === "component" ? itemTypeParam : undefined;
+  const auftragslisteItemIds = params.getAll("itemIds")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
 
   if (
     (reportType !== "vorlaufliste" && reportType !== "produktionsplanung" && reportType !== "auftragsliste" && reportType !== "tourenplan")
@@ -91,6 +96,8 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
     printMode: printMode === "spardruck" ? "spardruck" : printMode === "farbdruck" ? "farbdruck" : undefined,
     fontSize: fontSize === "small" || fontSize === "medium" || fontSize === "large" ? fontSize : undefined,
     orientation: orientation === "portrait" || orientation === "landscape" ? orientation : undefined,
+    auftragslisteItemType,
+    auftragslisteItemIds,
   };
 }
 

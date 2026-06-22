@@ -913,6 +913,7 @@ const reportVorlauflistePrintPreviewResponseSchema = z.object({
 const reportProduktionsplanungItemTotalSchema = z.object({
   itemName: z.string().min(1),
   totalQuantity: z.number().int().min(0),
+  itemIds: z.array(z.number().int().positive()),
 });
 
 const reportProduktionsplanungCategoryGroupSchema = z.object({
@@ -4596,6 +4597,30 @@ export const api = {
           saunaModels: z.preprocess(
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.string().trim().min(1)).default([]),
+          ),
+          useShortCodes: z.preprocess(
+            (value) => value === "true" || value === true,
+            z.boolean().default(false),
+          ),
+        }).strict(),
+        responses: {
+          200: reportAuftragslisteResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    auftragslisteByItem: {
+      list: {
+        method: "GET" as const,
+        path: "/api/reports/auftragsliste-by-item",
+        input: z.object({
+          fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          itemType: z.enum(["product", "component"]),
+          itemIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
           ),
           useShortCodes: z.preprocess(
             (value) => value === "true" || value === true,

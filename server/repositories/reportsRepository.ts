@@ -851,6 +851,7 @@ export async function getProduktionsplanung(params: {
   const productGroupRows: Array<{
     categoryId: number;
     categoryName: string;
+    itemId: number;
     itemName: string;
     shortCode: string | null;
     quantity: number;
@@ -858,6 +859,7 @@ export async function getProduktionsplanung(params: {
   const componentGroupRows: Array<{
     categoryId: number;
     categoryName: string;
+    itemId: number;
     itemName: string;
     shortCode: string | null;
     quantity: number;
@@ -882,6 +884,7 @@ export async function getProduktionsplanung(params: {
         productGroupRows.push({
           categoryId: row.productCategory.id,
           categoryName: row.productCategory.name,
+          itemId: row.product.id,
           itemName: row.product.name.trim(),
           shortCode: row.product.shortCode,
           quantity,
@@ -905,6 +908,7 @@ export async function getProduktionsplanung(params: {
       componentGroupRows.push({
         categoryId: row.componentCategory.id,
         categoryName: row.componentCategory.name,
+        itemId: row.component.id,
         itemName: row.component.name.trim(),
         shortCode: row.component.shortCode,
         quantity,
@@ -1279,4 +1283,59 @@ export async function getAuftragsliste(params: {
     availableSaunaModels,
     items,
   };
+}
+
+/**
+ * Liefert die Auftragslisten-Projekte einer Date Range, die genau ein bestimmtes Merkmal
+ * (Produkt- oder Komponenten-Item) enthalten. Wiederverwendung des Auftragslisten-Datenpfads
+ * (Eligibility inkl. Reklamations-/Storno-Ausschluss, Zeilenform, chronologische Sortierung);
+ * der Auftragsliste-Endpoint selbst bleibt unangetastet. Gefiltert wird über die Item-Identität
+ * (ID-Menge), nicht über einen Namensstring.
+ */
+export async function getAuftragslisteByOrderItem(params: {
+  fromDate: string;
+  toDate?: string;
+  itemType: "product" | "component";
+  itemIds: number[];
+  useShortCodes: boolean;
+}): Promise<AuftragslisteResult> {
+  const base = await getAuftragsliste({
+    fromDate: params.fromDate,
+    toDate: params.toDate,
+    productCategoryIds: [],
+    componentCategoryIds: [],
+    tagIds: [],
+    saunaModels: [],
+    useShortCodes: params.useShortCodes,
+  });
+
+  const uniqueItemIds = Array.from(new Set(params.itemIds.filter((id) => Number.isInteger(id) && id > 0)));
+  if (uniqueItemIds.length === 0 || base.items.length === 0) {
+    return { ...base, items: [] };
+  }
+
+  const eligibleProjectIds = base.items.map((item) => item.projectId);
+  const idColumn = params.itemType === "product" ? projectOrderItems.productId : projectOrderItems.componentId;
+  const matchingItemRows = await db
+    .select({ projectId: projectOrderItems.projectId, quantity: projectOrderItems.quantity })
+    .from(projectOrderItems)
+    .where(and(
+      inArray(projectOrderItems.projectId, eligibleProjectIds),
+      inArray(idColumn, uniqueItemIds),
+    ));
+  const matchingProjectIds = new Set(
+    matchingItemRows
+      .filter((row) => {
+        const quantity = Number(row.quantity ?? 0);
+        return Number.isInteger(quantity) && quantity > 0;
+      })
+      .map((row) => row.projectId),
+  );
+
+  // Eigener Zweck (Absprung je Item): chronologisch nach Termin-Startdatum aufsteigend (AP-218.3),
+  // unabhängig von der Tour-dann-Datum-Sortierung des Auftragsliste-Reports.
+  const items = base.items
+    .filter((item) => matchingProjectIds.has(item.projectId))
+    .sort((left, right) => left.actualDate.localeCompare(right.actualDate) || left.projectId - right.projectId);
+  return { ...base, items };
 }

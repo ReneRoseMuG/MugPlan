@@ -98,3 +98,22 @@ export async function listAuftragsliste(
 
   return reportsRepository.getAuftragsliste(params);
 }
+
+export async function listAuftragslisteByOrderItem(
+  params: {
+    fromDate: string;
+    toDate?: string;
+    itemType: "product" | "component";
+    itemIds: number[];
+    useShortCodes: boolean;
+  },
+  roleKey: CanonicalRoleKey,
+) {
+  assertReportReadRole(roleKey);
+
+  if (params.toDate && params.toDate < params.fromDate) {
+    throw new ReportsError(422, "VALIDATION_ERROR");
+  }
+
+  return reportsRepository.getAuftragslisteByOrderItem(params);
+}

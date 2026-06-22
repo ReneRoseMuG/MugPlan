@@ -8,14 +8,14 @@ type ReportResultOverlayShellProps = {
   open: boolean;
   title: string;
   metaLabel?: string;
-  onOpenPrintPreview: () => void;
+  onOpenPrintPreview?: () => void;
   onBack: () => void;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
   contentClassName?: string;
   testId: string;
-  printPreviewTestId: string;
+  printPreviewTestId?: string;
   backTestId: string;
   printPreviewDisabled?: boolean;
 };
@@ -52,10 +52,12 @@ export function ReportResultOverlayShell({
             {metaLabel ? <span className="truncate text-sm text-muted-foreground">{metaLabel}</span> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={onOpenPrintPreview} disabled={printPreviewDisabled} data-testid={printPreviewTestId}>
-              <Printer className="h-4 w-4" />
-              Druckvorschau
-            </Button>
+            {onOpenPrintPreview ? (
+              <Button type="button" variant="outline" onClick={onOpenPrintPreview} disabled={printPreviewDisabled} data-testid={printPreviewTestId}>
+                <Printer className="h-4 w-4" />
+                Druckvorschau
+              </Button>
+            ) : null}
             <Button type="button" variant="outline" onClick={onBack} data-testid={backTestId}>Zurück</Button>
           </div>
         </div>

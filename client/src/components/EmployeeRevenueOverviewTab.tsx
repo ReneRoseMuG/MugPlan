@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { EmployeeRevenueOverviewResponse } from "@shared/routes";
 import { EmployeeRevenueOverviewPreview } from "@/components/EmployeeRevenueOverviewPreview";
+import { EmployeeRevenueWeekAppointmentsDialog } from "@/components/EmployeeRevenueWeekAppointmentsDialog";
+import { Button } from "@/components/ui/button";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
@@ -56,6 +58,7 @@ export function EmployeeRevenueOverviewTab({
   isLoading = false,
 }: EmployeeRevenueOverviewTabProps) {
   const [weekFilter, setWeekFilter] = useState("");
+  const [selectedWeek, setSelectedWeek] = useState<EmployeeRevenueOverviewWeek | null>(null);
   const allWeeks = overview?.weeks ?? [];
   const visibleWeeks = allWeeks.filter((week) => matchesEmployeeRevenueOverviewWeekFilter(week, weekFilter));
 
@@ -80,6 +83,23 @@ export function EmployeeRevenueOverviewTab({
       align: "right",
       minWidth: 180,
       cell: ({ row }) => formatRevenueAmount(row.revenueAmount),
+    },
+    {
+      id: "actions",
+      header: "",
+      align: "center",
+      minWidth: 160,
+      cell: ({ row }) => (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setSelectedWeek(row)}
+          data-testid={`employee-revenue-overview-show-orders-${row.isoYear}-${row.isoWeek}`}
+        >
+          Aufträge zeigen
+        </Button>
+      ),
     },
   ];
 
@@ -132,6 +152,16 @@ export function EmployeeRevenueOverviewTab({
             cursorOffsetY: 18,
           },
         })}
+      />
+      <EmployeeRevenueWeekAppointmentsDialog
+        open={selectedWeek !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedWeek(null);
+          }
+        }}
+        employeeFullName={overview?.employeeFullName ?? ""}
+        week={selectedWeek}
       />
     </div>
   );

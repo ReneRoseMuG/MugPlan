@@ -225,8 +225,8 @@ describe("FT26 integration: report produktionsplanung", () => {
         categoryId: saunaCategoryId,
         categoryName: "Fass Saunen",
         items: [
-          { itemName: "Sauna A", totalQuantity: 2 },
-          { itemName: "Sauna B", totalQuantity: 3 },
+          expect.objectContaining({ itemName: "Sauna A", totalQuantity: 2 }),
+          expect.objectContaining({ itemName: "Sauna B", totalQuantity: 3 }),
         ],
       },
     ]);
@@ -235,8 +235,8 @@ describe("FT26 integration: report produktionsplanung", () => {
         categoryId: windowCategoryId,
         categoryName: "Fenster",
         items: [
-          { itemName: "Fenster A", totalQuantity: 4 },
-          { itemName: "Fenster B", totalQuantity: 2 },
+          expect.objectContaining({ itemName: "Fenster A", totalQuantity: 4 }),
+          expect.objectContaining({ itemName: "Fenster B", totalQuantity: 2 }),
         ],
       },
     ]);
@@ -390,14 +390,14 @@ describe("FT26 integration: report produktionsplanung", () => {
       {
         categoryId: saunaCategoryId,
         categoryName: "Fass Saunen",
-        items: [{ itemName: "Visible Sauna", totalQuantity: 3 }],
+        items: [expect.objectContaining({ itemName: "Visible Sauna", totalQuantity: 3 })],
       },
     ]);
     expect(response.body.componentCategoryGroups).toEqual([
       {
         categoryId: windowCategoryId,
         categoryName: "Fenster",
-        items: [{ itemName: "Visible Fenster", totalQuantity: 2 }],
+        items: [expect.objectContaining({ itemName: "Visible Fenster", totalQuantity: 2 })],
       },
     ]);
     expect(response.body.projectRows).toEqual([
@@ -484,8 +484,8 @@ describe("FT26 integration: report produktionsplanung", () => {
 
     const withSCItems = withSCGroups[0]!.items;
     expect(withSCItems).toHaveLength(2);
-    expect(withSCItems).toContainEqual({ itemName: "SC-MERGE", totalQuantity: 5 });
-    expect(withSCItems).toContainEqual({ itemName: "Sauna Gamma", totalQuantity: 1 });
+    expect(withSCItems).toContainEqual(expect.objectContaining({ itemName: "SC-MERGE", totalQuantity: 5 }));
+    expect(withSCItems).toContainEqual(expect.objectContaining({ itemName: "Sauna Gamma", totalQuantity: 1 }));
 
     const responseNoSC = await admin
       .get(`/api/reports/produktionsplanung?fromDate=2098-06-01&toDate=2098-06-30&productCategoryIds=${saunaCategoryId}&useShortCodes=false`)
@@ -496,9 +496,9 @@ describe("FT26 integration: report produktionsplanung", () => {
 
     const noSCItems = noSCGroups[0]!.items;
     expect(noSCItems).toHaveLength(3);
-    expect(noSCItems).toContainEqual({ itemName: "Sauna Alpha", totalQuantity: 2 });
-    expect(noSCItems).toContainEqual({ itemName: "Sauna Beta", totalQuantity: 3 });
-    expect(noSCItems).toContainEqual({ itemName: "Sauna Gamma", totalQuantity: 1 });
+    expect(noSCItems).toContainEqual(expect.objectContaining({ itemName: "Sauna Alpha", totalQuantity: 2 }));
+    expect(noSCItems).toContainEqual(expect.objectContaining({ itemName: "Sauna Beta", totalQuantity: 3 }));
+    expect(noSCItems).toContainEqual(expect.objectContaining({ itemName: "Sauna Gamma", totalQuantity: 1 }));
   });
 
   /**
@@ -535,14 +535,14 @@ describe("FT26 integration: report produktionsplanung", () => {
       {
         categoryId: saunaCategoryId,
         categoryName: "Fass Saunen",
-        items: [{ itemName: "X", totalQuantity: 5 }],
+        items: [expect.objectContaining({ itemName: "X", totalQuantity: 5 })],
       },
     ]);
     expect(response.body.componentCategoryGroups).toEqual([
       {
         categoryId: windowCategoryId,
         categoryName: "Fenster",
-        items: [{ itemName: "X", totalQuantity: 9 }],
+        items: [expect.objectContaining({ itemName: "X", totalQuantity: 9 })],
       },
     ]);
   });
@@ -580,7 +580,7 @@ describe("FT26 integration: report produktionsplanung", () => {
       {
         categoryId: saunaCategoryId,
         categoryName: "Fass Saunen",
-        items: [{ itemName: "VOL", totalQuantity: 55 }],
+        items: [expect.objectContaining({ itemName: "VOL", totalQuantity: 55 })],
       },
     ]);
   });
