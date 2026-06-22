@@ -102,6 +102,7 @@ vi.mock("@/components/ui/tabs", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
+  buildIneligibleReasonById: () => ({}),
   EmployeePickerDialogList: () => <div>employee-picker</div>,
 }));
 

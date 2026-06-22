@@ -157,6 +157,7 @@ vi.mock("@/components/ui/toggle", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
+  buildIneligibleReasonById: () => ({}),
   EmployeePickerDialogList: (props: Record<string, unknown>) => {
     employeePickerCalls.push(props);
     return <div>employee-picker</div>;

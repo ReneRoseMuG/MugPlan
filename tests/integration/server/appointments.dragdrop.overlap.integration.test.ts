@@ -67,7 +67,7 @@ describe("calendar drag and drop overlap handling", () => {
 
     expect(response.body.code).toBe("EMPLOYEE_OVERLAP_CONFLICT");
     expect(response.body.conflictEmployees).toEqual([
-      { id: overlappingEmployee.id, fullName: overlappingEmployee.fullName },
+      { id: overlappingEmployee.id, fullName: overlappingEmployee.fullName, isAbsence: false },
     ]);
     await expect(getAppointmentEmployeeIds(appointmentToMove.id)).resolves.toEqual([overlappingEmployee.id]);
   });

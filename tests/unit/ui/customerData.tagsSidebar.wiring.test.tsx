@@ -55,6 +55,10 @@ vi.mock("@/components/CustomerAttachmentsPanel", () => ({
   CustomerAttachmentsPanel: () => <section>attachments</section>,
 }));
 
+vi.mock("@/components/CustomerAddressesPanel", () => ({
+  CustomerAddressesPanel: () => <section>addresses</section>,
+}));
+
 vi.mock("@/components/NotesSection", () => ({
   NotesSection: () => <section>notes</section>,
 }));

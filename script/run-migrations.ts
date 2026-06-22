@@ -199,6 +199,28 @@ function parseAlterTableDropColumns(statement: string) {
   return { tableName, columns };
 }
 
+function parseAlterTableDropIndex(statement: string) {
+  const normalized = statement.trim().replace(/;$/, "");
+  const tableMatch = /^ALTER TABLE\s+`([^`]+)`\s+/i.exec(normalized);
+  if (!tableMatch || !/\bDROP INDEX\b/i.test(normalized)) {
+    return null;
+  }
+
+  const tableName = tableMatch[1];
+  const body = normalized.slice(tableMatch[0].length);
+  const segments = body.split(/,\s*(?=DROP INDEX\s+`)/i);
+  const indexes = segments.map((segment) => {
+    const match = /^DROP INDEX\s+`([^`]+)`$/i.exec(segment.trim());
+    if (!match) {
+      throw new Error(`Konnte DROP INDEX nicht lesen: ${segment}`);
+    }
+
+    return match[1];
+  });
+
+  return { tableName, indexes };
+}
+
 function parseAlterTableDropCheck(statement: string) {
   const normalized = statement.trim().replace(/;$/, "");
   const match = /^ALTER TABLE\s+`([^`]+)`\s+DROP CHECK\s+`([^`]+)`$/i.exec(normalized);
@@ -302,6 +324,21 @@ async function executeMigrationChunk(connection: mysql.Connection, chunk: string
 
       await connection.query(
         `ALTER TABLE \`${dropColumns.tableName}\` DROP COLUMN \`${columnName}\`;`,
+      );
+    }
+    return;
+  }
+
+  const dropIndexes = parseAlterTableDropIndex(chunk);
+  if (dropIndexes) {
+    for (const indexName of dropIndexes.indexes) {
+      const exists = await indexExists(connection, dropIndexes.tableName, indexName);
+      if (!exists) {
+        continue;
+      }
+
+      await connection.query(
+        `ALTER TABLE \`${dropIndexes.tableName}\` DROP INDEX \`${indexName}\`;`,
       );
     }
     return;

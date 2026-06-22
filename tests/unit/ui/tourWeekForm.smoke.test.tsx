@@ -84,6 +84,7 @@ vi.mock("@/components/AppointmentsListPage", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
+  buildIneligibleReasonById: () => ({}),
   EmployeePickerDialogList: (props: Record<string, unknown>) => {
     employeePickerCalls.push(props);
     return <section data-testid="tour-week-employee-picker-marker">picker</section>;

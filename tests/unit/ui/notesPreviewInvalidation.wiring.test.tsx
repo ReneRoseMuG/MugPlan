@@ -195,6 +195,10 @@ vi.mock("@/components/CustomerAttachmentsPanel", () => ({
   CustomerAttachmentsPanel: () => <div>customer-attachments</div>,
 }));
 
+vi.mock("@/components/CustomerAddressesPanel", () => ({
+  CustomerAddressesPanel: () => <div>customer-addresses</div>,
+}));
+
 function buildQueryResult(queryKey: unknown) {
   if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[1] === 7 && queryKey[2] === "tags") {
     return {
