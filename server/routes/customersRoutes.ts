@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { api } from "@shared/routes";
 import * as customersController from "../controllers/customersController";
+import * as customerAddressesController from "../controllers/customerAddressesController";
 
 const router = Router();
 
@@ -13,5 +14,9 @@ router.get(api.customers.appointments.list.path, customersController.listAppoint
 router.get(api.customerTags.list.path, customersController.listCustomerTags);
 router.post(api.customerTags.add.path, customersController.addCustomerTag);
 router.delete(api.customerTags.remove.path, customersController.removeCustomerTag);
+router.get(api.customerAddresses.list.path, customerAddressesController.listCustomerAddresses);
+router.post(api.customerAddresses.create.path, customerAddressesController.createCustomerAddress);
+router.patch(api.customerAddresses.update.path, customerAddressesController.updateCustomerAddress);
+router.delete(api.customerAddresses.remove.path, customerAddressesController.deleteCustomerAddress);
 
 export default router;

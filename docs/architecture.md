@@ -125,6 +125,7 @@ Kalendermarker folgen einer eigenen Rollenabgrenzung: aktive Marker sind für `A
 Das relationale Modell ist in `shared/schema.ts` definiert. Zentrale Entitäten:
 
 - Kunden (`customer`)
+- Kundenadressen und Adresskategorie-Katalog (`customer_address`, `address_category`); je Kunde genau eine Rechnungsadresse und höchstens eine abweichende Lieferadresse (MS-68/FT09)
 - Projekte (`project`)
 - Projektaufträge und Auftragspositionen (`project_order`, `project_order_items`)
 - Termine (`appointments`)
@@ -169,6 +170,10 @@ Ausnahme: Termine der Tour „Parkplatz“ können auch bei historischem Startda
 ### 7.4 Archivierungsmodell
 
 Stammdaten nutzen primär Aktiv-Flags (`isActive`) statt physischem Löschen; gleichzeitig existieren bewusst destruktive Spezialpfade für Test-/Admin-Reset und Demo-Purge unter Guards.
+
+### 7.5 Wirksame Lieferadresse (MS-68/FT09)
+
+Je Kunde wird serverseitig eine wirksame Lieferadresse aufgelöst: existiert eine abweichende Lieferadresse (Kategorie `roleKey=DELIVERY`), gilt diese; andernfalls die Rechnungsadresse (`roleKey=BILLING`) als Fallback. Die Auflösung erfolgt über einen wiederverwendbaren Resolver (`server/repositories/effectiveDeliveryAddress.ts`, korrelierte Unterabfrage je Adressfeld) und ist die in allen kundendarstellenden Projektionen (Terminkarten, Sidebar, Tour-Druck, Reports, Projekt-Board, Export, Kundenliste) gezeigte Adresse — unter Beibehaltung der bestehenden DTO-Feldnamen. Die flachen Adressfelder am `customer` bleiben die im Kundenformular bearbeitete Rechnungsadresse und werden per Write-Through in eine `customer_address`-Rechnungsadress-Zeile gespiegelt; die Pflichtkategorien Rechnungs-/Lieferadresse sind geschützt.
 
 ## 8. Kern-Datenflüsse
 

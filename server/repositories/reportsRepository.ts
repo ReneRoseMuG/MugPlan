@@ -24,6 +24,7 @@ import {
   tours,
 } from "@shared/schema";
 import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
+import { customerSelectWithEffectiveAddress } from "./effectiveDeliveryAddress";
 import {
   hasAppointmentCancellationTag,
   isManagedRemarksTag,
@@ -557,7 +558,7 @@ async function buildVorlauflisteItems(params: {
   const projectRows = await db
     .select({
       project: projects,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       order: projectOrder,
     })
     .from(projects)
@@ -778,7 +779,7 @@ export async function getProduktionsplanung(params: {
   const projectDetails = await db
     .select({
       project: projects,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       order: projectOrder,
     })
     .from(projects)
@@ -1046,7 +1047,7 @@ export async function getAuftragsliste(params: {
   const projectDetails = await db
     .select({
       project: projects,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       order: projectOrder,
     })
     .from(projects)

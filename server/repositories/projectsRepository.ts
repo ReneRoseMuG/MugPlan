@@ -33,6 +33,7 @@ import {
 import type { ProjectScope } from "../services/projectsService";
 import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
 import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
+import { customerSelectWithEffectiveAddress } from "./effectiveDeliveryAddress";
 
 export type ProjectWithTags = Project & { tags: Tag[] };
 export type ProjectWithArticleItemsAndTags = ProjectWithTags & { projectArticleItems: ProjectArticleItem[] };
@@ -459,7 +460,7 @@ export async function getProjectsPaged(params: {
   const rows = await db
     .select({
       project: projects,
-      customer: customers,
+      customer: customerSelectWithEffectiveAddress(),
       order: projectOrder,
     })
     .from(projects)
@@ -718,7 +719,7 @@ export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: ProjectWithArticleItemsAndTags; customer: typeof customers.$inferSelect } | null> {
   const [result] = await db
-    .select({ project: projects, customer: customers, order: projectOrder })
+    .select({ project: projects, customer: customerSelectWithEffectiveAddress(), order: projectOrder })
     .from(projects)
     .innerJoin(customers, eq(projects.customerId, customers.id))
     .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))

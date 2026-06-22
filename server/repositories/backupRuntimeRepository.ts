@@ -9,6 +9,7 @@ import {
   projects,
   tours,
 } from "@shared/schema";
+import { effectiveDeliveryAddressColumn } from "./effectiveDeliveryAddress";
 
 export type ExportAppointmentRow = {
   appointmentId: number;
@@ -88,9 +89,9 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
       customerId: customers.id,
       customerNumber: customers.customerNumber,
       customerName: customers.fullName,
-      postalCode: customers.postalCode,
-      addressLine1: customers.addressLine1,
-      addressLine2: customers.addressLine2,
+      postalCode: effectiveDeliveryAddressColumn("postalCode"),
+      addressLine1: effectiveDeliveryAddressColumn("addressLine1"),
+      addressLine2: effectiveDeliveryAddressColumn("addressLine2"),
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
@@ -143,9 +144,9 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
       customerId: customers.id,
       customerNumber: customers.customerNumber,
       customerName: customers.fullName,
-      postalCode: customers.postalCode,
-      addressLine1: customers.addressLine1,
-      addressLine2: customers.addressLine2,
+      postalCode: effectiveDeliveryAddressColumn("postalCode"),
+      addressLine1: effectiveDeliveryAddressColumn("addressLine1"),
+      addressLine2: effectiveDeliveryAddressColumn("addressLine2"),
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
