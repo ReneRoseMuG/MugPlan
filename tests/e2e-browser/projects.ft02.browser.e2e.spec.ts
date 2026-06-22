@@ -596,6 +596,10 @@ test("deletes projects without appointments and keeps projects with appointments
     return response.status();
   }).toBe(200);
 
+  // Das fehlgeschlagene Löschen lässt das Projekt-Detail-Overlay offen; vor der Navigation schließen,
+  // damit der nav-Klick nicht vom Vollbild-Overlay abgefangen wird (Detail bleibt nach Block bewusst offen).
+  await page.getByTestId("button-close-project").click();
+
   await openProjects(page);
   await page.getByTestId("toggle-project-scope-no-appointments").click();
   await page.getByTestId(`project-card-${deletableProject.id}`).dblclick();

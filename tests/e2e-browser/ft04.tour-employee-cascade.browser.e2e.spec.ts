@@ -85,7 +85,7 @@ test("creates a new tour without a Wochenplanung tab in create mode", async ({ p
   await expect(page.getByTestId("button-new-tour")).toBeVisible();
 });
 
-test("hides employees that are already assigned to another tour in the same ISO week from the picker", async ({ page }) => {
+test("shows employees already assigned to another tour in the same ISO week as locked with a reason", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const firstTour = await createTourFixture("#4477aa");
   const secondTour = await createTourFixture("#aa7744");
@@ -105,7 +105,12 @@ test("hides employees that are already assigned to another tour in the same ISO 
   await weekCard.getByTestId(
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
-  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
+  // Bereits in der KW (firstTour) verplanter Mitarbeiter: sichtbar, aber gesperrt mit Tour-Begründung (nicht ausgeblendet).
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toBeVisible();
+  const ineligibleReason = page.getByTestId(`employee-picker-ineligible-reason-${employee.id}`);
+  await expect(ineligibleReason).toBeVisible();
+  await expect(ineligibleReason).toContainText("Bereits verplant");
+  await expect(ineligibleReason).toContainText(firstTour.name);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/tours/${secondTour.id}/week-employees`);
