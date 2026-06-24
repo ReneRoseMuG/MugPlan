@@ -5,8 +5,10 @@
  * - Konsumenten von Adressdaten (Terminkarte der Wochenuebersicht, Kundenkarte) zeigen die
  *   WIRKSAME LIEFERADRESSE: ohne abweichende Lieferadresse die Rechnungsadresse (Fallback),
  *   mit abweichender Lieferadresse diese - und schliessen die Rechnungsadresse nachweislich aus.
- * - Das Setzen einer abweichenden Lieferadresse im Kundenformular wirkt sofort: nach der
- *   Mutation zeigen die Konsumenten den neuen Stand (Cache-Invalidierung der Projektionen).
+ * - Das Anlegen einer abweichenden Lieferadresse ueber die Adress-Tabs wirkt nach dem
+ *   gemeinsamen Speichern: die Konsumenten zeigen den neuen Stand (Cache-Invalidierung).
+ * - Die Tab-Benennung wechselt von "Rechnungs- und Lieferadresse" zu "Rechnungsadresse",
+ *   sobald eine separate Lieferadresse angelegt ist.
  *
  * Fehlerfaelle:
  * - Eine Terminkarte zeigt weiter die Rechnungsadresse, obwohl eine Lieferadresse gesetzt ist.
@@ -126,24 +128,28 @@ test("Setzen der Lieferadresse im Kundenformular wirkt sofort auf die Terminkart
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
   await expect(appointmentPanel).toContainText("31111");
 
-  // Kunden oeffnen und abweichende Lieferadresse ueber die Adressverwaltung anlegen.
+  // Kunden oeffnen und abweichende Lieferadresse ueber die Adress-Tabs anlegen.
   await page.getByTestId("nav-kunden").click();
   const customerCard = page.getByTestId(`customer-card-${customer.id}`);
   await expect(customerCard).toBeVisible({ timeout: 10_000 });
   await customerCard.dblclick();
 
   await expect(page.getByTestId("customer-addresses-panel")).toBeVisible({ timeout: 10_000 });
+  // Ohne separate Lieferadresse traegt der erste Tab den kombinierten Namen.
+  await expect(page.getByTestId("address-tab-billing")).toHaveText("Rechnungs- und Lieferadresse");
+
   await page.getByTestId("add-customer-address-button").click();
-  await page.getByTestId("address-line1-input").fill("Lieferstrasse 9");
-  await page.getByTestId("address-postalcode-input").fill("32222");
-  await page.getByTestId("address-city-input").fill("Deliverytown");
-  await page.getByTestId("address-country-input").fill("Deutschland");
-  await page.getByTestId("save-customer-address-button").click();
+  await page.getByTestId("address-category-select").selectOption({ label: "Lieferadresse" });
+  await page.getByTestId("extra-address-line1").fill("Lieferstrasse 9");
+  await page.getByTestId("extra-address-postalcode").fill("32222");
+  await page.getByTestId("extra-address-city").fill("Deliverytown");
+  await page.getByTestId("extra-address-country").fill("Deutschland");
 
-  // Die neue Lieferadresse wird als wirksame Lieferadresse markiert.
-  await expect(page.getByTestId("customer-address-effective-badge")).toBeVisible({ timeout: 10_000 });
+  // Sobald eine Lieferadresse existiert, heisst der erste Tab nur noch "Rechnungsadresse".
+  await expect(page.getByTestId("address-tab-billing")).toHaveText("Rechnungsadresse");
 
-  await page.getByTestId("button-close-customer").click();
+  // Variante A: alle Adressen werden gemeinsam mit dem grossen Speichern uebernommen.
+  await page.getByTestId("button-save-customer").click();
 
   // Konsument reagiert: Terminkarte zeigt die Lieferadresse, nicht mehr die Rechnungsadresse.
   await page.getByTestId("nav-wochenuebersicht").click();

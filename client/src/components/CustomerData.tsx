@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
-import { Calendar, LayoutList, Mail, MapPin, Phone, ScrollText, User, X } from "lucide-react";
+import { Calendar, LayoutList, Mail, Phone, ScrollText, User, X } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { CustomerAttachmentsPanel, type PendingCustomerAttachmentItem } from "@/components/CustomerAttachmentsPanel";
-import { CustomerAddressesPanel } from "@/components/CustomerAddressesPanel";
+import { CustomerAddressesPanel, type AddressCategory } from "@/components/CustomerAddressesPanel";
+import { ADDRESS_ROLE_BILLING, buildAddressPersistPlan, type CustomerAddressDraft } from "@/lib/customer-addresses";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -59,6 +60,22 @@ type CustomerSubmitPayload = {
 type CustomerDetail = Customer & { tags: Tag[] };
 type DraftCustomerNote = Note & { templateId?: number };
 
+type CustomerAddressApiItem = {
+  id: number;
+  customerId: number;
+  categoryId: number;
+  categoryName: string;
+  roleKey: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+  isSystemManaged: boolean;
+  isEffectiveDelivery: boolean;
+  version: number;
+};
+
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOpenAppointment }: CustomerDataProps) {
   const { toast } = useToast();
   const userRole = getStoredUserRole();
@@ -100,6 +117,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
   const [draftCustomerAttachments, setDraftCustomerAttachments] = useState<PendingCustomerAttachmentItem[]>([]);
   const draftCustomerNoteIdRef = useRef(-1);
   const draftCustomerAttachmentIdRef = useRef(-1);
+  const [extraAddressDrafts, setExtraAddressDrafts] = useState<CustomerAddressDraft[]>([]);
 
   const isEditMode = !!customerId;
   const normalizeOptionalInput = (value: string): string | null => {
@@ -127,6 +145,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
   const { data: notes = [], isLoading: notesLoading } = useQuery<Note[]>({
     queryKey: ['/api/customers', customerId, 'notes'],
     enabled: isEditMode && !!customerId,
+  });
+  const { data: customerAddressesData } = useQuery<CustomerAddressApiItem[]>({
+    queryKey: ['/api/customers', customerId, 'addresses'],
+    queryFn: async () => (await apiRequest("GET", `/api/customers/${customerId}/addresses`)).json(),
+    enabled: isEditMode && !!customerId,
+  });
+  const { data: addressCategories = [] } = useQuery<AddressCategory[]>({
+    queryKey: ["/api/address-categories"],
+    queryFn: async () => (await apiRequest("GET", "/api/address-categories")).json(),
   });
   const visibleCustomerTags = isEditMode ? customerTagRelations : draftCustomerTags;
   const visibleCustomerNotes = isEditMode ? notes : draftCustomerNotes;
@@ -246,6 +273,30 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
       });
     }
   }, [customer]);
+
+  useEffect(() => {
+    if (!customerAddressesData) return;
+    // Weitere Adressen (alles außer der Rechnungsadresse) als bearbeitbare Entwürfe übernehmen.
+    setExtraAddressDrafts(
+      customerAddressesData
+        .filter((item) => item.roleKey !== ADDRESS_ROLE_BILLING)
+        .map((item) => ({
+          localId: `addr-existing-${item.id}`,
+          id: item.id,
+          categoryId: item.categoryId,
+          categoryName: item.categoryName,
+          roleKey: item.roleKey,
+          addressLine1: item.addressLine1 ?? "",
+          addressLine2: item.addressLine2 ?? "",
+          postalCode: item.postalCode ?? "",
+          city: item.city ?? "",
+          country: item.country ?? "",
+          version: item.version,
+          pendingDelete: false,
+          dirty: false,
+        })),
+    );
+  }, [customerAddressesData]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -461,6 +512,34 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
     }
   };
 
+  const persistExtraAddressDrafts = async (targetCustomerId: number) => {
+    const plan = buildAddressPersistPlan(extraAddressDrafts);
+    for (const draft of plan.toCreate) {
+      await apiRequest("POST", `/api/customers/${targetCustomerId}/addresses`, {
+        categoryId: draft.categoryId,
+        addressLine1: draft.addressLine1,
+        addressLine2: draft.addressLine2 || null,
+        postalCode: draft.postalCode,
+        city: draft.city,
+        country: draft.country,
+      });
+    }
+    for (const draft of plan.toUpdate) {
+      await apiRequest("PATCH", `/api/customers/${targetCustomerId}/addresses/${draft.id}`, {
+        categoryId: draft.categoryId,
+        addressLine1: draft.addressLine1,
+        addressLine2: draft.addressLine2 || null,
+        postalCode: draft.postalCode,
+        city: draft.city,
+        country: draft.country,
+        version: draft.version,
+      });
+    }
+    for (const entry of plan.toDelete) {
+      await apiRequest("DELETE", `/api/customers/${targetCustomerId}/addresses/${entry.id}`, { version: entry.version });
+    }
+  };
+
   const persistCreateSidebarDrafts = async (targetCustomerId: number) => {
     await persistDraftCustomerTags(targetCustomerId);
     await persistDraftCustomerNotes(targetCustomerId);
@@ -515,13 +594,29 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
 
     if (isEditMode) {
       await updateMutation.mutateAsync(submitData);
+      if (customerId) {
+        try {
+          await persistExtraAddressDrafts(customerId);
+          await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'addresses'] });
+          await invalidateAppointmentProjectionQueries();
+        } catch (error) {
+          toast({
+            title: "Adressen konnten nicht vollständig gespeichert werden",
+            description: error instanceof Error ? error.message : "Unbekannter Fehler",
+            variant: "destructive",
+          });
+        }
+      }
     } else {
       const createdCustomer = await createMutation.mutateAsync(submitData);
       try {
         await persistCreateSidebarDrafts(createdCustomer.id);
+        await persistExtraAddressDrafts(createdCustomer.id);
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'tags'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'notes'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'attachments'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'addresses'] });
+        await invalidateAppointmentProjectionQueries();
         setDraftCustomerTags([]);
         setDraftCustomerNotes([]);
         setDraftCustomerAttachments([]);
@@ -948,68 +1043,20 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
                 </div>
               </div>
 
-              <div className="sub-panel space-y-4">
-                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Rechnungsadresse
-                </h3>
-                <div className="space-y-2">
-                  <Label htmlFor="addressLine1" data-testid="label-addressline1">Straße</Label>
-                  <Input 
-                    id="addressLine1" 
-                    value={formData.addressLine1}
-                    onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
-                    readOnly={isReadOnlyView}
-                    data-testid="input-addressline1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="addressLine2" data-testid="label-addressline2">Adresszusatz</Label>
-                  <Input 
-                    id="addressLine2" 
-                    value={formData.addressLine2}
-                    onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
-                    readOnly={isReadOnlyView}
-                    data-testid="input-addressline2"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="postalCode" data-testid="label-postalcode">PLZ</Label>
-                    <Input 
-                      id="postalCode" 
-                      value={formData.postalCode}
-                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                      readOnly={isReadOnlyView}
-                      data-testid="input-postalcode"
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="city" data-testid="label-city">Ort</Label>
-                    <Input 
-                      id="city" 
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      readOnly={isReadOnlyView}
-                      data-testid="input-city"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country" data-testid="label-country">Land</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    readOnly={isReadOnlyView}
-                    data-testid="input-country"
-                  />
-                </div>
-              </div>
-
-              {isEditMode && typeof customerId === "number" ? (
-                <CustomerAddressesPanel customerId={customerId} isReadOnly={isReadOnlyView} />
-              ) : null}
+              <CustomerAddressesPanel
+                billing={{
+                  addressLine1: formData.addressLine1,
+                  addressLine2: formData.addressLine2,
+                  postalCode: formData.postalCode,
+                  city: formData.city,
+                  country: formData.country,
+                }}
+                onBillingChange={(fields) => setFormData((prev) => ({ ...prev, ...fields }))}
+                extraDrafts={extraAddressDrafts}
+                onExtraDraftsChange={setExtraAddressDrafts}
+                categories={addressCategories}
+                isReadOnly={isReadOnlyView}
+              />
 
               {!isEditMode && !isReadOnlyView ? (
                 <DocumentExtractionDropzone

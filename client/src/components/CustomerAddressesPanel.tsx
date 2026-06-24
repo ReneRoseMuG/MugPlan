@@ -1,30 +1,14 @@
-import { useMemo, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { MapPin, Plus, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { MapPin, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  resolveBillingTabLabel,
+  type CustomerAddressDraft,
+} from "@/lib/customer-addresses";
 
-export type CustomerAddressItem = {
-  id: number;
-  customerId: number;
-  categoryId: number;
-  categoryName: string;
-  roleKey: string | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  postalCode: string | null;
-  city: string | null;
-  country: string | null;
-  isSystemManaged: boolean;
-  isEffectiveDelivery: boolean;
-  version: number;
-};
-
-type AddressCategory = {
+export type AddressCategory = {
   id: number;
   name: string;
   roleKey: string | null;
@@ -34,11 +18,7 @@ type AddressCategory = {
   version: number;
 };
 
-type DraftState = {
-  mode: "create" | "edit";
-  addressId: number | null;
-  version: number | null;
-  categoryId: number | null;
+export type BillingAddressFields = {
   addressLine1: string;
   addressLine2: string;
   postalCode: string;
@@ -46,219 +26,231 @@ type DraftState = {
   country: string;
 };
 
-const emptyDraft = (categoryId: number | null): DraftState => ({
-  mode: "create",
-  addressId: null,
-  version: null,
-  categoryId,
-  addressLine1: "",
-  addressLine2: "",
-  postalCode: "",
-  city: "",
-  country: "",
-});
+const BILLING_TAB_ID = "__billing__";
 
-function addressLines(item: CustomerAddressItem): string {
-  const locality = [item.postalCode, item.city].filter((value) => value && value.trim()).join(" ");
-  return [item.addressLine1, item.addressLine2, locality, item.country]
-    .filter((value) => value && value.trim())
-    .join(", ");
+export function makeAddressLocalId(): string {
+  return `addr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function CustomerAddressesPanel({
-  customerId,
+function AddressFieldGrid({
+  idPrefix,
+  fields,
+  onChange,
   isReadOnly,
 }: {
-  customerId: number;
+  idPrefix: string;
+  fields: BillingAddressFields;
+  onChange: (fields: BillingAddressFields) => void;
   isReadOnly: boolean;
 }) {
-  const { toast } = useToast();
-  const addressesKey = ["/api/customers", customerId, "addresses"] as const;
-  const [draft, setDraft] = useState<DraftState | null>(null);
-
-  const { data: addresses = [] } = useQuery<CustomerAddressItem[]>({
-    queryKey: addressesKey,
-    queryFn: async () => (await apiRequest("GET", `/api/customers/${customerId}/addresses`)).json(),
-  });
-
-  const { data: categories = [] } = useQuery<AddressCategory[]>({
-    queryKey: ["/api/address-categories"],
-    queryFn: async () => (await apiRequest("GET", "/api/address-categories")).json(),
-  });
-
-  // Kategorien, die im Adress-CRUD zur Auswahl stehen: aktiv und nicht die Rechnungsadresse
-  // (diese wird oben im Kundenformular gepflegt).
-  const selectableCategories = useMemo(
-    () => categories.filter((category) => category.isActive && category.roleKey !== "BILLING"),
-    [categories],
+  const set = (patch: Partial<BillingAddressFields>) => onChange({ ...fields, ...patch });
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-line1`}>Straße</Label>
+        <Input
+          id={`${idPrefix}-line1`}
+          value={fields.addressLine1}
+          onChange={(e) => set({ addressLine1: e.target.value })}
+          readOnly={isReadOnly}
+          data-testid={`${idPrefix}-line1`}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-line2`}>Adresszusatz</Label>
+        <Input
+          id={`${idPrefix}-line2`}
+          value={fields.addressLine2}
+          onChange={(e) => set({ addressLine2: e.target.value })}
+          readOnly={isReadOnly}
+          data-testid={`${idPrefix}-line2`}
+        />
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-postalcode`}>PLZ</Label>
+          <Input
+            id={`${idPrefix}-postalcode`}
+            value={fields.postalCode}
+            onChange={(e) => set({ postalCode: e.target.value })}
+            readOnly={isReadOnly}
+            data-testid={`${idPrefix}-postalcode`}
+          />
+        </div>
+        <div className="col-span-2 space-y-2">
+          <Label htmlFor={`${idPrefix}-city`}>Ort</Label>
+          <Input
+            id={`${idPrefix}-city`}
+            value={fields.city}
+            onChange={(e) => set({ city: e.target.value })}
+            readOnly={isReadOnly}
+            data-testid={`${idPrefix}-city`}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-country`}>Land</Label>
+        <Input
+          id={`${idPrefix}-country`}
+          value={fields.country}
+          onChange={(e) => set({ country: e.target.value })}
+          readOnly={isReadOnly}
+          data-testid={`${idPrefix}-country`}
+        />
+      </div>
+    </div>
   );
-  const deliveryCategory = useMemo(
-    () => categories.find((category) => category.roleKey === "DELIVERY") ?? null,
-    [categories],
-  );
+}
 
-  const invalidateAll = async () => {
-    await queryClient.invalidateQueries({ queryKey: addressesKey });
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId] });
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-    // Reaktivität: alle Konsumenten (Terminkarten, Hover, Reports, Board) neu laden.
-    await invalidateTagProjectionQueries();
+/**
+ * Adressbereich des Kundenformulars als Tab-Leiste (MS-68, FT 09).
+ * Der erste Tab ist die Rechnungsadresse (fest, nicht entfernbar); sie wird über die flachen
+ * Kundenfelder gepflegt (billing/onBillingChange). Jede weitere Adresse ist ein eigener Tab
+ * mit Kategorie-Auswahl; diese werden als Entwurf gesammelt und gemeinsam mit dem Kunden
+ * gespeichert (Variante A). Solange keine separate Lieferadresse existiert, trägt der erste
+ * Tab den kombinierten Namen.
+ */
+export function CustomerAddressesPanel({
+  billing,
+  onBillingChange,
+  extraDrafts,
+  onExtraDraftsChange,
+  categories,
+  isReadOnly,
+}: {
+  billing: BillingAddressFields;
+  onBillingChange: (fields: BillingAddressFields) => void;
+  extraDrafts: CustomerAddressDraft[];
+  onExtraDraftsChange: (drafts: CustomerAddressDraft[]) => void;
+  categories: AddressCategory[];
+  isReadOnly: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState<string>(BILLING_TAB_ID);
+
+  const visibleExtras = extraDrafts.filter((draft) => !draft.pendingDelete);
+  // Kategorien für weitere Adressen: aktiv und nicht die Rechnungsadresse (die ist fest).
+  const selectableCategories = categories.filter(
+    (category) => category.isActive && category.roleKey !== "BILLING",
+  );
+  const billingLabel = resolveBillingTabLabel(extraDrafts);
+  const activeExtra = visibleExtras.find((draft) => draft.localId === activeTab) ?? null;
+
+  const tabClass = (selected: boolean) =>
+    `px-3 py-2 text-sm -mb-px border-b-2 ${
+      selected ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"
+    }`;
+
+  const updateExtra = (localId: string, patch: Partial<CustomerAddressDraft>) => {
+    onExtraDraftsChange(
+      extraDrafts.map((draft) => (draft.localId === localId ? { ...draft, ...patch, dirty: true } : draft)),
+    );
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async (state: DraftState) => {
-      const body = {
-        categoryId: state.categoryId,
-        addressLine1: state.addressLine1,
-        addressLine2: state.addressLine2 || null,
-        postalCode: state.postalCode,
-        city: state.city,
-        country: state.country,
-      };
-      if (state.mode === "edit" && state.addressId != null) {
-        return (
-          await apiRequest("PATCH", `/api/customers/${customerId}/addresses/${state.addressId}`, {
-            ...body,
-            version: state.version,
-          })
-        ).json();
-      }
-      return (await apiRequest("POST", `/api/customers/${customerId}/addresses`, body)).json();
-    },
-    onSuccess: async () => {
-      setDraft(null);
-      await invalidateAll();
-    },
-    onError: (error: Error) => {
-      toast({ title: "Adresse konnte nicht gespeichert werden", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (item: CustomerAddressItem) => {
-      await apiRequest("DELETE", `/api/customers/${customerId}/addresses/${item.id}`, { version: item.version });
-    },
-    onSuccess: async () => {
-      await invalidateAll();
-    },
-    onError: (error: Error) => {
-      toast({ title: "Adresse konnte nicht entfernt werden", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const startAddDelivery = () => {
-    setDraft(emptyDraft(deliveryCategory?.id ?? selectableCategories[0]?.id ?? null));
+  const addAddress = () => {
+    const category = selectableCategories[0] ?? null;
+    const localId = makeAddressLocalId();
+    onExtraDraftsChange([
+      ...extraDrafts,
+      {
+        localId,
+        id: null,
+        categoryId: category ? category.id : null,
+        categoryName: category ? category.name : "",
+        roleKey: category ? category.roleKey : null,
+        addressLine1: "",
+        addressLine2: "",
+        postalCode: "",
+        city: "",
+        country: "",
+        version: null,
+        pendingDelete: false,
+        dirty: true,
+      },
+    ]);
+    setActiveTab(localId);
   };
 
-  const startEdit = (item: CustomerAddressItem) => {
-    setDraft({
-      mode: "edit",
-      addressId: item.id,
-      version: item.version,
-      categoryId: item.categoryId,
-      addressLine1: item.addressLine1 ?? "",
-      addressLine2: item.addressLine2 ?? "",
-      postalCode: item.postalCode ?? "",
-      city: item.city ?? "",
-      country: item.country ?? "",
+  const removeExtra = (draft: CustomerAddressDraft) => {
+    if (draft.id == null) {
+      // Noch nicht gespeichert: den Entwurf ganz verwerfen.
+      onExtraDraftsChange(extraDrafts.filter((entry) => entry.localId !== draft.localId));
+    } else {
+      // Bereits gespeichert: zum Entfernen beim Speichern markieren.
+      onExtraDraftsChange(
+        extraDrafts.map((entry) =>
+          entry.localId === draft.localId ? { ...entry, pendingDelete: true } : entry,
+        ),
+      );
+    }
+    setActiveTab(BILLING_TAB_ID);
+  };
+
+  const changeCategory = (draft: CustomerAddressDraft, categoryId: number) => {
+    const category = selectableCategories.find((entry) => entry.id === categoryId) ?? null;
+    updateExtra(draft.localId, {
+      categoryId,
+      categoryName: category?.name ?? draft.categoryName,
+      roleKey: category?.roleKey ?? null,
     });
   };
-
-  const managedAddresses = addresses.filter((item) => !item.isSystemManaged);
 
   return (
     <div className="sub-panel space-y-4" data-testid="customer-addresses-panel">
       <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
         <MapPin className="w-4 h-4" />
-        Lieferadresse &amp; weitere Adressen
+        Adressen
       </h3>
 
-      {addresses.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Es ist nur die Rechnungsadresse hinterlegt; sie gilt als wirksame Lieferadresse.</p>
-      ) : (
-        <ul className="space-y-2">
-          {addresses.map((item) => (
-            <li
-              key={item.id}
-              data-testid={`customer-address-row-${item.id}`}
-              data-role={item.roleKey ?? "CUSTOM"}
-              data-effective={item.isEffectiveDelivery ? "1" : "0"}
-              className="flex items-start justify-between gap-3 rounded border border-border p-2"
-            >
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold">{item.categoryName}</span>
-                  {item.isEffectiveDelivery ? (
-                    <span
-                      className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
-                      data-testid="customer-address-effective-badge"
-                    >
-                      wirksame Lieferadresse
-                    </span>
-                  ) : null}
-                  {item.isSystemManaged ? (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      oben im Formular pflegen
-                    </span>
-                  ) : null}
-                </div>
-                <div className="text-sm" data-testid={`customer-address-text-${item.id}`}>
-                  {addressLines(item) || "—"}
-                </div>
-              </div>
-              {!isReadOnly && !item.isSystemManaged ? (
-                <div className="flex shrink-0 gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => startEdit(item)}
-                    data-testid={`edit-customer-address-${item.id}`}
-                    aria-label="Adresse bearbeiten"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMutation.mutate(item)}
-                    data-testid={`delete-customer-address-${item.id}`}
-                    aria-label="Adresse entfernen"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {!isReadOnly && draft === null && managedAddresses.every((item) => item.roleKey !== "DELIVERY") ? (
-        <Button
+      <div className="flex flex-wrap gap-1 border-b border-border" role="tablist">
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          onClick={startAddDelivery}
-          data-testid="add-customer-address-button"
-          disabled={selectableCategories.length === 0}
+          role="tab"
+          aria-selected={activeTab === BILLING_TAB_ID}
+          data-testid="address-tab-billing"
+          onClick={() => setActiveTab(BILLING_TAB_ID)}
+          className={tabClass(activeTab === BILLING_TAB_ID)}
         >
-          <Plus className="mr-1 h-4 w-4" />
-          Abweichende Lieferadresse hinzufügen
-        </Button>
-      ) : null}
+          {billingLabel}
+        </button>
+        {visibleExtras.map((draft) => (
+          <button
+            key={draft.localId}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === draft.localId}
+            data-testid={`address-tab-${draft.localId}`}
+            onClick={() => setActiveTab(draft.localId)}
+            className={tabClass(activeTab === draft.localId)}
+          >
+            {draft.categoryName || "Adresse"}
+          </button>
+        ))}
+        {!isReadOnly && selectableCategories.length > 0 ? (
+          <button
+            type="button"
+            data-testid="add-customer-address-button"
+            onClick={addAddress}
+            className={tabClass(false)}
+          >
+            <Plus className="inline w-4 h-4 mr-1" />
+            Adresse
+          </button>
+        ) : null}
+      </div>
 
-      {draft !== null ? (
-        <div className="space-y-3 rounded border border-border p-3" data-testid="customer-address-form">
-          <div className="space-y-1">
-            <Label htmlFor="address-category">Kategorie</Label>
+      {activeTab === BILLING_TAB_ID ? (
+        <AddressFieldGrid idPrefix="billing-address" fields={billing} onChange={onBillingChange} isReadOnly={isReadOnly} />
+      ) : activeExtra ? (
+        <div className="space-y-4" data-testid="customer-address-form">
+          <div className="space-y-2">
+            <Label htmlFor="extra-address-category">Kategorie</Label>
             <select
-              id="address-category"
+              id="extra-address-category"
               data-testid="address-category-select"
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-              value={draft.categoryId ?? ""}
-              onChange={(event) => setDraft({ ...draft, categoryId: Number(event.target.value) })}
+              value={activeExtra.categoryId ?? ""}
+              disabled={isReadOnly}
+              onChange={(event) => changeCategory(activeExtra, Number(event.target.value))}
             >
               {selectableCategories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -267,67 +259,24 @@ export function CustomerAddressesPanel({
               ))}
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="address-line1">Straße</Label>
-            <Input
-              id="address-line1"
-              data-testid="address-line1-input"
-              value={draft.addressLine1}
-              onChange={(event) => setDraft({ ...draft, addressLine1: event.target.value })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="address-line2">Adresszusatz</Label>
-            <Input
-              id="address-line2"
-              data-testid="address-line2-input"
-              value={draft.addressLine2}
-              onChange={(event) => setDraft({ ...draft, addressLine2: event.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="address-postalcode">PLZ</Label>
-              <Input
-                id="address-postalcode"
-                data-testid="address-postalcode-input"
-                value={draft.postalCode}
-                onChange={(event) => setDraft({ ...draft, postalCode: event.target.value })}
-              />
-            </div>
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="address-city">Ort</Label>
-              <Input
-                id="address-city"
-                data-testid="address-city-input"
-                value={draft.city}
-                onChange={(event) => setDraft({ ...draft, city: event.target.value })}
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="address-country">Land</Label>
-            <Input
-              id="address-country"
-              data-testid="address-country-input"
-              value={draft.country}
-              onChange={(event) => setDraft({ ...draft, country: event.target.value })}
-            />
-          </div>
-          <div className="flex gap-2">
+          <AddressFieldGrid
+            idPrefix="extra-address"
+            fields={activeExtra}
+            onChange={(fields) => updateExtra(activeExtra.localId, fields)}
+            isReadOnly={isReadOnly}
+          />
+          {!isReadOnly ? (
             <Button
               type="button"
+              variant="ghost"
               size="sm"
-              onClick={() => saveMutation.mutate(draft)}
-              disabled={saveMutation.isPending || draft.categoryId == null}
-              data-testid="save-customer-address-button"
+              onClick={() => removeExtra(activeExtra)}
+              data-testid={`delete-customer-address-${activeExtra.localId}`}
             >
-              Speichern
+              <Trash2 className="mr-1 h-4 w-4" />
+              Adresse entfernen
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setDraft(null)} data-testid="cancel-customer-address-button">
-              Abbrechen
-            </Button>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </div>
