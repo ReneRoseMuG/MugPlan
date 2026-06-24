@@ -833,7 +833,21 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
           email: (existingCustomer.email ?? "").trim(),
           phone: (existingCustomer.phone ?? "").trim(),
         }));
-        applyBillingAddressFromExtraction(existingCustomer);
+        // Rechnungsadresse des bestehenden Kunden aus dem Adressobjekt lesen, nicht aus den
+        // flachen Kundenfeldern.
+        const existingAddresses = (await (
+          await apiRequest("GET", `/api/customers/${existingCustomer.id}/addresses`)
+        ).json()) as Array<{
+          roleKey: string | null;
+          addressLine1: string | null;
+          addressLine2: string | null;
+          postalCode: string | null;
+          city: string | null;
+          country: string | null;
+        }>;
+        applyBillingAddressFromExtraction(
+          existingAddresses.find((row) => row.roleKey === ADDRESS_ROLE_BILLING) ?? {},
+        );
         setDocumentExtractionOpen(false);
         toast({
           title: "Kundendaten übernommen",
