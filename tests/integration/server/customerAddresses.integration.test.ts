@@ -8,7 +8,9 @@
  *   nachweislich ausgeschlossen.
  * - Aenderung der Lieferadresse spiegelt sich im naechsten Kalenderabruf; Entfernen faellt
  *   auf die Rechnungsadresse zurueck.
- * - Optimistic Locking, Pflichtfeldvalidierung, Schutz der Rechnungsadress-Zeile sowie der
+ * - Die Rechnungsadress-Zeile ist pflegbar (Felder), behaelt aber ihre Rolle und ist nicht
+ *   loeschbar; ihre Aenderungen werden in die flachen Kundenfelder gespiegelt.
+ * - Optimistic Locking, Pflichtfeldvalidierung, Schutz der Rechnungsadress-Rolle sowie der
  *   geschuetzten Pflichtkategorien werden serverseitig erzwungen.
  *
  * Fehlerfaelle:
@@ -221,5 +223,40 @@ describe("FT09 integration: wirksame Lieferadresse und Adressverwaltung", () => 
       .send({ version: billingCat.version })
       .expect(409)
       .expect((res) => expect(res.body.code).toBe("ADDRESS_CATEGORY_PROTECTED"));
+  });
+
+  it("erlaubt das Pflegen der Rechnungsadresse und spiegelt sie in die flachen Kundenfelder", async () => {
+    const { admin, customer, appointment } = await setupCustomerWithAppointment("ADDR-BILL-EDIT");
+    const billing = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
+
+    await admin
+      .patch(`/api/customers/${customer.id}/addresses/${billing.id}`)
+      .send({ addressLine1: "Rechnungsweg 7", postalCode: "44444", city: "Billcity", country: "Deutschland", version: billing.version })
+      .expect(200);
+
+    // Adresszeile ist aktualisiert und bleibt die Rechnungsadresse.
+    const updatedBilling = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
+    expect(updatedBilling).toMatchObject({ roleKey: "BILLING", postalCode: "44444", city: "Billcity", addressLine1: "Rechnungsweg 7" });
+
+    // Spiegel: die flachen Kundenfelder tragen die neue Rechnungsadresse.
+    const detail = await admin.get(`/api/customers/${customer.id}`).expect(200);
+    expect(detail.body).toMatchObject({ addressLine1: "Rechnungsweg 7", postalCode: "44444", city: "Billcity" });
+
+    // Konsument: ohne abweichende Lieferadresse zeigt der Kalender die neue Rechnungsadresse.
+    const customerInCalendar = await calendarCustomer(admin, appointment.id);
+    expect(customerInCalendar.postalCode).toBe("44444");
+  });
+
+  it("verhindert den Rollenwechsel der Rechnungsadresse", async () => {
+    const { admin, customer } = await setupCustomerWithAppointment("ADDR-BILL-ROLE");
+    const categories = await getCategories(admin);
+    const deliveryCat = categories.find((c) => c.roleKey === "DELIVERY")!;
+    const billing = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
+
+    await admin
+      .patch(`/api/customers/${customer.id}/addresses/${billing.id}`)
+      .send({ categoryId: deliveryCat.id, addressLine1: "Rechnungsweg 1", postalCode: "11111", city: "Billtown", country: "Deutschland", version: billing.version })
+      .expect(409)
+      .expect((res) => expect(res.body.code).toBe("ADDRESS_PROTECTED"));
   });
 });

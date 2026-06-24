@@ -114,12 +114,16 @@ export async function updateAddress(
   }
   const existing = await addressesRepository.getCustomerAddress(customerId, addressId);
   if (!existing) throw new AddressError(404, "NOT_FOUND");
-  if (existing.isSystemManaged) throw new AddressError(409, "ADDRESS_PROTECTED");
 
+  // Die Rechnungsadresse darf gepflegt werden (Felder), behält aber ihre Rolle.
+  const isBilling = existing.roleKey === ADDRESS_ROLE_BILLING;
   const targetCategoryId = data.categoryId ?? existing.categoryId;
   if (data.categoryId !== undefined && data.categoryId !== existing.categoryId) {
+    // Die Rechnungsadress-Zeile darf ihre Kategorie nicht verlieren ...
+    if (isBilling) throw new AddressError(409, "ADDRESS_PROTECTED");
     const category = await addressesRepository.getAddressCategory(data.categoryId);
     if (!category || !category.isActive) throw new AddressError(422, "VALIDATION_ERROR");
+    // ... und keine andere Adresse darf die Rechnungsadress-Rolle übernehmen.
     if (category.roleKey === ADDRESS_ROLE_BILLING) throw new AddressError(409, "ADDRESS_CATEGORY_PROTECTED");
   }
 
@@ -136,6 +140,13 @@ export async function updateAddress(
     if (isDuplicateKeyError(error)) throw new AddressError(409, "ADDRESS_ROLE_CONFLICT");
     throw error;
   }
+
+  // Die Adresszeile ist das Original; die flachen Kundenfelder werden als Spiegel der
+  // Rechnungsadresse nachgeführt (MS-68, Weg 1 non-destruktiv).
+  if (isBilling) {
+    await customersRepository.mirrorBillingAddressToCustomerColumns(customerId, toFields(data));
+  }
+
   const item = await addressesRepository.getCustomerAddress(customerId, addressId);
   if (!item) throw new AddressError(404, "NOT_FOUND");
   return item;

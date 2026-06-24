@@ -84,6 +84,30 @@ async function syncBillingAddress(
   });
 }
 
+/**
+ * Spiegelt die Rechnungsadresse (customer_address, roleKey=BILLING) in die flachen
+ * Kundenadressfelder. Ab dem Umzug ist die Adresszeile das Original; die flachen Felder
+ * bleiben als abgeleiteter Spiegel erhalten, damit das Kundenobjekt konsistent bleibt
+ * (MS-68, Weg 1). Die Kunden-version wird bewusst nicht angetastet: reine Spiegelung
+ * ohne fachliches Kunden-Update und ohne Optimistic-Lock-Effekt.
+ */
+export async function mirrorBillingAddressToCustomerColumns(
+  customerId: number,
+  fields: CustomerAddressFields,
+): Promise<void> {
+  await db
+    .update(customers)
+    .set({
+      addressLine1: fields.addressLine1 ?? null,
+      addressLine2: fields.addressLine2 ?? null,
+      postalCode: fields.postalCode ?? null,
+      city: fields.city ?? null,
+      country: fields.country ?? null,
+      updatedAt: sql`now()`,
+    })
+    .where(eq(customers.id, customerId));
+}
+
 export type CustomerWithTags = Customer & { tags: Tag[] };
 export type CustomerListItem = Customer & { notesCount: number; tags: Tag[] };
 export type CustomerBoardListItem = CustomerListItem & {
