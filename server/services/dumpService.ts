@@ -99,7 +99,11 @@ const DUMP_TABLE_ENTRIES = [
   { key: "employees", table: schema.employees },
   { key: "tourWeeks", table: schema.tourWeeks },
   { key: "tourWeekEmployees", table: schema.tourWeekEmployees },
+  // address_category muss vor customer_address stehen (FK customer_address.category_id).
+  { key: "addressCategories", table: schema.addressCategories },
   { key: "customers", table: schema.customers },
+  // customer_address muss nach customers UND address_category stehen (FK auf beide).
+  { key: "customerAddresses", table: schema.customerAddresses },
   { key: "products", table: schema.products },
   { key: "components", table: schema.components },
   { key: "projects", table: schema.projects },
@@ -126,6 +130,9 @@ const DUMP_TABLE_ENTRIES = [
   { key: "users", table: schema.users },
   { key: "userSettingsValue", table: schema.userSettingsValue },
   { key: "backupLog", table: schema.backupLog },
+  // journal_entry vor journal_entry_context (FK journal_entry_context.entry_id, ON DELETE CASCADE).
+  { key: "journalEntries", table: schema.journalEntries },
+  { key: "journalEntryContexts", table: schema.journalEntryContexts },
 ] as const;
 
 export const DUMP_TABLE_KEYS = DUMP_TABLE_ENTRIES.map((entry) => entry.key);
@@ -1163,9 +1170,11 @@ export async function applyDumpImport(
     sha256Matches: false,
   };
   let journalPath = path.resolve(transferRun.transferDir, "journal.json");
-  const skippedTableKeys = new Set<DumpTableKey>(
-    preview.payload.missingTableKeys.filter((key) => key === "users"),
-  );
+  // Im Dump fehlende Tabellen (z. B. Alt-Dumps, die vor Einführung zusätzlicher Tabellen
+  // erzeugt wurden) werden beim Import NICHT geleert, sondern unverändert gelassen.
+  // Andernfalls würde ein Alt-Dump u. a. die Pflicht-Adresskategorien (address_category)
+  // und damit die Auflösung der wirksamen Lieferadresse zerstören.
+  const skippedTableKeys = new Set<DumpTableKey>(preview.payload.missingTableKeys);
 
   try {
     incomingDumpPath = await writeDumpTransferBinaryArtifact(transferRun.transferDir, "incoming-dump.zip", params.fileBuffer);

@@ -7,6 +7,8 @@
  * - POST /api/admin/dumps/import spielt einen erzeugten Dump als echten Roundtrip wieder ein.
  * - Ein älterer Dump mit fehlenden neuen Tabellen kann weiterhin importiert werden.
  * - Touren, Wochenplanung und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
+ * - Adressen (customer_address) und der Adresskatalog (address_category) werden mitgesichert und per Identität wiederhergestellt.
+ * - Alt-Dumps ohne address_category leeren den Adresskatalog nicht (fehlende Tabellen bleiben unangetastet).
  * - users werden per roleCode übertragen; roles bleiben als Seed-Tabelle ausgeschlossen.
  * - Admin-Endpunkte lehnen ungültige Dumps und Nicht-Admins korrekt ab.
  *
@@ -189,6 +191,8 @@ async function collectSnapshot() {
     calendarWeekNotes: await getRowCount(schema.calendarWeekNotes),
     users: await getRowCount(schema.users),
     roles: await getRowCount(schema.roles),
+    addressCategories: await getRowCount(schema.addressCategories),
+    customerAddresses: await getRowCount(schema.customerAddresses),
   };
 }
 
@@ -303,6 +307,12 @@ describe("POST /api/admin/dumps/create und Download", () => {
     expect(dumpData.tables["users"].length).toBeGreaterThan(0);
     expect(dumpData.tables["users"][0]).toHaveProperty("roleCode");
     expect(dumpData.tables["users"][0]).not.toHaveProperty("roleId");
+    // Neue Tabellen sind Teil des erlaubten Tabellensatzes; der Adresskatalog traegt
+    // mindestens die beiden Pflichtkategorien (Bootstrap).
+    expect(dumpData.tables["addressCategories"].length).toBeGreaterThan(0);
+    expect(dumpData.tables).toHaveProperty("customerAddresses");
+    expect(dumpData.tables).toHaveProperty("journalEntries");
+    expect(dumpData.tables).toHaveProperty("journalEntryContexts");
     expect(manifest.formatVersion).toBe(DUMP_FORMAT_VERSION);
     expect(manifest.dumpId).toContain("dump_");
     expect(Object.keys(manifest.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
@@ -321,6 +331,23 @@ describe("POST /api/admin/dumps/import", () => {
     const tour = await createTourFixture("#2266aa");
     const employee = await createEmployeeFixture("ROUNDTRIP-EMP");
     const customer = await createCustomerFixture("ROUNDTRIP-CUST");
+    const [deliveryCategory] = await db
+      .select({ id: schema.addressCategories.id })
+      .from(schema.addressCategories)
+      .where(eq(schema.addressCategories.roleKey, schema.ADDRESS_ROLE_DELIVERY))
+      .limit(1);
+    const deliveryAddressInsert = await db.insert(schema.customerAddresses).values({
+      customerId: customer.id,
+      categoryId: Number(deliveryCategory!.id),
+      addressLine1: "Lieferstrasse 9",
+      postalCode: "29221",
+      city: "Lieferstadt",
+      country: "Deutschland",
+      version: 1,
+    });
+    const deliveryAddressId = Number(
+      (deliveryAddressInsert as any)?.[0]?.insertId ?? (deliveryAddressInsert as any)?.insertId ?? 0,
+    );
     const project = await createProjectFixture({ prefix: "ROUNDTRIP-PROJ", customerId: customer.id });
     await createAppointmentFixture({
       projectId: project.id,
@@ -395,6 +422,23 @@ describe("POST /api/admin/dumps/import", () => {
     expect(removedExtraTeam).toHaveLength(0);
     expect(removedExtraCustomer).toHaveLength(0);
     expect(removedExtraWeekAssignment).toHaveLength(0);
+
+    // Adressobjekt: die abweichende Lieferadresse wird per Identität wiederhergestellt.
+    const restoredDeliveryAddress = await db
+      .select()
+      .from(schema.customerAddresses)
+      .where(eq(schema.customerAddresses.id, deliveryAddressId));
+    expect(restoredDeliveryAddress).toHaveLength(1);
+    expect(restoredDeliveryAddress[0]?.customerId).toBe(customer.id);
+    expect(restoredDeliveryAddress[0]?.addressLine1).toBe("Lieferstrasse 9");
+    expect(restoredDeliveryAddress[0]?.city).toBe("Lieferstadt");
+
+    // Adresskatalog: beide Pflichtkategorien sind nach dem Roundtrip vorhanden.
+    const restoredRoleKeys = (
+      await db.select({ roleKey: schema.addressCategories.roleKey }).from(schema.addressCategories)
+    ).map((row) => row.roleKey);
+    expect(restoredRoleKeys).toContain(schema.ADDRESS_ROLE_BILLING);
+    expect(restoredRoleKeys).toContain(schema.ADDRESS_ROLE_DELIVERY);
   });
 
   it("stellt Benutzerfelder und Rollenmapping per roleCode im echten Roundtrip wieder her", async () => {
@@ -612,6 +656,9 @@ describe("POST /api/admin/dumps/import", () => {
     delete dumpData.tables["employeeTags"];
     delete dumpData.tables["tourWeekEmployees"];
     delete dumpData.tables["users"];
+    // Alt-Dump kannte den Adresskatalog noch nicht: die fehlende Tabelle darf beim Import
+    // NICHT geleert werden, sonst gingen die Pflichtkategorien verloren.
+    delete dumpData.tables["addressCategories"];
 
     const legacyZipBuffer = await buildZipFromDataJson(dumpData);
 
@@ -641,6 +688,13 @@ describe("POST /api/admin/dumps/import", () => {
     const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
     expect(removedExtraTour).toHaveLength(0);
     expect(removedExtraCustomer).toHaveLength(0);
+
+    // Der im Alt-Dump fehlende Adresskatalog wurde nicht geleert: Pflichtkategorien bleiben.
+    const legacyRoleKeys = (
+      await db.select({ roleKey: schema.addressCategories.roleKey }).from(schema.addressCategories)
+    ).map((row) => row.roleKey);
+    expect(legacyRoleKeys).toContain(schema.ADDRESS_ROLE_BILLING);
+    expect(legacyRoleKeys).toContain(schema.ADDRESS_ROLE_DELIVERY);
   });
 
   it("akzeptiert versionierte Dumps mit fehlenden neuen Tabellen im manifest.json als Warning", async () => {
