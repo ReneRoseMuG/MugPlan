@@ -13,7 +13,7 @@ import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { CustomerAttachmentsPanel, type PendingCustomerAttachmentItem } from "@/components/CustomerAttachmentsPanel";
-import { CustomerAddressesPanel, type AddressCategory } from "@/components/CustomerAddressesPanel";
+import { CustomerAddressesPanel, makeAddressLocalId, type AddressCategory } from "@/components/CustomerAddressesPanel";
 import { ADDRESS_ROLE_BILLING, buildAddressPersistPlan, type CustomerAddressDraft } from "@/lib/customer-addresses";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -50,11 +50,6 @@ type CustomerSubmitPayload = {
   company: string | null;
   email: string | null;
   phone: string | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  postalCode: string | null;
-  city: string | null;
-  country: string | null;
 };
 
 type CustomerDetail = Customer & { tags: Tag[] };
@@ -100,11 +95,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
     company: "",
     email: "",
     phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    postalCode: "",
-    city: "",
-    country: "",
     isActive: true,
   });
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
@@ -117,7 +107,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
   const [draftCustomerAttachments, setDraftCustomerAttachments] = useState<PendingCustomerAttachmentItem[]>([]);
   const draftCustomerNoteIdRef = useRef(-1);
   const draftCustomerAttachmentIdRef = useRef(-1);
-  const [extraAddressDrafts, setExtraAddressDrafts] = useState<CustomerAddressDraft[]>([]);
+  const [addressDrafts, setAddressDrafts] = useState<CustomerAddressDraft[]>([]);
 
   const isEditMode = !!customerId;
   const normalizeOptionalInput = (value: string): string | null => {
@@ -264,11 +254,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
         company: customer.company || "",
         email: customer.email || "",
         phone: customer.phone || "",
-        addressLine1: customer.addressLine1 || "",
-        addressLine2: customer.addressLine2 || "",
-        postalCode: customer.postalCode || "",
-        city: customer.city || "",
-        country: customer.country || "",
         isActive: customer.isActive ?? true,
       });
     }
@@ -276,27 +261,54 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
 
   useEffect(() => {
     if (!customerAddressesData) return;
-    // Weitere Adressen (alles außer der Rechnungsadresse) als bearbeitbare Entwürfe übernehmen.
-    setExtraAddressDrafts(
-      customerAddressesData
-        .filter((item) => item.roleKey !== ADDRESS_ROLE_BILLING)
-        .map((item) => ({
-          localId: `addr-existing-${item.id}`,
-          id: item.id,
-          categoryId: item.categoryId,
-          categoryName: item.categoryName,
-          roleKey: item.roleKey,
-          addressLine1: item.addressLine1 ?? "",
-          addressLine2: item.addressLine2 ?? "",
-          postalCode: item.postalCode ?? "",
-          city: item.city ?? "",
-          country: item.country ?? "",
-          version: item.version,
-          pendingDelete: false,
-          dirty: false,
-        })),
+    // Alle Adressen (inkl. Rechnungsadresse) als bearbeitbare Entwürfe übernehmen — jeder Tab
+    // ist an seine Adresszeile gebunden, kein Sonderweg über die flachen Kundenfelder.
+    setAddressDrafts(
+      customerAddressesData.map((item) => ({
+        localId: `addr-existing-${item.id}`,
+        id: item.id,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        roleKey: item.roleKey,
+        addressLine1: item.addressLine1 ?? "",
+        addressLine2: item.addressLine2 ?? "",
+        postalCode: item.postalCode ?? "",
+        city: item.city ?? "",
+        country: item.country ?? "",
+        version: item.version,
+        pendingDelete: false,
+        dirty: false,
+      })),
     );
   }, [customerAddressesData]);
+
+  useEffect(() => {
+    // Neuanlage: einen leeren Rechnungsadress-Entwurf bereitstellen, sobald der Katalog da ist.
+    if (isEditMode) return;
+    const billingCategory = addressCategories.find((category) => category.roleKey === ADDRESS_ROLE_BILLING);
+    if (!billingCategory) return;
+    setAddressDrafts((prev) =>
+      prev.length > 0
+        ? prev
+        : [
+            {
+              localId: makeAddressLocalId(),
+              id: null,
+              categoryId: billingCategory.id,
+              categoryName: billingCategory.name,
+              roleKey: ADDRESS_ROLE_BILLING,
+              addressLine1: "",
+              addressLine2: "",
+              postalCode: "",
+              city: "",
+              country: "",
+              version: null,
+              pendingDelete: false,
+              dirty: false,
+            },
+          ],
+    );
+  }, [isEditMode, addressCategories]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -512,8 +524,38 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
     }
   };
 
-  const persistExtraAddressDrafts = async (targetCustomerId: number) => {
-    const plan = buildAddressPersistPlan(extraAddressDrafts);
+  const persistAddresses = async (targetCustomerId: number, isCreate: boolean) => {
+    const billingDraft = addressDrafts.find(
+      (draft) => draft.roleKey === ADDRESS_ROLE_BILLING && !draft.pendingDelete,
+    );
+    if (billingDraft) {
+      // Die Rechnungsadress-Zeile existiert serverseitig immer (bei Neuanlage frisch angelegt).
+      // Sie wird über die Adress-API gepflegt; die flachen Kundenfelder sind nur ihr Spiegel.
+      let billingId = billingDraft.id;
+      let billingVersion = billingDraft.version;
+      if (isCreate || billingId == null) {
+        const existing = (await (
+          await apiRequest("GET", `/api/customers/${targetCustomerId}/addresses`)
+        ).json()) as Array<{ id: number; roleKey: string | null; version: number }>;
+        const billingRow = existing.find((row) => row.roleKey === ADDRESS_ROLE_BILLING);
+        billingId = billingRow?.id ?? null;
+        billingVersion = billingRow?.version ?? null;
+      }
+      if (billingId != null && billingVersion != null && (isCreate || billingDraft.dirty)) {
+        await apiRequest("PATCH", `/api/customers/${targetCustomerId}/addresses/${billingId}`, {
+          addressLine1: billingDraft.addressLine1,
+          addressLine2: billingDraft.addressLine2 || null,
+          postalCode: billingDraft.postalCode,
+          city: billingDraft.city,
+          country: billingDraft.country,
+          version: billingVersion,
+        });
+      }
+    }
+
+    const plan = buildAddressPersistPlan(
+      addressDrafts.filter((draft) => draft.roleKey !== ADDRESS_ROLE_BILLING),
+    );
     for (const draft of plan.toCreate) {
       await apiRequest("POST", `/api/customers/${targetCustomerId}/addresses`, {
         categoryId: draft.categoryId,
@@ -584,11 +626,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
       company: normalizeOptionalInput(formData.company),
       email: normalizeOptionalInput(formData.email),
       phone: normalizeOptionalInput(formData.phone),
-      addressLine1: normalizeOptionalInput(formData.addressLine1),
-      addressLine2: normalizeOptionalInput(formData.addressLine2),
-      postalCode: normalizeOptionalInput(formData.postalCode),
-      city: normalizeOptionalInput(formData.city),
-      country: normalizeOptionalInput(formData.country),
       isActive: formData.isActive,
     };
 
@@ -596,7 +633,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
       await updateMutation.mutateAsync(submitData);
       if (customerId) {
         try {
-          await persistExtraAddressDrafts(customerId);
+          await persistAddresses(customerId, false);
           await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'addresses'] });
           await invalidateAppointmentProjectionQueries();
         } catch (error) {
@@ -611,7 +648,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
       const createdCustomer = await createMutation.mutateAsync(submitData);
       try {
         await persistCreateSidebarDrafts(createdCustomer.id);
-        await persistExtraAddressDrafts(createdCustomer.id);
+        await persistAddresses(createdCustomer.id, true);
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'tags'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'notes'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'attachments'] });
@@ -749,6 +786,30 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
     }
   };
 
+  const applyBillingAddressFromExtraction = (fields: {
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+    country?: string | null;
+  }) => {
+    setAddressDrafts((prev) =>
+      prev.map((draft) =>
+        draft.roleKey === ADDRESS_ROLE_BILLING
+          ? {
+              ...draft,
+              addressLine1: (fields.addressLine1 ?? "").trim(),
+              addressLine2: (fields.addressLine2 ?? "").trim(),
+              postalCode: (fields.postalCode ?? "").trim(),
+              city: (fields.city ?? "").trim(),
+              country: (fields.country ?? "").trim(),
+              dirty: true,
+            }
+          : draft,
+      ),
+    );
+  };
+
   const applyExtractedCustomerDraft = async ({ customer }: { customer: ExtractionCustomerDraft }) => {
     try {
       if (!customer.customerNumber.trim()) {
@@ -771,12 +832,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
           company: (existingCustomer.company ?? "").trim(),
           email: (existingCustomer.email ?? "").trim(),
           phone: (existingCustomer.phone ?? "").trim(),
-          addressLine1: (existingCustomer.addressLine1 ?? "").trim(),
-          addressLine2: (existingCustomer.addressLine2 ?? "").trim(),
-          postalCode: (existingCustomer.postalCode ?? "").trim(),
-          city: (existingCustomer.city ?? "").trim(),
-          country: (existingCustomer.country ?? "").trim(),
         }));
+        applyBillingAddressFromExtraction(existingCustomer);
         setDocumentExtractionOpen(false);
         toast({
           title: "Kundendaten übernommen",
@@ -792,12 +849,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
         company: (customer.company ?? "").trim(),
         email: (customer.email ?? "").trim(),
         phone: (customer.phone ?? "").trim(),
-        addressLine1: (customer.addressLine1 ?? "").trim(),
-        addressLine2: (customer.addressLine2 ?? "").trim(),
-        postalCode: (customer.postalCode ?? "").trim(),
-        city: (customer.city ?? "").trim(),
-        country: (customer.country ?? "").trim(),
       }));
+      applyBillingAddressFromExtraction(customer);
       setDocumentExtractionOpen(false);
       toast({ title: "Kundendaten übernommen" });
     } catch (error) {
@@ -1044,16 +1097,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOp
               </div>
 
               <CustomerAddressesPanel
-                billing={{
-                  addressLine1: formData.addressLine1,
-                  addressLine2: formData.addressLine2,
-                  postalCode: formData.postalCode,
-                  city: formData.city,
-                  country: formData.country,
-                }}
-                onBillingChange={(fields) => setFormData((prev) => ({ ...prev, ...fields }))}
-                extraDrafts={extraAddressDrafts}
-                onExtraDraftsChange={setExtraAddressDrafts}
+                drafts={addressDrafts}
+                onChange={setAddressDrafts}
                 categories={addressCategories}
                 isReadOnly={isReadOnlyView}
               />

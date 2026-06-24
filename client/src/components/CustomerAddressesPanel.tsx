@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-  resolveBillingTabLabel,
+  ADDRESS_ROLE_BILLING,
+  resolveAddressTabLabel,
   type CustomerAddressDraft,
 } from "@/lib/customer-addresses";
 
@@ -18,15 +19,13 @@ export type AddressCategory = {
   version: number;
 };
 
-export type BillingAddressFields = {
+export type AddressFieldValues = {
   addressLine1: string;
   addressLine2: string;
   postalCode: string;
   city: string;
   country: string;
 };
-
-const BILLING_TAB_ID = "__billing__";
 
 export function makeAddressLocalId(): string {
   return `addr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -39,11 +38,11 @@ function AddressFieldGrid({
   isReadOnly,
 }: {
   idPrefix: string;
-  fields: BillingAddressFields;
-  onChange: (fields: BillingAddressFields) => void;
+  fields: AddressFieldValues;
+  onChange: (fields: AddressFieldValues) => void;
   isReadOnly: boolean;
 }) {
-  const set = (patch: Partial<BillingAddressFields>) => onChange({ ...fields, ...patch });
+  const set = (patch: Partial<AddressFieldValues>) => onChange({ ...fields, ...patch });
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -104,53 +103,54 @@ function AddressFieldGrid({
 
 /**
  * Adressbereich des Kundenformulars als Tab-Leiste (MS-68, FT 09).
- * Der erste Tab ist die Rechnungsadresse (fest, nicht entfernbar); sie wird über die flachen
- * Kundenfelder gepflegt (billing/onBillingChange). Jede weitere Adresse ist ein eigener Tab
- * mit Kategorie-Auswahl; diese werden als Entwurf gesammelt und gemeinsam mit dem Kunden
- * gespeichert (Variante A). Solange keine separate Lieferadresse existiert, trägt der erste
- * Tab den kombinierten Namen.
+ * Jeder Tab ist an ein Adress-Objekt (eine customer_address-Zeile) gebunden — auch die
+ * Rechnungsadresse. Es gibt keinen Sonderweg über die flachen Kundenfelder mehr. Der erste
+ * Tab ist die Rechnungsadresse (fest, nicht entfernbar); solange keine separate Lieferadresse
+ * existiert, trägt er den kombinierten Namen. Jede weitere Adresse ist ein eigener Tab mit
+ * Kategorie-Auswahl. Alle Adressen werden als Entwurf gesammelt und gemeinsam mit dem Kunden
+ * gespeichert (Variante A).
  */
 export function CustomerAddressesPanel({
-  billing,
-  onBillingChange,
-  extraDrafts,
-  onExtraDraftsChange,
+  drafts,
+  onChange,
   categories,
   isReadOnly,
 }: {
-  billing: BillingAddressFields;
-  onBillingChange: (fields: BillingAddressFields) => void;
-  extraDrafts: CustomerAddressDraft[];
-  onExtraDraftsChange: (drafts: CustomerAddressDraft[]) => void;
+  drafts: CustomerAddressDraft[];
+  onChange: (drafts: CustomerAddressDraft[]) => void;
   categories: AddressCategory[];
   isReadOnly: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<string>(BILLING_TAB_ID);
+  const [activeLocalId, setActiveLocalId] = useState<string | null>(null);
 
-  const visibleExtras = extraDrafts.filter((draft) => !draft.pendingDelete);
+  const visible = drafts.filter((draft) => !draft.pendingDelete);
+  // Die Rechnungsadresse steht immer zuerst, danach die weiteren Adressen.
+  const ordered = [
+    ...visible.filter((draft) => draft.roleKey === ADDRESS_ROLE_BILLING),
+    ...visible.filter((draft) => draft.roleKey !== ADDRESS_ROLE_BILLING),
+  ];
+  const activeDraft = ordered.find((draft) => draft.localId === activeLocalId) ?? ordered[0] ?? null;
+  const isBillingActive = activeDraft?.roleKey === ADDRESS_ROLE_BILLING;
+
   // Kategorien für weitere Adressen: aktiv und nicht die Rechnungsadresse (die ist fest).
   const selectableCategories = categories.filter(
-    (category) => category.isActive && category.roleKey !== "BILLING",
+    (category) => category.isActive && category.roleKey !== ADDRESS_ROLE_BILLING,
   );
-  const billingLabel = resolveBillingTabLabel(extraDrafts);
-  const activeExtra = visibleExtras.find((draft) => draft.localId === activeTab) ?? null;
 
   const tabClass = (selected: boolean) =>
     `px-3 py-2 text-sm -mb-px border-b-2 ${
       selected ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"
     }`;
 
-  const updateExtra = (localId: string, patch: Partial<CustomerAddressDraft>) => {
-    onExtraDraftsChange(
-      extraDrafts.map((draft) => (draft.localId === localId ? { ...draft, ...patch, dirty: true } : draft)),
-    );
+  const updateDraft = (localId: string, patch: Partial<CustomerAddressDraft>) => {
+    onChange(drafts.map((draft) => (draft.localId === localId ? { ...draft, ...patch, dirty: true } : draft)));
   };
 
   const addAddress = () => {
     const category = selectableCategories[0] ?? null;
     const localId = makeAddressLocalId();
-    onExtraDraftsChange([
-      ...extraDrafts,
+    onChange([
+      ...drafts,
       {
         localId,
         id: null,
@@ -167,27 +167,23 @@ export function CustomerAddressesPanel({
         dirty: true,
       },
     ]);
-    setActiveTab(localId);
+    setActiveLocalId(localId);
   };
 
-  const removeExtra = (draft: CustomerAddressDraft) => {
+  const removeDraft = (draft: CustomerAddressDraft) => {
     if (draft.id == null) {
       // Noch nicht gespeichert: den Entwurf ganz verwerfen.
-      onExtraDraftsChange(extraDrafts.filter((entry) => entry.localId !== draft.localId));
+      onChange(drafts.filter((entry) => entry.localId !== draft.localId));
     } else {
       // Bereits gespeichert: zum Entfernen beim Speichern markieren.
-      onExtraDraftsChange(
-        extraDrafts.map((entry) =>
-          entry.localId === draft.localId ? { ...entry, pendingDelete: true } : entry,
-        ),
-      );
+      onChange(drafts.map((entry) => (entry.localId === draft.localId ? { ...entry, pendingDelete: true } : entry)));
     }
-    setActiveTab(BILLING_TAB_ID);
+    setActiveLocalId(null);
   };
 
   const changeCategory = (draft: CustomerAddressDraft, categoryId: number) => {
     const category = selectableCategories.find((entry) => entry.id === categoryId) ?? null;
-    updateExtra(draft.localId, {
+    updateDraft(draft.localId, {
       categoryId,
       categoryName: category?.name ?? draft.categoryName,
       roleKey: category?.roleKey ?? null,
@@ -202,29 +198,22 @@ export function CustomerAddressesPanel({
       </h3>
 
       <div className="flex flex-wrap gap-1 border-b border-border" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === BILLING_TAB_ID}
-          data-testid="address-tab-billing"
-          onClick={() => setActiveTab(BILLING_TAB_ID)}
-          className={tabClass(activeTab === BILLING_TAB_ID)}
-        >
-          {billingLabel}
-        </button>
-        {visibleExtras.map((draft) => (
-          <button
-            key={draft.localId}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === draft.localId}
-            data-testid={`address-tab-${draft.localId}`}
-            onClick={() => setActiveTab(draft.localId)}
-            className={tabClass(activeTab === draft.localId)}
-          >
-            {draft.categoryName || "Adresse"}
-          </button>
-        ))}
+        {ordered.map((draft) => {
+          const isBilling = draft.roleKey === ADDRESS_ROLE_BILLING;
+          return (
+            <button
+              key={draft.localId}
+              type="button"
+              role="tab"
+              aria-selected={activeDraft?.localId === draft.localId}
+              data-testid={isBilling ? "address-tab-billing" : `address-tab-${draft.localId}`}
+              onClick={() => setActiveLocalId(draft.localId)}
+              className={tabClass(activeDraft?.localId === draft.localId)}
+            >
+              {resolveAddressTabLabel(draft, drafts) || "Adresse"}
+            </button>
+          );
+        })}
         {!isReadOnly && selectableCategories.length > 0 ? (
           <button
             type="button"
@@ -238,40 +227,40 @@ export function CustomerAddressesPanel({
         ) : null}
       </div>
 
-      {activeTab === BILLING_TAB_ID ? (
-        <AddressFieldGrid idPrefix="billing-address" fields={billing} onChange={onBillingChange} isReadOnly={isReadOnly} />
-      ) : activeExtra ? (
+      {activeDraft ? (
         <div className="space-y-4" data-testid="customer-address-form">
-          <div className="space-y-2">
-            <Label htmlFor="extra-address-category">Kategorie</Label>
-            <select
-              id="extra-address-category"
-              data-testid="address-category-select"
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-              value={activeExtra.categoryId ?? ""}
-              disabled={isReadOnly}
-              onChange={(event) => changeCategory(activeExtra, Number(event.target.value))}
-            >
-              {selectableCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isBillingActive ? (
+            <div className="space-y-2">
+              <Label htmlFor="extra-address-category">Kategorie</Label>
+              <select
+                id="extra-address-category"
+                data-testid="address-category-select"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                value={activeDraft.categoryId ?? ""}
+                disabled={isReadOnly}
+                onChange={(event) => changeCategory(activeDraft, Number(event.target.value))}
+              >
+                {selectableCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <AddressFieldGrid
-            idPrefix="extra-address"
-            fields={activeExtra}
-            onChange={(fields) => updateExtra(activeExtra.localId, fields)}
+            idPrefix={isBillingActive ? "billing-address" : "extra-address"}
+            fields={activeDraft}
+            onChange={(fields) => updateDraft(activeDraft.localId, fields)}
             isReadOnly={isReadOnly}
           />
-          {!isReadOnly ? (
+          {!isReadOnly && !isBillingActive ? (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => removeExtra(activeExtra)}
-              data-testid={`delete-customer-address-${activeExtra.localId}`}
+              onClick={() => removeDraft(activeDraft)}
+              data-testid={`delete-customer-address-${activeDraft.localId}`}
             >
               <Trash2 className="mr-1 h-4 w-4" />
               Adresse entfernen

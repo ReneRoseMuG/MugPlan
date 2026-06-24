@@ -157,3 +157,30 @@ test("Setzen der Lieferadresse im Kundenformular wirkt sofort auf die Terminkart
   await expect(appointmentPanel).toContainText("32222");
   await expect(appointmentPanel).not.toContainText("31111");
 });
+
+test("Bearbeiten der Rechnungsadresse im Tab wirkt über das Adressobjekt auf die Terminkarte", async ({ page }) => {
+  const { customer, appointment } = await buildScenario("E2E-MS68-BILL", "41111");
+
+  await loginAsAdmin(page);
+
+  await page.getByTestId("nav-wochenuebersicht").click();
+  const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
+  await expect(appointmentPanel).toContainText("41111");
+
+  await page.getByTestId("nav-kunden").click();
+  const customerCard = page.getByTestId(`customer-card-${customer.id}`);
+  await expect(customerCard).toBeVisible({ timeout: 10_000 });
+  await customerCard.dblclick();
+
+  // Der Rechnungsadress-Tab ist an die Adresszeile gebunden (kein flacher Kundenpfad mehr):
+  // die geaenderte PLZ wird ueber die Adress-API gespeichert und in die Konsumenten gespiegelt.
+  await expect(page.getByTestId("customer-addresses-panel")).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("billing-address-postalcode").fill("42222");
+  await page.getByTestId("button-save-customer").click();
+
+  await page.getByTestId("nav-wochenuebersicht").click();
+  await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
+  await expect(appointmentPanel).toContainText("42222");
+  await expect(appointmentPanel).not.toContainText("41111");
+});
