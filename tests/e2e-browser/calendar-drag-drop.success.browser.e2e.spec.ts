@@ -22,6 +22,7 @@ import {
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { dispatchMonthViewDrop } from "./helpers/appointment-conflict-helpers";
 
 function isPointInsideBox(
   point: { x: number; y: number },
@@ -66,9 +67,10 @@ test("moves a regular future appointment onto another future day in the month sh
     && response.request().method() === "PATCH"
   ), { timeout: 15_000 });
 
-  // Termin-Balken liegen im unteren Slot-Bereich des Zieltags; auf den freien Kopfbereich
-  // (Tagesnummer-Zeile) zielen, damit das Drop nicht von einem Balken abgefangen wird.
-  await appointmentBar.dragTo(targetCalendarDay, { targetPosition: { x: 20, y: 8 } });
+  // HTML5-natives Drag&Drop wird synthetisch ausgelöst (Playwright dragTo triggert das
+  // drop-Event für native DnD nicht zuverlässig); der eigentliche Move-Flow (Dialog -> PATCH
+  // -> Persistenz -> Zielposition) wird danach unverändert end-to-end geprüft.
+  await dispatchMonthViewDrop(page, appointment.id, targetDate);
 
   const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();

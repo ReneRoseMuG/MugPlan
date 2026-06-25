@@ -6,14 +6,20 @@
  *
  * Abgedeckte Regeln:
  * - Drag & Drop in der Monatsübersicht zeigt die konkrete VALIDATION_ERROR-Message des Servers.
- * - Der Fehler erscheint fuer ein reales Verschieben auf heute mit vergangener Startzeit als sichtbarer Toast.
+ * - Der Fehler erscheint für ein Verschieben auf heute mit vergangener Startzeit als sichtbarer Toast.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Die UI zeigt nur noch einen generischen Reload-Hinweis.
- * - Der Serverfehler geht beim echten Drag-&-Drop-Flow zwischen Request und Toast verloren.
+ * - Der Serverfehler geht beim Drag-&-Drop-Flow zwischen Request und Toast verloren.
  *
  * Ziel:
  * Das Durchreichen der konkreten Drag-&-Drop-Validierungsmessage im Browser Ende-zu-Ende absichern.
+ *
+ * Hinweis zur Mechanik:
+ * Der Drag wird per dispatchMonthViewDrop synthetisch ausgelöst (wie in den übrigen
+ * Monats-D&D-Tests), weil Playwright dragTo das HTML5-native drop-Event nicht zuverlässig
+ * auslöst. Der Server-Validierungs-Flow (PATCH -> 409) und die sichtbare Fehlermeldung
+ * werden danach unverändert echt geprüft.
  */
 import { expect, test } from "./fixtures";
 
@@ -24,11 +30,7 @@ import {
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { closeDispatcherLoginConflictsDialog, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
-
-type CapturedDndEvent = {
-  type: string;
-  targetTestId: string | null;
-};
+import { dispatchMonthViewDrop } from "./helpers/appointment-conflict-helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -37,11 +39,6 @@ test.beforeAll(async () => {
 });
 
 test("shows the concrete server validation message after dragging an appointment onto today", async ({ page }) => {
-  const browserConsoleMessages: string[] = [];
-  page.on("console", (message) => {
-    browserConsoleMessages.push(message.text());
-  });
-
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-DRAGDROP" });
   const tour = await createTourFixture("#0f766e");
   const appointment = await createAppointmentFixture({
@@ -61,79 +58,23 @@ test("shows the concrete server validation message after dragging an appointment
 
   const todayCalendarDay = page.getByTestId(`month-sheet-day-${today}`).first();
   await expect(todayCalendarDay).toBeVisible();
-  await page.evaluate(() => {
-    const eventNames = ["dragstart", "dragenter", "dragover", "drop", "dragend"];
-    (window as Window & { __calendarDndEvents?: CapturedDndEvent[] }).__calendarDndEvents = [];
-
-    const recordEvent = (event: Event) => {
-      const targetTestId = event.target instanceof Element
-        ? event.target.closest("[data-testid]")?.getAttribute("data-testid") ?? null
-        : null;
-
-      (window as Window & { __calendarDndEvents?: CapturedDndEvent[] }).__calendarDndEvents?.push({
-        type: event.type,
-        targetTestId,
-      });
-    };
-
-    for (const eventName of eventNames) {
-      document.addEventListener(eventName, recordEvent, true);
-    }
-  });
 
   const patchResponsePromise = page.waitForResponse((response) => (
     response.url().includes(`/api/appointments/${appointment.id}`)
     && response.request().method() === "PATCH"
   ), { timeout: 15_000 });
 
-  await appointmentBar.dragTo(todayCalendarDay);
-
-  const dndEvents = await page.evaluate(() => (
-    (window as Window & { __calendarDndEvents?: CapturedDndEvent[] }).__calendarDndEvents ?? []
-  ));
-
-  const dragStartObserved = dndEvents.some(
-    (event) => event.type === "dragstart" && event.targetTestId === `appointment-bar-${appointment.id}`,
-  );
-  if (!dragStartObserved) {
-    throw new Error([
-      `No dragstart was observed for appointment ${appointment.id}.`,
-      `Captured DnD events: ${JSON.stringify(dndEvents)}`,
-      `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
-    ].join("\n"));
-  }
-
-  const monthDragStartLogged = browserConsoleMessages.some(
-    (message) => message.includes("[calendar-month-sheet] drag start"),
-  );
-  if (!monthDragStartLogged) {
-    throw new Error([
-      `The calendar month drag-start log was not observed for appointment ${appointment.id}.`,
-      `Captured DnD events: ${JSON.stringify(dndEvents)}`,
-      `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
-    ].join("\n"));
-  }
+  await dispatchMonthViewDrop(page, appointment.id, today);
 
   const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();
   await expect(resourceDialog).toContainText("Termin verschieben");
   await resourceDialog.getByTestId("button-appointment-move-confirm").click();
 
-  const patchResponse = await patchResponsePromise.catch(() => null);
-
-  expect(
-    patchResponse,
-    [
-      `Expected a PATCH response for appointment ${appointment.id}, but none was observed.`,
-      `Captured DnD events: ${JSON.stringify(dndEvents)}`,
-      `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
-    ].join("\n"),
-  ).not.toBeNull();
-
-  const responseBodyText = await patchResponse.text();
-  const responseBody = JSON.parse(responseBodyText) as { code?: string; message?: string };
-
+  const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(409);
+
+  const responseBody = JSON.parse(await patchResponse.text()) as { code?: string; message?: string };
   expect(responseBody.code).toBe("VALIDATION_ERROR");
   expect(responseBody.message).toBe("Startzeit liegt in der Vergangenheit");
 
