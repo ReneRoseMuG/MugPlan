@@ -14,6 +14,7 @@
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
+ * - Extrahierte Kundendaten fuellen beim Termin-Doc-Extract auch die bestehende Standard-Rechnungsadresse auf.
  * - Speichert das Overlay-Projekt eine sichtbare Beschreibung, traegt der Projekt-Save still das Tag `Anmerkungen` nach.
  * - Nach Save des neu angelegten Overlay-Projekts zeigt der Projektslot im Terminformular die persistierte Artikelliste statt des Fallbacktexts.
  * - Beim Abbrechen des aus der Dokumentextraktion geoeffneten Projektformulars bleibt die Datei als Termin-Draft sichtbar.
@@ -100,6 +101,22 @@ async function readAppointmentTagNames(page: Page, appointmentId: number): Promi
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as Array<{ tag: { name: string } }>;
   return body.map((item) => item.tag.name);
+}
+
+async function readBillingAddress(page: Page, customerId: number): Promise<{
+  addressLine1: string | null;
+  postalCode: string | null;
+  city: string | null;
+} | null> {
+  const response = await page.request.get(`/api/customers/${customerId}/addresses`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as Array<{
+    roleKey: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+  }>;
+  return body.find((item) => item.roleKey === "BILLING") ?? null;
 }
 
 async function mockAppointmentDocumentExtraction(page: Page, customerNumber: string, options?: {
@@ -562,6 +579,11 @@ test("shows an extracted document only as project attachment after successful pr
   await uploadExtractionPdf(page, extractionFileName);
 
   await completeProjectDocumentExtractionWorkflow(page);
+  await expect.poll(async () => readBillingAddress(page, customer.id)).toMatchObject({
+    addressLine1: "Testweg 1",
+    postalCode: "12345",
+    city: "Berlin",
+  });
   await expect(page.getByTestId("button-save-project")).toBeVisible();
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByTestId("project-description-editor-panel").getByTestId("richtext-editor").fill("Extrahierte Projektbeschreibung fuer den Overlay-Save");

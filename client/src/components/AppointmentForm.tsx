@@ -5,7 +5,7 @@ import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
-import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
+import { ADDRESS_ROLE_BILLING, type Customer, type Employee, type Project, type Tag, type Team, type Tour } from "@shared/schema";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
@@ -1727,19 +1727,49 @@ export function AppointmentForm({
     setDraftAppointmentNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
-  const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
+  // MS-68: Der Kunden-Contract nimmt nur Stammdaten; die Rechnungsadresse wird separat
+  // ueber das Adress-Backend gepflegt.
+  const mapExtractionCustomerToStammdaten = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
     firstName: customer.firstName?.trim() || null,
     lastName: customer.lastName?.trim() || null,
     company: customer.company?.trim() || null,
     email: customer.email?.trim() || null,
     phone: customer.phone?.trim() || null,
-    addressLine1: customer.addressLine1?.trim() || null,
-    addressLine2: customer.addressLine2?.trim() || null,
-    postalCode: customer.postalCode?.trim() || null,
-    city: customer.city?.trim() || null,
-    country: customer.country?.trim() || null,
   });
+
+  const fetchBillingAddressForCustomer = async (customerId: number) => {
+    const res = await fetch(`/api/customers/${customerId}/addresses`, { credentials: "include" });
+    if (!res.ok) return null;
+    const addresses = (await res.json()) as Array<{
+      id: number;
+      roleKey: string | null;
+      version: number;
+      addressLine1: string | null;
+      addressLine2: string | null;
+      postalCode: string | null;
+      city: string | null;
+      country: string | null;
+    }>;
+    return addresses.find((address) => address.roleKey === ADDRESS_ROLE_BILLING) ?? null;
+  };
+
+  const patchBillingAddress = async (
+    customerId: number,
+    billing: { id: number; version: number },
+    fields: { addressLine1: string | null; addressLine2: string | null; postalCode: string | null; city: string | null; country: string | null },
+  ) => {
+    const res = await fetch(`/api/customers/${customerId}/addresses/${billing.id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...fields, version: billing.version }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.message ?? "Rechnungsadresse konnte nicht gespeichert werden.");
+    }
+  };
 
   const escapeDescriptionHtml = (value: string): string =>
     value
@@ -1803,75 +1833,119 @@ export function AppointmentForm({
   };
 
   const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
-    const payload = mapExtractionCustomerToPayload(customerDraft);
     const response = await fetch("/api/customers", {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(mapExtractionCustomerToStammdaten(customerDraft)),
     });
     const json = await response.json().catch(() => null);
     if (!response.ok) {
       throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
     }
+    const customer = json as Customer;
+    const draftAddress = {
+      addressLine1: customerDraft.addressLine1?.trim() || null,
+      addressLine2: customerDraft.addressLine2?.trim() || null,
+      postalCode: customerDraft.postalCode?.trim() || null,
+      city: customerDraft.city?.trim() || null,
+      country: customerDraft.country?.trim() || null,
+    };
+    if (Object.values(draftAddress).some((value) => value !== null)) {
+      const billing = await fetchBillingAddressForCustomer(customer.id);
+      if (billing) {
+        await patchBillingAddress(customer.id, billing, draftAddress);
+      }
+    }
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
     await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-    return json as Customer;
+    return customer;
   };
 
   const updateExistingCustomerFromDraft = async (
     existingCustomer: Customer,
     customerDraft: ExtractionCustomerDraft,
   ): Promise<Customer> => {
-    const backfill = buildCustomerBackfillUpdatePayload(existingCustomer, customerDraft);
-    if (Object.keys(backfill).length === 0) {
+    const addressKeys = ["addressLine1", "addressLine2", "postalCode", "city", "country"] as const;
+    const splitBackfill = (source: Customer) => {
+      const full = buildCustomerBackfillUpdatePayload(source, customerDraft);
+      const stammdaten: Record<string, string | null> = {};
+      const address: Partial<Record<(typeof addressKeys)[number], string | null>> = {};
+      for (const [key, value] of Object.entries(full)) {
+        if ((addressKeys as readonly string[]).includes(key)) {
+          address[key as (typeof addressKeys)[number]] = value;
+        } else {
+          stammdaten[key] = value;
+        }
+      }
+      return { stammdaten, address };
+    };
+
+    const initial = splitBackfill(existingCustomer);
+    if (Object.keys(initial.stammdaten).length === 0 && Object.keys(initial.address).length === 0) {
       return existingCustomer;
     }
 
-    const sendUpdate = async (customer: Customer, version: number) =>
+    let resultCustomer = existingCustomer;
+
+    const sendUpdate = async (customer: Customer, fields: Record<string, string | null>) =>
       fetch(`/api/customers/${customer.id}`, {
         method: "PATCH",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...backfill, version }),
+        body: JSON.stringify({ ...fields, version: customer.version }),
       });
 
-    let response = await sendUpdate(existingCustomer, existingCustomer.version);
-    if (response.status === 409) {
-      const freshResponse = await fetch(`/api/customers/${existingCustomer.id}`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!freshResponse.ok) {
-        throw new Error("Kunde konnte vor der Ergänzung nicht neu geladen werden.");
+    if (Object.keys(initial.stammdaten).length > 0) {
+      let response = await sendUpdate(existingCustomer, initial.stammdaten);
+      if (response.status === 409) {
+        const freshResponse = await fetch(`/api/customers/${existingCustomer.id}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!freshResponse.ok) {
+          throw new Error("Kunde konnte vor der Ergänzung nicht neu geladen werden.");
+        }
+        const freshCustomer = (await freshResponse.json()) as Customer;
+        const retry = splitBackfill(freshCustomer);
+        resultCustomer = freshCustomer;
+        if (Object.keys(retry.stammdaten).length > 0) {
+          response = await sendUpdate(freshCustomer, retry.stammdaten);
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) {
+            throw new Error(payload?.message ?? "Kunde konnte nicht ergänzt werden.");
+          }
+          resultCustomer = payload as Customer;
+        }
+      } else {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.message ?? "Kunde konnte nicht ergänzt werden.");
+        }
+        resultCustomer = payload as Customer;
       }
-      const freshCustomer = (await freshResponse.json()) as Customer;
-      const retryBackfill = buildCustomerBackfillUpdatePayload(freshCustomer, customerDraft);
-      if (Object.keys(retryBackfill).length === 0) {
-        return freshCustomer;
-      }
-      response = await fetch(`/api/customers/${freshCustomer.id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...retryBackfill, version: freshCustomer.version }),
-      });
     }
 
-    const json = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(json?.message ?? "Kunde konnte nicht ergänzt werden.");
+    if (Object.keys(initial.address).length > 0) {
+      const billing = await fetchBillingAddressForCustomer(existingCustomer.id);
+      if (billing) {
+        await patchBillingAddress(existingCustomer.id, billing, {
+          addressLine1: initial.address.addressLine1 ?? billing.addressLine1 ?? null,
+          addressLine2: initial.address.addressLine2 ?? billing.addressLine2 ?? null,
+          postalCode: initial.address.postalCode ?? billing.postalCode ?? null,
+          city: initial.address.city ?? billing.city ?? null,
+          country: initial.address.country ?? billing.country ?? null,
+        });
+      }
     }
-    const updatedCustomer = json as Customer;
+
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
     await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-    return updatedCustomer;
+    return resultCustomer;
   };
 
   const validateProjectDocumentExtractionTarget = async ({ orderNumber: extractedOrderNumber }: { orderNumber: string }) => {
