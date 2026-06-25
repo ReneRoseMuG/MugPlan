@@ -1728,7 +1728,7 @@ export function AppointmentForm({
   };
 
   // MS-68: Der Kunden-Contract nimmt nur Stammdaten; die Rechnungsadresse wird separat
-  // ueber das Adress-Backend gepflegt.
+  // über das Adress-Backend gepflegt.
   const mapExtractionCustomerToStammdaten = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
     firstName: customer.firstName?.trim() || null,
