@@ -226,11 +226,24 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
         company: "Neu Holzbau",
         email: "inga.neu@example.test",
         phone: "0481555444",
+      })
+      .expect(200);
+
+    // MS-68: Rechnungsadresse über die Adress-API ändern (wie im echten Client); die Änderung
+    // muss in der nächsten Board-/Detail-/Sidebar-Projektion (wirksame Lieferadresse) erscheinen.
+    const billingAddress = ((await fixture.admin
+      .get(`/api/customers/${fixture.customer.id}/addresses`)
+      .expect(200)).body as Array<{ id: number; roleKey: string | null; version: number }>)
+      .find((address) => address.roleKey === "BILLING")!;
+    await fixture.admin
+      .patch(`/api/customers/${fixture.customer.id}/addresses/${billingAddress.id}`)
+      .send({
         addressLine1: "Am Markt 3",
         addressLine2: "Büro",
         postalCode: "28195",
         city: "Bremen",
         country: "Luxemburg",
+        version: billingAddress.version,
       })
       .expect(200);
 

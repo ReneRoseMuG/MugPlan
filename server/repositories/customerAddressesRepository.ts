@@ -119,6 +119,60 @@ export async function createCustomerAddress(
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
 }
 
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+const EMPTY_ADDRESS_FIELDS: CustomerAddressFieldInput = {
+  addressLine1: null,
+  addressLine2: null,
+  postalCode: null,
+  city: null,
+  country: null,
+};
+
+/**
+ * Stellt die Rechnungsadress-Zeile (Kategorie roleKey=BILLING) eines Kunden sicher und setzt
+ * sie auf die übergebenen Werte (MS-68). Zentrale, transaktionsfähige Schreibstelle der
+ * Rechnungsadresse: Beim Anlegen eines Kunden wird sie atomar miterzeugt (Default: leere
+ * Felder), System-/Seed-Pfade übergeben feste Werte. Fehlt die Pflichtkategorie BILLING, ist
+ * das ein Systemfehler (kein stilles Überspringen) — die Invariante „jeder Kunde hat eine
+ * Rechnungsadresse" muss gewahrt bleiben.
+ */
+export async function ensureBillingAddressTx(
+  tx: DbTx,
+  customerId: number,
+  fields: CustomerAddressFieldInput = EMPTY_ADDRESS_FIELDS,
+): Promise<void> {
+  const [billingCategory] = await tx
+    .select({ id: addressCategories.id })
+    .from(addressCategories)
+    .where(eq(addressCategories.roleKey, ADDRESS_ROLE_BILLING))
+    .limit(1);
+  if (!billingCategory) {
+    throw new Error("Rechnungsadress-Kategorie (BILLING) fehlt — System-Seed nicht ausgeführt.");
+  }
+
+  const [existing] = await tx
+    .select({ id: customerAddresses.id })
+    .from(customerAddresses)
+    .where(and(eq(customerAddresses.customerId, customerId), eq(customerAddresses.categoryId, billingCategory.id)))
+    .limit(1);
+
+  if (existing) {
+    await tx
+      .update(customerAddresses)
+      .set({ ...fields, updatedAt: sql`now()`, version: sql`${customerAddresses.version} + 1` })
+      .where(eq(customerAddresses.id, existing.id));
+    return;
+  }
+
+  await tx.insert(customerAddresses).values({
+    customerId,
+    categoryId: billingCategory.id,
+    ...fields,
+    version: 1,
+  });
+}
+
 export async function updateCustomerAddressWithVersion(
   addressId: number,
   expectedVersion: number,

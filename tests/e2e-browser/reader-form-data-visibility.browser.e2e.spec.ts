@@ -283,8 +283,8 @@ test.describe("Reader form data visibility", () => {
 
     await expect(page.getByTestId("input-firstname")).toHaveValue(customer.firstName ?? "");
     await expect(page.getByTestId("input-company")).toHaveValue(customer.company ?? "");
-    await expect(page.getByTestId("input-city")).toHaveValue(customer.city ?? "");
-    await expect(page.getByTestId("input-country")).toHaveValue(customer.country ?? "");
+    await expect(page.getByTestId("billing-address-city")).toHaveValue(customer.city ?? "");
+    await expect(page.getByTestId("billing-address-country")).toHaveValue(customer.country ?? "");
     await expect(page.getByTestId(`customer-tag-picker-tag-${customerTag.id}`)).toBeVisible();
     await expect(page.getByTestId("list-notes")).toContainText("Reader Kundennotiz");
     await expect(page.getByTestId("customer-form-sidebar")).toContainText(customerAttachment.originalName);

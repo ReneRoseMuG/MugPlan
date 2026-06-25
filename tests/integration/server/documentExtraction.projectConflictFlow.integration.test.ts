@@ -156,15 +156,33 @@ async function runProjectAdoptionFlow(agent: SuperAgentTest, extraction: Extract
         company: payload.customer.company,
         email: payload.customer.email,
         phone: payload.customer.phone,
-        addressLine1: payload.customer.addressLine1,
-        addressLine2: payload.customer.addressLine2,
-        postalCode: payload.customer.postalCode,
-        city: payload.customer.city,
-        country: payload.customer.country,
       });
 
     if (createCustomerResponse.status === 201) {
-      customer = createCustomerResponse.body as Customer;
+      const createdId = (createCustomerResponse.body as Customer).id;
+      // MS-68: Die extrahierte Adresse wird über die Adress-API in die Rechnungsadress-Zeile
+      // geschrieben (wie im echten Client), nicht über den Kunden-Contract.
+      if (payload.customer.addressLine1 && payload.customer.postalCode && payload.customer.city && payload.customer.country) {
+        const billing = ((await agent
+          .get(`/api/customers/${createdId}/addresses`)
+          .expect(200)).body as Array<{ id: number; roleKey: string | null; version: number }>)
+          .find((address) => address.roleKey === "BILLING");
+        if (billing) {
+          await agent
+            .patch(`/api/customers/${createdId}/addresses/${billing.id}`)
+            .send({
+              addressLine1: payload.customer.addressLine1,
+              addressLine2: payload.customer.addressLine2,
+              postalCode: payload.customer.postalCode,
+              city: payload.customer.city,
+              country: payload.customer.country,
+              version: billing.version,
+            })
+            .expect(200);
+        }
+      }
+      // Kunde neu laden, damit die wirksame Lieferadresse (Resolver) enthalten ist.
+      customer = (await agent.get(`/api/customers/${createdId}`).expect(200)).body as Customer;
       customerSource = "created";
     } else if (createCustomerResponse.status === 409 && createCustomerResponse.body?.code === "CUSTOMER_NUMBER_CONFLICT") {
       const retryResolution = await resolveCustomer(agent, customerNumber);

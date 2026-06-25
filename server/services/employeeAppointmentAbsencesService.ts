@@ -209,20 +209,29 @@ async function ensureAbsenceCustomer() {
     return existing;
   }
 
-  return customersRepository.createCustomer({
-    customerNumber: ABSENCE_CUSTOMER_NUMBER,
-    firstName: null,
-    lastName: null,
-    company: ABSENCE_CUSTOMER_NAME,
-    fullName: ABSENCE_CUSTOMER_NAME,
-    email: null,
-    phone: null,
-    addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
-    addressLine2: null,
-    postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
-    city: ABSENCE_CUSTOMER_CITY,
-    country: ABSENCE_CUSTOMER_COUNTRY,
-  });
+  // Der Systemkunde erhält eine echte Rechnungsadress-Zeile im Adressobjekt (MS-68); die
+  // feste Abwesenheitsadresse wird explizit als Rechnungsadresse übergeben und serverseitig
+  // in die flachen Kundenspalten gespiegelt.
+  return customersRepository.createCustomer(
+    {
+      customerNumber: ABSENCE_CUSTOMER_NUMBER,
+      firstName: null,
+      lastName: null,
+      company: ABSENCE_CUSTOMER_NAME,
+      fullName: ABSENCE_CUSTOMER_NAME,
+      email: null,
+      phone: null,
+    },
+    {
+      billingAddress: {
+        addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+        addressLine2: null,
+        postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+        city: ABSENCE_CUSTOMER_CITY,
+        country: ABSENCE_CUSTOMER_COUNTRY,
+      },
+    },
+  );
 }
 
 async function ensureAbsenceTag(absenceType: AbsenceType) {

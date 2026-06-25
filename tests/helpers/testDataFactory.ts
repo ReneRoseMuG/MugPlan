@@ -8,6 +8,7 @@ import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
+import * as customersRepository from "../../server/repositories/customersRepository";
 import * as employeesService from "../../server/services/employeesService";
 import * as masterDataService from "../../server/services/masterDataService";
 import * as projectsService from "../../server/services/projectsService";
@@ -50,11 +51,6 @@ export function buildCustomerPayload(prefix = "CUST"): InsertCustomer {
     company: null,
     email: null,
     phone: "0123456789",
-    addressLine1: null,
-    addressLine2: null,
-    postalCode: null,
-    city: null,
-    country: null,
   };
 }
 
@@ -77,7 +73,7 @@ export async function createCustomerFixtureWithOverrides(params?: {
   country?: string | null;
 }) {
   const payload = buildCustomerPayload(params?.prefix ?? "CUST");
-  return customersService.createCustomer({
+  const customer = await customersService.createCustomer({
     ...payload,
     firstName: params?.firstName ?? payload.firstName,
     lastName: params?.lastName ?? payload.lastName,
@@ -85,12 +81,29 @@ export async function createCustomerFixtureWithOverrides(params?: {
     company: params?.company ?? payload.company,
     email: params?.email ?? payload.email,
     phone: params?.phone ?? payload.phone,
-    addressLine1: params?.addressLine1 ?? payload.addressLine1,
-    addressLine2: params?.addressLine2 ?? payload.addressLine2,
-    postalCode: params?.postalCode ?? payload.postalCode,
-    city: params?.city ?? payload.city,
-    country: params?.country ?? payload.country,
   });
+
+  // MS-68: Adressen werden über das Adressobjekt gepflegt. Ein Adress-Override wird in die
+  // Rechnungsadress-Zeile geschrieben und in die flachen Kundenspalten gespiegelt, damit
+  // Fixtures mit gesetzter Adresse weiterhin die wirksame Lieferadresse liefern.
+  const hasAddressOverride =
+    params?.addressLine1 !== undefined ||
+    params?.addressLine2 !== undefined ||
+    params?.postalCode !== undefined ||
+    params?.city !== undefined ||
+    params?.country !== undefined;
+  if (!hasAddressOverride) {
+    return customer;
+  }
+  const billingFields = {
+    addressLine1: params?.addressLine1 ?? null,
+    addressLine2: params?.addressLine2 ?? null,
+    postalCode: params?.postalCode ?? null,
+    city: params?.city ?? null,
+    country: params?.country ?? null,
+  };
+  await customersRepository.applyBillingAddressMirrored(customer.id, billingFields);
+  return { ...customer, ...billingFields };
 }
 
 export async function createTagFixture(prefix = "TAG") {

@@ -72,6 +72,12 @@ interface ResourcePlanningDialogProps {
   resolutionNotice?: ReactNode;
   tourName?: string;
   infoText?: string;
+  /**
+   * Nur Variante "appointment": Signalisiert, dass der Termin nach der aktuellen Aktion
+   * (Entfernen des letzten Mitarbeiters) ohne Mitarbeiter dasteht. Blendet dieselbe
+   * Konfliktwarnung ein wie das Terminformular, statt einen eigenen Mechanismus zu ergänzen.
+   */
+  appointmentWillHaveNoEmployees?: boolean;
   summary?: ReactNode;
   executionMessage?: ReactNode;
   error?: unknown;
@@ -281,6 +287,14 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
                   : `wird in die Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName, props.weekLabel].filter(Boolean).join(" / ")}` : ""} übernommen`}
             </p>
           </div>
+        ) : null}
+
+        {variant === "appointment" && props.appointmentWillHaveNoEmployees ? (
+          <DialogBaseInlineMessage
+            tone="warning"
+            title="Termin hat keine Mitarbeiter"
+            description="Nach dem Entfernen ist diesem Termin kein Mitarbeiter mehr zugewiesen."
+          />
         ) : null}
 
         {props.executionMessage ? (

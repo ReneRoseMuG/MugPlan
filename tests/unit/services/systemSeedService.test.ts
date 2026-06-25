@@ -42,6 +42,7 @@ const updateTourWithVersionMock = vi.fn();
 const getCustomersByCustomerNumberMock = vi.fn();
 const createCustomerMock = vi.fn();
 const updateCustomerWithVersionMock = vi.fn();
+const applyBillingAddressMirroredMock = vi.fn();
 const getNoteTemplatesMock = vi.fn();
 const createNoteTemplateMock = vi.fn();
 const updateNoteTemplateWithVersionMock = vi.fn();
@@ -74,6 +75,7 @@ vi.mock("../../../server/repositories/customersRepository", () => ({
   getCustomersByCustomerNumber: (...args: unknown[]) => getCustomersByCustomerNumberMock(...args),
   createCustomer: (...args: unknown[]) => createCustomerMock(...args),
   updateCustomerWithVersion: (...args: unknown[]) => updateCustomerWithVersionMock(...args),
+  applyBillingAddressMirrored: (...args: unknown[]) => applyBillingAddressMirroredMock(...args),
 }));
 
 vi.mock("../../../server/repositories/noteTemplatesRepository", () => ({
@@ -95,6 +97,7 @@ describe("systemSeedService", () => {
     getCustomersByCustomerNumberMock.mockReset();
     createCustomerMock.mockReset();
     updateCustomerWithVersionMock.mockReset();
+    applyBillingAddressMirroredMock.mockReset();
     getNoteTemplatesMock.mockReset();
     createNoteTemplateMock.mockReset();
     updateNoteTemplateWithVersionMock.mockReset();
@@ -118,6 +121,7 @@ describe("systemSeedService", () => {
       version: 1,
       ...input,
     }));
+    applyBillingAddressMirroredMock.mockResolvedValue(undefined);
     updateCustomerWithVersionMock.mockResolvedValue({
       kind: "updated",
       customer: {
@@ -330,20 +334,28 @@ describe("systemSeedService", () => {
   it("legt den FT-33-Systemkunden mit dem Sollzustand an", async () => {
     const result = await applySystemSeed(["customer:001"]);
 
-    expect(createCustomerMock).toHaveBeenCalledWith({
-      customerNumber: ABSENCE_CUSTOMER_NUMBER,
-      firstName: null,
-      lastName: null,
-      fullName: ABSENCE_CUSTOMER_NAME,
-      company: ABSENCE_CUSTOMER_NAME,
-      email: null,
-      phone: null,
-      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
-      addressLine2: null,
-      postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
-      city: ABSENCE_CUSTOMER_CITY,
-      country: ABSENCE_CUSTOMER_COUNTRY,
-    });
+    // MS-68: Stammdaten gehen an createCustomer, die Adresse ausschließlich über den
+    // internen billingAddress-Parameter (Rechnungsadress-Zeile im Adressobjekt).
+    expect(createCustomerMock).toHaveBeenCalledWith(
+      {
+        customerNumber: ABSENCE_CUSTOMER_NUMBER,
+        firstName: null,
+        lastName: null,
+        fullName: ABSENCE_CUSTOMER_NAME,
+        company: ABSENCE_CUSTOMER_NAME,
+        email: null,
+        phone: null,
+      },
+      {
+        billingAddress: {
+          addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+          addressLine2: null,
+          postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+          city: ABSENCE_CUSTOMER_CITY,
+          country: ABSENCE_CUSTOMER_COUNTRY,
+        },
+      },
+    );
     expect(result.logLines).toEqual(["Kunde angelegt: 001 · Meisel & Gerken"]);
     expect(ensureTagDefinitionMock).not.toHaveBeenCalled();
     expect(createTourMock).not.toHaveBeenCalled();
@@ -396,12 +408,20 @@ describe("systemSeedService", () => {
 
     const result = await applySystemSeed(["customer:001"]);
 
+    // MS-68: Das Kunden-Update fasst keine Adressfelder mehr an ...
     expect(updateCustomerWithVersionMock).toHaveBeenCalledWith(1776, 4, expect.objectContaining({
       customerNumber: ABSENCE_CUSTOMER_NUMBER,
       company: ABSENCE_CUSTOMER_NAME,
       fullName: ABSENCE_CUSTOMER_NAME,
-      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
     }));
+    // ... die Rechnungsadresse wird über das Adressobjekt gepflegt und gespiegelt.
+    expect(applyBillingAddressMirroredMock).toHaveBeenCalledWith(1776, {
+      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+      addressLine2: null,
+      postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+      city: ABSENCE_CUSTOMER_CITY,
+      country: ABSENCE_CUSTOMER_COUNTRY,
+    });
     expect(result.logLines).toEqual(["Kunde aktualisiert: 001 · Meisel & Gerken"]);
   });
 

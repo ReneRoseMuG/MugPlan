@@ -10,14 +10,18 @@
  *   auf die Rechnungsadresse zurueck.
  * - Die Rechnungsadress-Zeile ist pflegbar (Felder), behaelt aber ihre Rolle und ist nicht
  *   loeschbar; ihre Aenderungen werden in die flachen Kundenfelder gespiegelt.
- * - Optimistic Locking, Pflichtfeldvalidierung, Schutz der Rechnungsadress-Rolle sowie der
- *   geschuetzten Pflichtkategorien werden serverseitig erzwungen.
+ * - Der Kunden-Create-Contract nimmt keine flachen Adressfelder mehr als Quelle an (MS-68):
+ *   gesendete Adressfelder werden ignoriert; der neue Kunde erhaelt eine leere
+ *   systemgepflegte Rechnungsadress-Zeile, und getCustomer liefert die wirksame Lieferadresse.
+ * - Adressfelder sind optional: eine leere oder teilweise Adresse wird akzeptiert (MS-68).
+ * - Optimistic Locking, Schutz der Rechnungsadress-Rolle sowie der geschuetzten
+ *   Pflichtkategorien werden serverseitig erzwungen.
  *
  * Fehlerfaelle:
  * - Anlegen einer Adresse mit Rechnungsadress-Kategorie (409 ADDRESS_CATEGORY_PROTECTED).
  * - Entfernen der systemgepflegten Rechnungsadresse (409 ADDRESS_PROTECTED).
- * - Versionskonflikt (409 VERSION_CONFLICT), unvollstaendige Adresse (422), geschuetzte
- *   Kategorie loeschen (409 ADDRESS_CATEGORY_PROTECTED).
+ * - Versionskonflikt (409 VERSION_CONFLICT), geschuetzte Kategorie loeschen
+ *   (409 ADDRESS_CATEGORY_PROTECTED).
  *
  * Ziel:
  * Die serverseitige Aufloesung und Verwaltung der wirksamen Lieferadresse end-to-end
@@ -178,12 +182,6 @@ describe("FT09 integration: wirksame Lieferadresse und Adressverwaltung", () => 
       .expect(409)
       .expect((res) => expect(res.body.code).toBe("ADDRESS_CATEGORY_PROTECTED"));
 
-    // Unvollstaendige Adresse wird abgelehnt.
-    await admin
-      .post(`/api/customers/${customer.id}/addresses`)
-      .send({ categoryId: deliveryCat.id, addressLine1: "Nur Strasse" })
-      .expect(422);
-
     // Systemgepflegte Rechnungsadress-Zeile darf nicht entfernt werden.
     const billingAddress = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
     await admin
@@ -258,5 +256,67 @@ describe("FT09 integration: wirksame Lieferadresse und Adressverwaltung", () => 
       .send({ categoryId: deliveryCat.id, addressLine1: "Rechnungsweg 1", postalCode: "11111", city: "Billtown", country: "Deutschland", version: billing.version })
       .expect(409)
       .expect((res) => expect(res.body.code).toBe("ADDRESS_PROTECTED"));
+  });
+
+  it("ignoriert flache Adressfelder im Kunden-Create-Contract und legt eine leere Rechnungsadresse an", async () => {
+    const admin = await loginAdminAgent(app);
+    const token = `ADDR-CONTRACT-${Date.now()}`;
+
+    // Bewusst flache Adressfelder mitsenden: Sie duerfen NICHT als Quelle uebernommen werden.
+    const created = await admin
+      .post("/api/customers")
+      .send({
+        customerNumber: token,
+        firstName: "Vorname",
+        lastName: token,
+        addressLine1: "Schmuggelweg 9",
+        postalCode: "99999",
+        city: "Leakdorf",
+        country: "Deutschland",
+      })
+      .expect(201);
+    const customerId = created.body.id as number;
+
+    // Die gesendeten Adressfelder sind nicht in den flachen Kundenspalten gelandet.
+    expect(created.body.postalCode ?? null).toBeNull();
+    expect(created.body.addressLine1 ?? null).toBeNull();
+
+    // Es existiert genau eine leere, systemgepflegte Rechnungsadress-Zeile.
+    const addresses = await listAddresses(admin, customerId);
+    expect(addresses).toHaveLength(1);
+    expect(addresses[0]).toMatchObject({ roleKey: "BILLING", isSystemManaged: true });
+    expect(addresses[0].postalCode ?? null).toBeNull();
+    expect(addresses[0].addressLine1 ?? null).toBeNull();
+
+    // getCustomer liefert die (leere) wirksame Lieferadresse, nicht die gesendeten Felder.
+    const detail = await admin.get(`/api/customers/${customerId}`).expect(200);
+    expect(detail.body.postalCode ?? null).toBeNull();
+    expect(detail.body.addressLine1 ?? null).toBeNull();
+    expect(detail.body.city ?? null).toBeNull();
+  });
+
+  it("akzeptiert eine teilweise oder leere Adresse (Felder sind optional)", async () => {
+    const { admin, customer } = await setupCustomerWithAppointment("ADDR-OPTIONAL");
+    const categories = await getCategories(admin);
+    const deliveryCat = categories.find((c) => c.roleKey === "DELIVERY")!;
+
+    // Eine Lieferadresse mit nur der Straße (PLZ/Ort/Land leer) wird angenommen.
+    const created = await admin
+      .post(`/api/customers/${customer.id}/addresses`)
+      .send({ categoryId: deliveryCat.id, addressLine1: "Nur Strasse 1" })
+      .expect(201);
+    expect(created.body).toMatchObject({ roleKey: "DELIVERY", addressLine1: "Nur Strasse 1" });
+    expect(created.body.postalCode ?? null).toBeNull();
+    expect(created.body.city ?? null).toBeNull();
+
+    // Die Rechnungsadresse darf vollständig geleert werden (keine Pflichtfelder mehr).
+    const billing = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
+    await admin
+      .patch(`/api/customers/${customer.id}/addresses/${billing.id}`)
+      .send({ addressLine1: "", postalCode: "", city: "", country: "", version: billing.version })
+      .expect(200);
+    const clearedBilling = (await listAddresses(admin, customer.id)).find((a) => a.roleKey === "BILLING")!;
+    expect(clearedBilling.addressLine1 ?? null).toBeNull();
+    expect(clearedBilling.postalCode ?? null).toBeNull();
   });
 });

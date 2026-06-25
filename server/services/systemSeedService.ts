@@ -476,20 +476,26 @@ async function applyCustomerDefinition(definition: SeedCustomerDefinition, logLi
   const existing = matches[0] ?? null;
 
   if (!existing) {
-    await customersRepository.createCustomer({
-      customerNumber: definition.customerNumber,
-      firstName: definition.firstName,
-      lastName: definition.lastName,
-      fullName: definition.fullName,
-      company: definition.company,
-      email: definition.email,
-      phone: definition.phone,
-      addressLine1: definition.addressLine1,
-      addressLine2: definition.addressLine2,
-      postalCode: definition.postalCode,
-      city: definition.city,
-      country: definition.country,
-    });
+    await customersRepository.createCustomer(
+      {
+        customerNumber: definition.customerNumber,
+        firstName: definition.firstName,
+        lastName: definition.lastName,
+        fullName: definition.fullName,
+        company: definition.company,
+        email: definition.email,
+        phone: definition.phone,
+      },
+      {
+        billingAddress: {
+          addressLine1: definition.addressLine1,
+          addressLine2: definition.addressLine2,
+          postalCode: definition.postalCode,
+          city: definition.city,
+          country: definition.country,
+        },
+      },
+    );
     logLines.push(`Kunde angelegt: ${customerDefinitionLabel(definition)}`);
     return;
   }
@@ -507,16 +513,21 @@ async function applyCustomerDefinition(definition: SeedCustomerDefinition, logLi
     company: definition.company,
     email: definition.email,
     phone: definition.phone,
-    addressLine1: definition.addressLine1,
-    addressLine2: definition.addressLine2,
-    postalCode: definition.postalCode,
-    city: definition.city,
-    country: definition.country,
     isActive: definition.isActive,
   });
   if (updateResult.kind !== "updated") {
     throw new Error(`Kunde konnte nicht aktualisiert werden: ${customerDefinitionLabel(definition)}`);
   }
+
+  // MS-68: Die Seed-Adresse wird über das Adressobjekt (Rechnungsadress-Zeile) gepflegt und
+  // von dort in die flachen Kundenspalten gespiegelt.
+  await customersRepository.applyBillingAddressMirrored(existing.id, {
+    addressLine1: definition.addressLine1,
+    addressLine2: definition.addressLine2,
+    postalCode: definition.postalCode,
+    city: definition.city,
+    country: definition.country,
+  });
 
   logLines.push(`Kunde aktualisiert: ${customerDefinitionLabel(definition)}`);
 }

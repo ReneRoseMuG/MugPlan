@@ -2,14 +2,11 @@ import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
-  addressCategories,
-  customerAddresses,
   customerNotes,
   customerAttachments,
   customers,
   projectOrder,
   projects,
-  ADDRESS_ROLE_BILLING,
   type Customer,
   type CustomerAttachment,
   type InsertCustomer,
@@ -19,8 +16,7 @@ import {
 } from "@shared/schema";
 import { getCustomerTagsByCustomerIds } from "./tagRelationsRepository";
 import { customerSelectWithEffectiveAddress } from "./effectiveDeliveryAddress";
-
-type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+import * as addressesRepository from "./customerAddressesRepository";
 
 type CustomerAddressFields = {
   addressLine1?: string | null;
@@ -30,58 +26,16 @@ type CustomerAddressFields = {
   country?: string | null;
 };
 
-/**
- * Schreibt die Rechnungsadress-Zeile (Kategorie roleKey=BILLING) eines Kunden in
- * `customer_address` fort, damit sie die flachen Kundenadressfelder spiegelt (MS-68).
- * Die flachen Felder bleiben das bearbeitete Original (Kundenformular); die wirksame
- * Lieferadresse wird serverseitig aus `customer_address` aufgelöst. So bleiben beide
- * konsistent (Write-Through), ohne dass das bestehende Formular geändert werden muss.
- */
-async function syncBillingAddress(
-  tx: DbTx,
-  customerId: number,
-  fields: CustomerAddressFields,
-): Promise<void> {
-  const [billingCategory] = await tx
-    .select({ id: addressCategories.id })
-    .from(addressCategories)
-    .where(eq(addressCategories.roleKey, ADDRESS_ROLE_BILLING))
-    .limit(1);
-  if (!billingCategory) return;
-
-  const values = {
+// Normalisiert die optionalen Adressfelder auf den Eingabetyp des Adress-Backends
+// (undefined -> null), das die Rechnungsadresse als einzige Schreibstelle pflegt.
+function toAddressFieldInput(fields: CustomerAddressFields): addressesRepository.CustomerAddressFieldInput {
+  return {
     addressLine1: fields.addressLine1 ?? null,
     addressLine2: fields.addressLine2 ?? null,
     postalCode: fields.postalCode ?? null,
     city: fields.city ?? null,
     country: fields.country ?? null,
   };
-
-  const [existing] = await tx
-    .select({ id: customerAddresses.id })
-    .from(customerAddresses)
-    .where(
-      and(
-        eq(customerAddresses.customerId, customerId),
-        eq(customerAddresses.categoryId, billingCategory.id),
-      ),
-    )
-    .limit(1);
-
-  if (existing) {
-    await tx
-      .update(customerAddresses)
-      .set({ ...values, updatedAt: sql`now()`, version: sql`${customerAddresses.version} + 1` })
-      .where(eq(customerAddresses.id, existing.id));
-    return;
-  }
-
-  await tx.insert(customerAddresses).values({
-    customerId,
-    categoryId: billingCategory.id,
-    ...values,
-    version: 1,
-  });
 }
 
 /**
@@ -106,6 +60,29 @@ export async function mirrorBillingAddressToCustomerColumns(
       updatedAt: sql`now()`,
     })
     .where(eq(customers.id, customerId));
+}
+
+/**
+ * Setzt die Rechnungsadresse eines bestehenden Kunden auf die übergebenen Werte und
+ * spiegelt sie in die flachen Kundenspalten. Ausschließlich für interne System-/Seed-
+ * Pfade gedacht (z. B. Abwesenheits-Systemkunde, Seed-Stammdaten), die ihre Adresse fest
+ * vorgeben — nicht für den API-Kundenpfad, der seine Adressen über die Adress-API pflegt.
+ */
+export async function applyBillingAddressMirrored(
+  customerId: number,
+  fields: CustomerAddressFields,
+): Promise<void> {
+  const addressFields = toAddressFieldInput(fields);
+  await db.transaction(async (tx) => {
+    await addressesRepository.ensureBillingAddressTx(tx, customerId, addressFields);
+    await tx
+      .update(customers)
+      .set({
+        ...addressFields,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(customers.id, customerId));
+  });
 }
 
 export type CustomerWithTags = Customer & { tags: Tag[] };
@@ -389,7 +366,7 @@ export async function getCustomersPaged(params: {
 }
 
 export async function getCustomer(id: number): Promise<CustomerWithTags | null> {
-  const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+  const [customer] = await db.select(customerSelectWithEffectiveAddress()).from(customers).where(eq(customers.id, id));
   if (!customer) return null;
   const tagsByCustomerId = await getCustomerTagsByCustomerIds([id]);
   return {
@@ -407,7 +384,7 @@ export async function listCustomerNumbers(): Promise<string[]> {
 
 export async function getCustomersByCustomerNumber(customerNumber: string): Promise<CustomerWithTags[]> {
   const rows = await db
-    .select()
+    .select(customerSelectWithEffectiveAddress())
     .from(customers)
     .where(eq(customers.customerNumber, customerNumber.trim()));
 
@@ -424,7 +401,7 @@ export async function getCustomersByCustomerNumber(customerNumber: string): Prom
 export async function getCustomersByExactDisplayName(displayName: string): Promise<CustomerWithTags[]> {
   const normalizedDisplayName = displayName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
   const rows = await db
-    .select()
+    .select(customerSelectWithEffectiveAddress())
     .from(customers)
     .where(or(
       sql`lower(trim(coalesce(${customers.fullName}, ''))) = ${normalizedDisplayName}`,
@@ -445,7 +422,7 @@ export async function getCustomersByExactNameParts(firstName: string, lastName: 
   const normalizedFirstName = firstName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
   const normalizedLastName = lastName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
   const rows = await db
-    .select()
+    .select(customerSelectWithEffectiveAddress())
     .from(customers)
     .where(and(
       sql`lower(trim(coalesce(${customers.firstName}, ''))) = ${normalizedFirstName}`,
@@ -462,11 +439,35 @@ export async function getCustomersByExactNameParts(firstName: string, lastName: 
   }));
 }
 
-export async function createCustomer(data: InsertCustomer & { fullName: string | null }): Promise<Customer> {
+export async function createCustomer(
+  data: InsertCustomer & { fullName: string | null },
+  options?: { billingAddress?: CustomerAddressFields },
+): Promise<Customer> {
+  const billingAddress = options?.billingAddress ?? null;
   return db.transaction(async (tx) => {
-    const result = await tx.insert(customers).values(data);
+    // Der API-Kundenpfad übergibt keine Adresse (billingAddress = null): Es entsteht eine
+    // leere Rechnungsadress-Zeile, die der Client anschließend über die Adress-API befüllt.
+    // System-/Seed-Kunden geben ihre Adresse explizit vor; dann werden die flachen Spalten
+    // als Spiegel gleich mitgeschrieben. Die flachen Felder dienen nie als Eingabe.
+    const insertValues = billingAddress
+      ? {
+          ...data,
+          addressLine1: billingAddress.addressLine1 ?? null,
+          addressLine2: billingAddress.addressLine2 ?? null,
+          postalCode: billingAddress.postalCode ?? null,
+          city: billingAddress.city ?? null,
+          country: billingAddress.country ?? null,
+        }
+      : data;
+    const result = await tx.insert(customers).values(insertValues);
     const insertId = (result as any)[0].insertId;
-    await syncBillingAddress(tx, insertId, data);
+    // Die Rechnungsadresse wird ausschließlich über das Adress-Backend angelegt (eine
+    // Schreibstelle); ohne explizite Adresse entsteht eine leere Rechnungsadress-Zeile.
+    await addressesRepository.ensureBillingAddressTx(
+      tx,
+      insertId,
+      billingAddress ? toAddressFieldInput(billingAddress) : undefined,
+    );
     const [customer] = await tx.select().from(customers).where(eq(customers.id, insertId));
     return customer;
   });
@@ -490,18 +491,9 @@ export async function updateCustomerWithVersion(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
-  if (data.addressLine1 !== undefined) updateData.addressLine1 = data.addressLine1;
-  if (data.addressLine2 !== undefined) updateData.addressLine2 = data.addressLine2;
-  if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
-  if (data.city !== undefined) updateData.city = data.city;
-  if (data.country !== undefined) updateData.country = data.country;
-
-  const addressTouched =
-    data.addressLine1 !== undefined ||
-    data.addressLine2 !== undefined ||
-    data.postalCode !== undefined ||
-    data.city !== undefined ||
-    data.country !== undefined;
+  // MS-68: Adressfelder werden hier nicht mehr verarbeitet — die Rechnungsadresse wird
+  // ausschließlich über die Adress-API (customer_address) gepflegt und von dort in die
+  // flachen Kundenspalten gespiegelt.
 
   return db.transaction(async (tx) => {
     const result = await tx
@@ -515,9 +507,6 @@ export async function updateCustomerWithVersion(
     }
 
     const [customer] = await tx.select().from(customers).where(eq(customers.id, id));
-    if (addressTouched) {
-      await syncBillingAddress(tx, id, customer);
-    }
     return { kind: "updated", customer };
   });
 }

@@ -20,6 +20,7 @@ import { addDays, addWeeks, format, startOfISOWeek } from "date-fns";
 import type express from "express";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as customersService from "../../../server/services/customersService";
+import * as customersRepository from "../../../server/repositories/customersRepository";
 import * as projectsService from "../../../server/services/projectsService";
 import * as toursRepository from "../../../server/repositories/toursRepository";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
@@ -31,13 +32,29 @@ beforeAll(async () => {
   app = await createApiTestApp();
 });
 
+// MS-68: Kundenadressen laufen über das Adressobjekt. Dieser Helfer legt den Kunden ohne flache
+// Adressfelder an und setzt die Rechnungsadresse (BILLING-Zeile) anschließend über das
+// Adressobjekt; die wirksame Lieferadresse (PLZ) stammt dann aus der Server-Projektion.
+async function createCustomerWithBilling(input: Record<string, any>) {
+  const { addressLine1 = null, addressLine2 = null, postalCode = null, city = null, country = null, ...stammdaten } = input;
+  const customer = await customersService.createCustomer(stammdaten);
+  await customersRepository.applyBillingAddressMirrored(customer.id, {
+    addressLine1,
+    addressLine2,
+    postalCode,
+    city,
+    country,
+  });
+  return customer;
+}
+
 async function createFixture() {
   const local = seq++;
   const tourExact = await toursRepository.createTour(`Tour ${local * 10 + 1}`, "#2563eb");
   const tourNear = await toursRepository.createTour(`Tour ${local * 10 + 2}`, "#16a34a");
   const ignoredTour = await toursRepository.createTour(`Parkplatz`, "#dc2626");
 
-  const exactCustomerA = await customersService.createCustomer({
+  const exactCustomerA = await createCustomerWithBilling({
     customerNumber: `TPLZ-EX-A-${local}`,
     firstName: "Erika",
     lastName: `Exakt-${local}-A`,
@@ -52,7 +69,7 @@ async function createFixture() {
     country: null,
     version: 1,
   });
-  const exactCustomerB = await customersService.createCustomer({
+  const exactCustomerB = await createCustomerWithBilling({
     customerNumber: `TPLZ-EX-B-${local}`,
     firstName: "Erika",
     lastName: `Exakt-${local}-B`,
@@ -67,7 +84,7 @@ async function createFixture() {
     country: null,
     version: 1,
   });
-  const nearCustomer = await customersService.createCustomer({
+  const nearCustomer = await createCustomerWithBilling({
     customerNumber: `TPLZ-NA-${local}`,
     firstName: "Nora",
     lastName: `Nah-${local}`,
@@ -82,7 +99,7 @@ async function createFixture() {
     country: null,
     version: 1,
   });
-  const unassignedCustomer = await customersService.createCustomer({
+  const unassignedCustomer = await createCustomerWithBilling({
     customerNumber: `TPLZ-UN-${local}`,
     firstName: "Una",
     lastName: `Unassigned-${local}`,
@@ -224,7 +241,7 @@ describe("calendar tour postal plan integration", () => {
     const currentWeekDate = berlinToday;
     const nextWeekDate = format(addDays(nextWeekStart, 1), "yyyy-MM-dd");
     const tour = await toursRepository.createTour(`Tour ${local * 10 + 3}`, "#0f766e");
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TPLZ-CL-${local}`,
       firstName: "Clara",
       lastName: `Clamp-${local}`,
@@ -279,7 +296,7 @@ describe("calendar tour postal plan integration", () => {
     const fullTour = await toursRepository.createTour(`Tour ${local * 10 + 1}`, "#1d4ed8");
     const freeTour = await toursRepository.createTour(`Tour ${local * 10 + 2}`, "#15803d");
 
-    const fullCustomer = await customersService.createCustomer({
+    const fullCustomer = await createCustomerWithBilling({
       customerNumber: `TPLZ-FULL-${local}`,
       firstName: "Vera",
       lastName: `Voll-${local}`,
@@ -294,7 +311,7 @@ describe("calendar tour postal plan integration", () => {
       country: null,
       version: 1,
     });
-    const freeCustomer = await customersService.createCustomer({
+    const freeCustomer = await createCustomerWithBilling({
       customerNumber: `TPLZ-FREE-${local}`,
       firstName: "Frida",
       lastName: `Frei-${local}`,

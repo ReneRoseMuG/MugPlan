@@ -112,11 +112,6 @@ export async function createCustomer(data: InsertCustomer, roleKey?: CanonicalRo
     company: normalizeOptionalText(data.company),
     email: normalizeOptionalText(data.email),
     phone: normalizeOptionalText(data.phone),
-    addressLine1: normalizeOptionalText(data.addressLine1),
-    addressLine2: normalizeOptionalText(data.addressLine2),
-    postalCode: normalizeOptionalText(data.postalCode),
-    city: normalizeOptionalText(data.city),
-    country: normalizeOptionalText(data.country),
   };
   const fullName = buildCustomerFullName(normalizedData);
   try {
@@ -154,11 +149,6 @@ export async function updateCustomer(
     company: normalizeOptionalText(data.company),
     email: normalizeOptionalText(data.email),
     phone: normalizeOptionalText(data.phone),
-    addressLine1: normalizeOptionalText(data.addressLine1),
-    addressLine2: normalizeOptionalText(data.addressLine2),
-    postalCode: normalizeOptionalText(data.postalCode),
-    city: normalizeOptionalText(data.city),
-    country: normalizeOptionalText(data.country),
   };
 
   const willUpdateNameParts =

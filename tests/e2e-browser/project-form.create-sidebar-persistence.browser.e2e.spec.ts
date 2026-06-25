@@ -688,15 +688,14 @@ async function expectProjectExtractionFixturePersistence(page: Page, fixture: Pr
     city: string | null;
     country: string | null;
   };
+  // MS-68: Die Kunden-POST-Response enthält keine Adressfelder mehr; die extrahierte Adresse
+  // läuft über das Adress-Backend und wird unten in der Projektion (wirksame Lieferadresse)
+  // nachgewiesen.
   expect(createdCustomer).toMatchObject({
     customerNumber: fixture.customer.customerNumber,
     firstName: fixture.customer.firstName,
     lastName: fixture.customer.lastName,
     phone: fixture.customer.phone,
-    addressLine1: fixture.customer.addressLine1,
-    postalCode: fixture.customer.postalCode,
-    city: fixture.customer.city,
-    country: fixture.customer.country,
   });
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
@@ -1011,15 +1010,13 @@ test("extracts BSP PLZ fixture into the project dialog and creates the customer 
     country: string | null;
   };
 
+  // MS-68: Die Kunden-POST-Response trägt keine Adressfelder mehr; die Adresse wird über das
+  // Adress-Backend gespeichert und unten über die Kundenprojektion nachgewiesen.
   expect(createdCustomer).toMatchObject({
     customerNumber: "160521",
     firstName: "Swen",
     lastName: "Wischnowsky",
     phone: "0172-7940641",
-    addressLine1: "Ulmenweg 8",
-    postalCode: "989610",
-    city: "Sömmerda",
-    country: "Deutschland",
   });
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
   await expect(page.getByTestId("badge-customer")).toContainText("160521");

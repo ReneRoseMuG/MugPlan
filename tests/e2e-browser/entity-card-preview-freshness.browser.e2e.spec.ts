@@ -39,6 +39,27 @@ async function hoverTableRow(page: Page, tableTestId: string, rowText: string) {
   return row;
 }
 
+// MS-68: Rechnungsadresse über die Adress-API ändern (wie im echten Client), statt über den
+// Kunden-Contract; setzt die BILLING-Zeile des Kunden auf die übergebenen Werte.
+async function patchBillingAddressViaApi(
+  page: Page,
+  customerId: number,
+  fields: { addressLine1: string; addressLine2?: string | null; postalCode: string; city: string; country: string },
+) {
+  const addresses = (await (await page.request.get(`/api/customers/${customerId}/addresses`)).json()) as Array<{ id: number; roleKey: string | null; version: number }>;
+  const billing = addresses.find((address) => address.roleKey === "BILLING")!;
+  await page.request.patch(`/api/customers/${customerId}/addresses/${billing.id}`, {
+    data: {
+      addressLine1: fields.addressLine1,
+      addressLine2: fields.addressLine2 ?? null,
+      postalCode: fields.postalCode,
+      city: fields.city,
+      country: fields.country,
+      version: billing.version,
+    },
+  });
+}
+
 test("Terminkarte und Tabellen-Preview zeigen nach Parent-Mutation die frischen Customer- und Projektdaten", async ({ page }) => {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: "E2E-APPT-CUST",
@@ -95,10 +116,13 @@ test("Terminkarte und Tabellen-Preview zeigen nach Parent-Mutation die frischen 
       company: "Frisch GmbH",
       email: "nina.frisch@example.test",
       phone: "0441009999",
-      addressLine1: "Neue Straße 8",
-      postalCode: "28195",
-      city: "Bremen",
     },
+  });
+  await patchBillingAddressViaApi(page, customer.id, {
+    addressLine1: "Neue Straße 8",
+    postalCode: "28195",
+    city: "Bremen",
+    country: "Deutschland",
   });
   await page.request.patch(`/api/projects/${project.id}`, {
     data: {
@@ -180,10 +204,13 @@ test("Projektkarte und Tabellen-Preview spiegeln frische Customer-Daten und Side
       lastName: "Neu",
       email: "petra.neu@example.test",
       phone: "0499111222",
-      addressLine1: "Neue Werkstraße 5",
-      postalCode: "28203",
-      city: "Bremen",
     },
+  });
+  await patchBillingAddressViaApi(page, customer.id, {
+    addressLine1: "Neue Werkstraße 5",
+    postalCode: "28203",
+    city: "Bremen",
+    country: "Deutschland",
   });
   await page.request.patch(`/api/projects/${project.id}`, {
     data: {
@@ -278,11 +305,14 @@ test("Kundenkarte und Tabellen-Preview spiegeln frische Stammdaten sowie verknue
       company: "Kundenbau Neu",
       email: "klara.neu@example.test",
       phone: "0421777888",
-      addressLine1: "Neue Kundenstraße 11",
-      addressLine2: "Empfang",
-      postalCode: "28195",
-      city: "Bremen",
     },
+  });
+  await patchBillingAddressViaApi(page, customer.id, {
+    addressLine1: "Neue Kundenstraße 11",
+    addressLine2: "Empfang",
+    postalCode: "28195",
+    city: "Bremen",
+    country: "Deutschland",
   });
   const secondProject = await createProjectFixtureWithOverrides({
     prefix: "E2E-CUST-PROJ-2",

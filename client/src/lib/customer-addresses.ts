@@ -51,8 +51,9 @@ export function resolveAddressTabLabel(
   return draft.categoryName;
 }
 
-// Pflichtfelder einer Adresse (Strasse, PLZ, Ort, Land) — gespiegelt zur serverseitigen Regel,
-// damit das Formular fehlende Felder vor dem Speichern sichtbar machen kann.
+// MS-68: Adressfelder sind nicht mehr Pflicht (eine leere oder teilweise Adresse ist erlaubt).
+// Dieser Helfer meldet nur, ob alle vier Felder gefüllt sind — als optionaler UI-Hinweis, nicht
+// als Speichersperre.
 export function isAddressDraftComplete(
   draft: Pick<CustomerAddressDraft, "addressLine1" | "postalCode" | "city" | "country">,
 ): boolean {

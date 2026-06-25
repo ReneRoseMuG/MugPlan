@@ -63,12 +63,20 @@ const shortCodeSchema = z.preprocess(
   z.string().max(64).nullable().optional(),
 );
 
-export const insertCustomerSchema = createInsertSchema(customers).omit({ 
-  id: true, 
-  createdAt: true, 
+// MS-68: Kundenadressen werden ausschließlich über das Adressobjekt (customer_address)
+// gepflegt. Der Kunden-Schreibpfad nimmt daher keine flachen Adressfelder mehr entgegen;
+// die flachen Spalten werden nur noch serverseitig als Spiegel der Rechnungsadresse geführt.
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  createdAt: true,
   updatedAt: true,
   isActive: true,
   fullName: true,
+  addressLine1: true,
+  addressLine2: true,
+  postalCode: true,
+  city: true,
+  country: true,
 }).extend({
   customerNumber: customerRequiredTextSchema,
   firstName: customerOptionalTextSchema,
@@ -76,11 +84,6 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   company: customerOptionalTextSchema,
   email: customerEmailSchema,
   phone: customerOptionalTextSchema,
-  addressLine1: customerOptionalTextSchema,
-  addressLine2: customerOptionalTextSchema,
-  postalCode: customerOptionalTextSchema,
-  city: customerOptionalTextSchema,
-  country: customerOptionalTextSchema,
 });
 
 export const updateCustomerSchema = z.object({
@@ -90,11 +93,6 @@ export const updateCustomerSchema = z.object({
   company: customerOptionalTextSchema,
   email: customerEmailSchema,
   phone: customerOptionalTextSchema,
-  addressLine1: customerOptionalTextSchema,
-  addressLine2: customerOptionalTextSchema,
-  postalCode: customerOptionalTextSchema,
-  city: customerOptionalTextSchema,
-  country: customerOptionalTextSchema,
   isActive: z.boolean().optional(),
 });
 
@@ -163,23 +161,24 @@ const addressRequiredTextSchema = z.preprocess(
   z.string().min(1),
 );
 
-// Pflichtfelder einer Adresse: mindestens Strasse, PLZ, Ort, Land (serverseitig).
+// MS-68: Eine Adresse ist als Objekt Pflicht (jeder Kunde hat eine Rechnungsadresse), ihre
+// Felder sind jedoch optional — eine leere oder teilweise Adresse ist ausdrücklich erlaubt.
 export const insertCustomerAddressSchema = z.object({
   categoryId: z.number().int().positive(),
-  addressLine1: addressRequiredTextSchema,
+  addressLine1: customerOptionalTextSchema,
   addressLine2: customerOptionalTextSchema,
-  postalCode: addressRequiredTextSchema,
-  city: addressRequiredTextSchema,
-  country: addressRequiredTextSchema,
+  postalCode: customerOptionalTextSchema,
+  city: customerOptionalTextSchema,
+  country: customerOptionalTextSchema,
 });
 
 export const updateCustomerAddressSchema = z.object({
   categoryId: z.number().int().positive().optional(),
-  addressLine1: addressRequiredTextSchema,
+  addressLine1: customerOptionalTextSchema,
   addressLine2: customerOptionalTextSchema,
-  postalCode: addressRequiredTextSchema,
-  city: addressRequiredTextSchema,
-  country: addressRequiredTextSchema,
+  postalCode: customerOptionalTextSchema,
+  city: customerOptionalTextSchema,
+  country: customerOptionalTextSchema,
   version: z.number().int().positive(),
 });
 

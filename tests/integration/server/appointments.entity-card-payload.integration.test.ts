@@ -270,11 +270,25 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         company: "Frisch GmbH",
         email: "frisch@example.test",
         phone: "0499988877",
+      })
+      .expect(200);
+
+    // MS-68: Die Rechnungsadresse wird über die Adress-API geändert (wie im echten Client),
+    // nicht mehr über den Kunden-Contract. Die Änderung muss in der Kalender-/List-Projektion
+    // (wirksame Lieferadresse) erscheinen.
+    const billingAddress = ((await fixture.admin
+      .get(`/api/customers/${fixture.customer.id}/addresses`)
+      .expect(200)).body as Array<{ id: number; roleKey: string | null; version: number }>)
+      .find((address) => address.roleKey === "BILLING")!;
+    await fixture.admin
+      .patch(`/api/customers/${fixture.customer.id}/addresses/${billingAddress.id}`)
+      .send({
         addressLine1: "Neue Straße 4",
         addressLine2: "Etage 2",
         postalCode: "49377",
         city: "Vechta",
         country: "Luxemburg",
+        version: billingAddress.version,
       })
       .expect(200);
 

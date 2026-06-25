@@ -29,6 +29,7 @@ interface TourEmployeeCascadeDialogProps {
   showResolutionMode?: boolean;
   tourName?: string;
   infoText?: string;
+  appointmentWillHaveNoEmployees?: boolean;
   resolutionNotice?: ReactNode;
   summary?: ReactNode;
   executionMessage?: ReactNode;

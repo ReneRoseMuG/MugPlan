@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - CustomerData rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
  * - Im Edit-Modus zeigt CustomerData die Haupttabs `Details`, `Termine` und `Journal`; im Create-Modus bleiben die Zusatz-Tabs verborgen.
- * - Das Kundenformular zeigt das neue Feld `Land` im Hauptbereich in Create und Edit an.
+ * - Das Kundenformular zeigt den Adress-Tab-Bereich (`customer-addresses-panel`) im Hauptbereich in Create und Edit an.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Projekte, Termine, Attachments, Tags, Notizen.
  * - Create-Verdrahtung behaelt Draft-faehige Tags, Notizen und Attachments.
  * - Footer-Aktionen bleiben im Shell-Layout mit Cancel links und Save rechts sichtbar.
@@ -12,7 +12,7 @@
  * Fehlerfaelle:
  * - Das Kundenformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
  * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
- * - Das neue Feld `Land` fehlt im Formular trotz erweitertem Kunden-Adressmodell.
+ * - Der Adress-Tab-Bereich fehlt im Formular trotz Kunden-Adressmodell.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
  *
@@ -261,8 +261,7 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("tab-customer-details");
     expect(markup).toContain("tab-customer-termine");
     expect(markup).toContain("tab-customer-journal");
-    expect(markup).toContain("label-country");
-    expect(markup).toContain("input-country");
+    expect(markup).toContain("customer-addresses-panel");
 
     expect(getIndex(markup, "linked-projects-panel-marker")).toBeLessThan(getIndex(markup, "customer-appointments-panel-marker"));
     expect(getIndex(markup, "customer-appointments-panel-marker")).toBeLessThan(getIndex(markup, "customer-attachments-panel-marker"));
@@ -294,8 +293,7 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).not.toContain("tab-customer-termine");
     expect(markup).not.toContain("tab-customer-journal");
     expect(markup).toContain("customer-document-extraction-dropzone-marker");
-    expect(markup).toContain("label-country");
-    expect(markup).toContain("input-country");
+    expect(markup).toContain("customer-addresses-panel");
 
     expect(getIndex(markup, "linked-projects-panel-marker")).toBeLessThan(getIndex(markup, "customer-appointments-panel-marker"));
     expect(getIndex(markup, "customer-appointments-panel-marker")).toBeLessThan(getIndex(markup, "customer-attachments-panel-marker"));

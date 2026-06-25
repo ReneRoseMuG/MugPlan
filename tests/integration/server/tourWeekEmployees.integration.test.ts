@@ -1304,6 +1304,63 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
+  it("omits system-wide conflicting employees without includeAvailableEmployees and only locks them when the flag is set", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#5566aa");
+    const project = await createProjectFixture({ prefix: "TWE-FORM-FLAG" });
+    const conflictEmployee = await createEmployeeFixture("TWE-FORM-FLAG-BLOCKED");
+    const targetDate = getRelativeBerlinDate(28);
+    await seedWeekPlanNoise("TWE-FORM-FLAG", targetDate);
+
+    // Echter systemweiter Konflikt: Mitarbeiter ist am Zieltag bereits anderweitig verplant,
+    // gehört aber NICHT zur KW-Planung dieser Tour und ist NICHT am Termin vorhanden.
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetDate,
+      employeeIds: [conflictEmployee.id],
+    });
+
+    // Ohne Flag (alter Terminformular-Request): der Konflikt-Mitarbeiter fehlt komplett in der
+    // Vorschau. Genau deshalb konnte der Formular-Picker ihn nicht als gesperrt anzeigen (Bug).
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+      })
+      .expect(200)
+      .expect((res) => {
+        const items = res.body.items as Array<Record<string, unknown>>;
+        expect(items.some((item) => item.employeeId === conflictEmployee.id)).toBe(false);
+      });
+
+    // Mit Flag (neuer Terminformular-Request): derselbe Mitarbeiter erscheint sichtbar gesperrt
+    // mit Terminkonflikt-Grund. Das ist der beobachtbare Unterschied, den der Fix herstellt.
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+        includeAvailableEmployees: true,
+      })
+      .expect(200)
+      .expect((res) => {
+        const items = res.body.items as Array<Record<string, unknown>>;
+        const conflictItem = items.find((item) => item.employeeId === conflictEmployee.id);
+        expect(conflictItem).toMatchObject({
+          employeeId: conflictEmployee.id,
+          status: "conflict",
+          selectable: false,
+          conflictReason: "EMPLOYEE_OVERLAP",
+          source: "available",
+        });
+      });
+  });
+
   it("locks an absent employee in the assignment preview with an absence reason instead of a generic overlap", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#0ea5e9");

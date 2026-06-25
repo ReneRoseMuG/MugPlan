@@ -26,6 +26,7 @@ import * as appointmentNotesService from "../../../server/services/appointmentNo
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as customerNotesService from "../../../server/services/customerNotesService";
 import * as customersService from "../../../server/services/customersService";
+import * as customersRepository from "../../../server/repositories/customersRepository";
 import * as employeesService from "../../../server/services/employeesService";
 import * as projectNotesService from "../../../server/services/projectNotesService";
 import * as projectsService from "../../../server/services/projectsService";
@@ -39,6 +40,22 @@ import { customerTags } from "@shared/schema";
 
 let app: express.Express;
 let counter = 1;
+
+// MS-68: Kundenadressen laufen über das Adressobjekt. Dieser Helfer legt den Kunden ohne flache
+// Adressfelder an und setzt die Rechnungsadresse (BILLING-Zeile) anschließend über das
+// Adressobjekt; die wirksame Lieferadresse stammt dann aus der Server-Projektion.
+async function createCustomerWithBilling(input: Record<string, any>) {
+  const { addressLine1 = null, addressLine2 = null, postalCode = null, city = null, country = null, ...stammdaten } = input;
+  const customer = await customersService.createCustomer(stammdaten);
+  await customersRepository.applyBillingAddressMirrored(customer.id, {
+    addressLine1,
+    addressLine2,
+    postalCode,
+    city,
+    country,
+  });
+  return customer;
+}
 
 beforeAll(async () => {
   app = express();
@@ -74,7 +91,7 @@ describe("FT31 integration: tour print preview", () => {
       isActive: true,
     });
 
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TPP-${Date.now()}-${seq}`,
       firstName: "Tour",
       lastName: `Preview-${seq}`,
@@ -181,7 +198,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
 
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TPP-OT-${Date.now()}-${seq}`,
       firstName: "Ohne",
       lastName: `Tour-${seq}`,
@@ -251,7 +268,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#aabbcc" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-APT-${Date.now()}-${seq}`,
       firstName: "Tag", lastName: `Apt-${seq}`, fullName: `Apt-${seq}, Tag`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
@@ -283,7 +300,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#ccbbaa" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-CST-${Date.now()}-${seq}`,
       firstName: "Tag", lastName: `Cst-${seq}`, fullName: `Cst-${seq}, Tag`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
@@ -314,7 +331,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#112233" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-PRJ-${Date.now()}-${seq}`,
       firstName: "Tag", lastName: `Prj-${seq}`, fullName: `Prj-${seq}, Tag`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
@@ -346,7 +363,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#445566" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-NONE-${Date.now()}-${seq}`,
       firstName: "Tag", lastName: `None-${seq}`, fullName: `None-${seq}, Tag`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
@@ -376,7 +393,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#667788" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-TWO-${Date.now()}-${seq}`,
       firstName: "Tag", lastName: `Two-${seq}`, fullName: `Two-${seq}, Tag`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
@@ -411,7 +428,7 @@ describe("FT31 integration: tour print preview", () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourRes = await admin.post("/api/tours").send({ color: "#778899" }).expect(201);
-    const customer = await customersService.createCustomer({
+    const customer = await createCustomerWithBilling({
       customerNumber: `TAG-NOPROJ-${Date.now()}-${seq}`,
       firstName: "Ohne", lastName: `Projekt-${seq}`, fullName: `Projekt-${seq}, Ohne`,
       company: null, email: null, phone: null, addressLine1: null, addressLine2: null,

@@ -285,6 +285,18 @@ function buildEmployeePickerConflictReasons(
   return reasons;
 }
 
+// Lädt die Konfliktvorschau für den Mitarbeiter-Picker und bildet sie auf Sperrgründe ab.
+// Fordert dabei verbindlich die systemweite Verfügbarkeit an, damit belegte Mitarbeiter sichtbar
+// gesperrt statt ausgeblendet erscheinen. Der Tour-spezifische Transport wird injiziert, damit die
+// Verdrahtung ohne Browserumgebung testbar bleibt und das Flag nicht an der Aufrufstelle vergessen
+// werden kann.
+export async function resolveEmployeePickerConflictReasons(
+  loadPreviewWithAvailability: (includeAvailableEmployees: true) => Promise<AppointmentWeekEmployeePreviewResponse>,
+): Promise<Record<number, string>> {
+  const preview = await loadPreviewWithAvailability(true);
+  return buildEmployeePickerConflictReasons(preview.items);
+}
+
 type AppointmentWeekPreviewDialogState = {
   open: boolean;
   title: string;
@@ -1352,12 +1364,14 @@ export function AppointmentForm({
   const loadTourAssignmentPreview = async (
     tourId: number,
     existingEmployeeIds: number[],
+    options?: { includeAvailableEmployees?: boolean },
   ): Promise<AppointmentWeekEmployeePreviewResponse> => {
     const response = await apiRequest("POST", `/api/tours/${tourId}/week-employees/assignment-preview`, {
       startDate,
       endDate: isEndDateEnabled ? endDate : null,
       startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
       existingEmployeeIds,
+      ...(options?.includeAvailableEmployees ? { includeAvailableEmployees: true } : {}),
     });
     return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
   };
@@ -1371,8 +1385,10 @@ export function AppointmentForm({
     setEmployeePickerConflictLoading(true);
     void (async () => {
       try {
-        const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
-        setEmployeePickerConflictReasons(buildEmployeePickerConflictReasons(preview.items));
+        const reasons = await resolveEmployeePickerConflictReasons((includeAvailableEmployees) =>
+          loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds, { includeAvailableEmployees }),
+        );
+        setEmployeePickerConflictReasons(reasons);
       } catch {
         setEmployeePickerConflictReasons({});
       } finally {

@@ -1100,7 +1100,7 @@ function MonthSheetSection({
                         return (
                           <div
                             key={`${month.monthKey}-${weekKey}-${slot.tourId ?? "unassigned"}-${appointment.id}-${bar.startDayIndex}-${bar.endDayIndex}`}
-                            className="pointer-events-auto absolute px-0.5"
+                            className={`${draggedAppointmentId !== null ? "pointer-events-none" : "pointer-events-auto"} absolute px-0.5`}
                             data-testid={`month-compact-bar-${appointment.id}`}
                             style={{
                               ...position,

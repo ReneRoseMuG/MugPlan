@@ -34,6 +34,7 @@ import {
 import { useCalendarMarkers } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { apiRequest } from "@/lib/queryClient";
+import { extractServerErrorCode } from "@/lib/error-normalization";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
 import {
@@ -304,6 +305,88 @@ export function buildAppointmentAssignIneligibleReasons(
     }
   }
   return reasons;
+}
+
+/**
+ * Frischer Termin-Stand, wie ihn der Detail-Endpunkt `GET /api/appointments/:id` liefert.
+ * Liefert Version und Mitarbeiterstand für die Menü-Zuweisung/-Entfernung, damit nicht
+ * die evtl. veraltete Version aus dem Kalender-Aggregat-Cache verwendet wird.
+ */
+export type FreshAppointmentForEmployeeWrite = {
+  id: number;
+  version: number;
+  projectId: number | null;
+  customerId: number;
+  tourId: number | null;
+  startDate: string;
+  endDate: string | null;
+  startTime: string | null;
+  employees: Array<{ id: number }>;
+};
+
+/**
+ * Baut den PATCH-Payload für die Termin-Mitarbeiterzuweisung aus dem frisch gelesenen Termin.
+ * Die zusätzlich gewählten Mitarbeiter werden additiv auf den aktuellen Serverstand gelegt
+ * (dedupliziert), damit parallel hinzugekommene Mitarbeiter nicht verloren gehen.
+ */
+export function buildAssignAppointmentEmployeesPayload(
+  appointment: FreshAppointmentForEmployeeWrite,
+  addedEmployeeIds: readonly number[],
+): {
+  version: number;
+  projectId: number | null;
+  customerId: number;
+  tourId: number | null;
+  startDate: string;
+  endDate: string | null;
+  startTime: string | null;
+  employeeIds: number[];
+} {
+  const employeeIds = Array.from(
+    new Set<number>([...appointment.employees.map((employee) => employee.id), ...addedEmployeeIds]),
+  );
+  return {
+    version: appointment.version,
+    projectId: appointment.projectId,
+    customerId: appointment.customerId,
+    tourId: appointment.tourId,
+    startDate: appointment.startDate,
+    endDate: appointment.endDate,
+    startTime: appointment.startTime,
+    employeeIds,
+  };
+}
+
+/**
+ * Führt eine versionsgeschützte Termin-Mitarbeiteroperation aus und ist robust gegen einen
+ * veralteten Versionsstand: Der Termin wird unmittelbar vor dem Schreiben frisch gelesen; bei
+ * `VERSION_CONFLICT` wird genau einmal mit erneut gelesener Version wiederholt. Jeder andere
+ * Fehler – und ein zweiter Konflikt – wird unverändert weitergereicht.
+ */
+export async function runAppointmentEmployeeWriteWithFreshVersion<TResult>(deps: {
+  loadFreshAppointment: () => Promise<FreshAppointmentForEmployeeWrite>;
+  write: (appointment: FreshAppointmentForEmployeeWrite) => Promise<TResult>;
+  isVersionConflict: (error: unknown) => boolean;
+}): Promise<TResult> {
+  const firstAppointment = await deps.loadFreshAppointment();
+  try {
+    return await deps.write(firstAppointment);
+  } catch (error) {
+    if (!deps.isVersionConflict(error)) throw error;
+    const retryAppointment = await deps.loadFreshAppointment();
+    return await deps.write(retryAppointment);
+  }
+}
+
+/**
+ * Prüft, ob nach dem Entfernen des angegebenen Mitarbeiters kein Mitarbeiter mehr am Termin
+ * verbleibt. Grundlage ist der beim Öffnen des Entfernen-Dialogs erfasste Mitarbeiterstand.
+ */
+export function willAppointmentHaveNoEmployeesAfterRemoval(
+  currentEmployeeIds: readonly number[],
+  employeeId: number,
+): boolean {
+  return currentEmployeeIds.filter((id) => id !== employeeId).length === 0;
 }
 
 export function resolveVisibleWeekStartFromScroll(params: {
@@ -1684,21 +1767,49 @@ export function CalendarWeekView({
     }
   };
 
+  const loadFreshAppointmentForEmployeeWrite = async (
+    appointmentId: number,
+  ): Promise<FreshAppointmentForEmployeeWrite> => {
+    const response = await apiRequest("GET", `/api/appointments/${appointmentId}`);
+    const detail = (await response.json()) as {
+      id: number;
+      version: number;
+      projectId: number | null;
+      customerId: number;
+      tourId: number | null;
+      startDate: string;
+      endDate: string | null;
+      startTime: string | null;
+      employees?: Array<{ id: number }>;
+    };
+    return {
+      id: detail.id,
+      version: detail.version,
+      projectId: detail.projectId ?? null,
+      customerId: detail.customerId,
+      tourId: detail.tourId ?? null,
+      startDate: detail.startDate,
+      endDate: detail.endDate ?? null,
+      startTime: detail.startTime ?? null,
+      employees: detail.employees ?? [],
+    };
+  };
+
   const assignAppointmentEmployeesMutation = useMutation({
-    mutationFn: async ({ appointmentId, employeeIds }: { appointmentId: number; employeeIds: number[] }) => {
-      const appointment = appointmentsById.get(appointmentId);
-      if (!appointment) throw new Error("Termin nicht gefunden.");
-      const response = await apiRequest("PATCH", `/api/appointments/${appointmentId}`, {
-        version: appointment.version,
-        projectId: appointment.projectId,
-        customerId: appointment.customer.id,
-        tourId: appointment.tourId,
-        startDate: appointment.startDate,
-        endDate: appointment.endDate,
-        startTime: appointment.startTime,
-        employeeIds,
+    mutationFn: async ({ appointmentId, addedEmployeeIds }: { appointmentId: number; addedEmployeeIds: number[] }) => {
+      // Frische Version statt Kalender-Cache: verhindert 409 nach vorherigen Termin-/Wochenmutationen.
+      return runAppointmentEmployeeWriteWithFreshVersion({
+        loadFreshAppointment: () => loadFreshAppointmentForEmployeeWrite(appointmentId),
+        write: async (appointment) => {
+          const response = await apiRequest(
+            "PATCH",
+            `/api/appointments/${appointmentId}`,
+            buildAssignAppointmentEmployeesPayload(appointment, addedEmployeeIds),
+          );
+          return response.json() as Promise<CalendarAppointment>;
+        },
+        isVersionConflict: (error) => extractServerErrorCode(error) === "VERSION_CONFLICT",
       });
-      return response.json() as Promise<CalendarAppointment>;
     },
     onSuccess: async () => {
       setAppointmentEmployeeDialog(null);
@@ -1714,10 +1825,14 @@ export function CalendarWeekView({
 
   const removeAppointmentEmployeeMutation = useMutation({
     mutationFn: async ({ appointmentId, employeeId }: { appointmentId: number; employeeId: number }) => {
-      const appointment = appointmentsById.get(appointmentId);
-      if (!appointment) throw new Error("Termin nicht gefunden.");
-      await apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`, {
-        version: appointment.version,
+      // Frische Version statt Kalender-Cache: verhindert 409 nach vorherigen Termin-/Wochenmutationen.
+      await runAppointmentEmployeeWriteWithFreshVersion({
+        loadFreshAppointment: () => loadFreshAppointmentForEmployeeWrite(appointmentId),
+        write: (appointment) =>
+          apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`, {
+            version: appointment.version,
+          }),
+        isVersionConflict: (error) => extractServerErrorCode(error) === "VERSION_CONFLICT",
       });
     },
     onSuccess: async () => {
@@ -3633,14 +3748,14 @@ export function CalendarWeekView({
                 if (!appointmentEmployeeDialog) return;
                 assignAppointmentEmployeesMutation.mutate({
                   appointmentId: appointmentEmployeeDialog.appointmentId,
-                  employeeIds: Array.from(new Set([...appointmentEmployeeDialog.currentEmployeeIds, employeeId])),
+                  addedEmployeeIds: [employeeId],
                 });
               }}
               onConfirmSelection={(employeeIds) => {
                 if (!appointmentEmployeeDialog) return;
                 assignAppointmentEmployeesMutation.mutate({
                   appointmentId: appointmentEmployeeDialog.appointmentId,
-                  employeeIds: Array.from(new Set([...appointmentEmployeeDialog.currentEmployeeIds, ...employeeIds])),
+                  addedEmployeeIds: employeeIds,
                 });
               }}
               onClose={() => setAppointmentEmployeeDialog(null)}
@@ -3658,6 +3773,14 @@ export function CalendarWeekView({
           employeeId={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.employeeId : undefined}
           employeeName={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.previewItems[0]?.employeeName : undefined}
           infoText={appointmentEmployeeDialog?.action === "remove" ? "wird vom Termin entfernt" : undefined}
+          appointmentWillHaveNoEmployees={
+            appointmentEmployeeDialog?.action === "remove"
+            && typeof appointmentEmployeeDialog.employeeId === "number"
+            && willAppointmentHaveNoEmployeesAfterRemoval(
+              appointmentEmployeeDialog.currentEmployeeIds,
+              appointmentEmployeeDialog.employeeId,
+            )
+          }
           isSubmitting={removeAppointmentEmployeeMutation.isPending}
           onSelectedIdsChange={(ids) => {
             setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
