@@ -120,4 +120,12 @@ Auf Nutzerentscheidung folgte ein architektonischer Umbau, der zwei im ersten Du
 
 **Verifikation:** `npm run check` grün; Unit 1450 grün; Integration der betroffenen Pfade 68/68 grün; Gruppe-A-Browsertests grün.
 
-**Geparkter Bestandsbug (nicht MS-68):** Im Duplikat-Projekt-Edit-Flow wird ein extrahiertes Dokument-Attachment beim Speichern eines bestehenden Projekts nicht dauerhaft verknüpft (`project-form.create-sidebar-persistence` „opens an existing project in edit mode for duplicate…"). Per Stash-Verifikation belegt: Der Fehler tritt auch ohne die MS-68-Änderungen auf → eigenständiger Folgeauftrag.
+## 10. Attachment-Bestandsbug behoben (eigener Commit `7beb5b12`, unabhängig von MS-68)
+
+Im Duplikat-Projekt-Edit-Flow wurde ein extrahiertes Dokument-Attachment beim Speichern eines bestehenden Projekts nicht dauerhaft verknüpft (`project-form.create-sidebar-persistence` „opens an existing project in edit mode for duplicate…"). Per Stash-Verifikation belegt: Der Fehler trat auch ohne die MS-68-Änderungen auf — eigenständiger Bestandsbug.
+
+**Ursache (per Netzwerk-Diagnose):** Das Attachment wird korrekt hochgeladen (`POST …/attachments` → 201), aber der Edit-Save-Pfad invalidierte — anders als der Neu-Projekt-Pfad — die Attachment-Query nicht. Beim erneuten Öffnen zeigte der Sidebar daher den leeren Cache.
+
+**Fix:** Eine `queryClient.invalidateQueries`-Zeile im Edit-Pfad (`ProjectForm.tsx`), analog zum Create-Pfad.
+
+**Verifikation:** Zuvor roter Test grün; gesamte `project-form`-Browser-Suite 26/26 grün; `npm run check` grün. Committet als `7beb5b12`, gepusht auf `merge/ms68-ms52`.
