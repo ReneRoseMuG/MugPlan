@@ -228,9 +228,11 @@ export function CalendarMonthSheetView({
     if (visibleWeekCount !== undefined) {
       return buildMonthWindowMatrix(startOfISOWeek(currentDate), visibleWeekCount);
     }
-    // currentDate ist ein ISO-Wochenstart (Montag), der im Vormonat liegen kann.
-    // +6 Tage liefert den Sonntag derselben Woche und damit den korrekt angezeigten Monat.
-    const effectiveDate = addDays(currentDate, 6);
+    // currentDate kann der initiale Tageswert (heute) oder ein Navigations-Wochenanker (Montag)
+    // sein. Erst auf den ISO-Wochenstart normalisieren, dann +6 Tage = Sonntag derselben Woche
+    // -> korrekt angezeigter Monat. Bei Montags-Ankern ist startOfISOWeek idempotent, daher
+    // bleibt die Monatsnavigation unverändert.
+    const effectiveDate = addDays(startOfISOWeek(currentDate), 6);
     return buildMonthSheetMatrix(effectiveDate.getFullYear(), effectiveDate.getMonth() + 1);
   }, [currentDate, visibleWeekCount]);
   const stripFromDate = format(month.visibleStart, "yyyy-MM-dd");
