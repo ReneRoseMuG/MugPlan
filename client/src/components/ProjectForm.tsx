@@ -1946,6 +1946,10 @@ export function ProjectForm({
           effectiveProjectId,
           options.extractionAttachmentDuplicateDecision ?? "check",
         );
+        // Frisch verknüpfte Dokumente müssen im nächsten Laden des bestehenden Projekts
+        // erscheinen — analog zum Neu-Projekt-Pfad die Attachment-Query invalidieren. Ohne
+        // diese Invalidierung blieb beim Bearbeiten eines (Duplikat-)Projekts der Cache leer.
+        await queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'attachments'] });
       }
     } else {
       let createdProject: Awaited<ReturnType<typeof createMutation.mutateAsync>>;
