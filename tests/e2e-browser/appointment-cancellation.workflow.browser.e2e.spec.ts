@@ -50,6 +50,15 @@ async function openProjects(page: Page) {
   await expect(page.getByTestId("button-new-project")).toBeVisible();
 }
 
+async function closeProjectForm(page: Page) {
+  await page.getByTestId("button-close-project").click();
+  const discardButton = page.getByRole("button", { name: "Verwerfen und schließen" });
+  if (await discardButton.isVisible().catch(() => false)) {
+    await discardButton.click();
+  }
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+}
+
 async function openReports(page: Page) {
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
@@ -255,7 +264,7 @@ test("runs the browser cancellation flow from regular future appointment to canc
 
   await page.getByTestId("button-calendar-context-back").click();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
-  await page.getByTestId("button-close-project").click();
+  await closeProjectForm(page);
 
   await openProjectById(page, {
     id: projectId,
@@ -264,7 +273,7 @@ test("runs the browser cancellation flow from regular future appointment to canc
   });
   await expect(page.getByTestId("input-project-order-number")).toHaveValue(persistedOrderNumber);
   await expect(page.getByTestId("input-project-amount")).toHaveValue("0.00");
-  await page.getByTestId("button-close-project").click();
+  await closeProjectForm(page);
 
   await openReports(page);
   await fillReportDateRange(page, "reports-vorlaufliste", appointmentDate);

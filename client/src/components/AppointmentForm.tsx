@@ -910,6 +910,8 @@ export function AppointmentForm({
       await queryClient.invalidateQueries({ queryKey: projectsQueryKey });
       if (selectedProjectId) {
         await queryClient.invalidateQueries({ queryKey: [`/api/projects/${selectedProjectId}`] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       }
       await invalidateRelatedAppointmentQueries(selectedProjectId);
       await refreshMonitoringWithNotification(toast);

@@ -19,6 +19,7 @@ import { expect, test } from "./fixtures";
 import * as customersService from "../../server/services/customersService";
 import {
   createAppointmentFixture,
+  createCustomerFixtureWithOverrides,
   createProjectFixture,
   getRelativeBerlinDate,
   buildCustomerPayload,
@@ -59,8 +60,8 @@ test("zeigt Telefonnummer im Kundendaten-Hover-Preview wenn am Kunden hinterlegt
 });
 
 test("laesst den Kundendaten-Hover-Preview ohne Telefonzeile offen wenn keine Telefonnummer hinterlegt ist", async ({ page }) => {
-  const customer = await customersService.createCustomer({
-    ...buildCustomerPayload("FT03-PHONE-WITHOUT"),
+  const customer = await createCustomerFixtureWithOverrides({
+    prefix: "FT03-PHONE-WITHOUT",
     phone: null,
     addressLine1: "Telefonloser Platz 7",
   });

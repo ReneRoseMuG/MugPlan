@@ -258,7 +258,7 @@ async function assertAppointmentFormLoaded(page: Page, fixture: AppointmentBrows
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
   await expect(page.getByTestId("slot-appointment-employees")).toBeVisible();
   await expect(page.getByTestId("button-add-employee")).toBeVisible();
-  await expect(page.getByText("Keine Mitarbeiter zugewiesen")).toBeVisible();
+  await expect(page.getByTestId("slot-appointment-employees")).toContainText("Keine Mitarbeiter zugewiesen");
   for (const employee of fixture.employees) {
     await expect(page.getByTestId(`badge-employee-${employee.id}`)).toHaveCount(0);
   }

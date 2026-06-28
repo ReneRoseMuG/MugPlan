@@ -330,6 +330,27 @@ function formatIsoDateForUi(value: string): string {
   return `${day}.${month}.${year.slice(-2)}`;
 }
 
+function formatDateOnly(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function resolveCurrentIsoWeekRangeForTest() {
+  const [year, month, day] = getRelativeBerlinDate(0).split("-").map((value) => Number(value));
+  const today = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const dayOfWeek = today.getUTCDay() === 0 ? 7 : today.getUTCDay();
+  const monday = new Date(today);
+  monday.setUTCDate(today.getUTCDate() - dayOfWeek + 1);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  return {
+    fromDate: formatDateOnly(monday),
+    toDate: formatDateOnly(sunday),
+  };
+}
+
 function toReportTestIdToken(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
 }
@@ -549,7 +570,9 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).not.toBeChecked();
   await page.getByTestId("toggle-reports-vorlaufliste-date").click();
   await page.getByTestId("toggle-reports-produktionsplanung-date").click();
-  await expect(page.getByTestId("reports-vorlaufliste-to-date")).not.toHaveValue(inRangeDate);
+  const resetReportRange = resolveCurrentIsoWeekRangeForTest();
+  await expect(page.getByTestId("reports-vorlaufliste-from-date")).toHaveValue(resetReportRange.fromDate);
+  await expect(page.getByTestId("reports-vorlaufliste-to-date")).toHaveValue(resetReportRange.toDate);
   await expect(page.getByTestId("reports-produktionsplanung-to-date")).toHaveValue(await page.getByTestId("reports-vorlaufliste-to-date").inputValue());
   await page.getByTestId("toggle-reports-vorlaufliste-calendarWeek").click();
   const resetVorlauflisteKwStart = await page.getByTestId("input-reports-vorlaufliste-kw-start").inputValue();

@@ -171,6 +171,9 @@ test("AF-03: Mitarbeiter mit Terminkonflikt im Formular – Finaler Konfliktdial
   await loginAsAdmin(page);
   await openAppointmentFormInWeekView(page, targetAppointment.id, 3);
 
+  await expect(page.getByTestId("input-start-date")).toHaveValue(week.weekStartDate);
+  await expect(page.getByText(`${employee.firstName} ${employee.lastName}`)).toBeVisible();
+
   // Kein Save-Review-Dialog: keine Änderungen → direkt speichern → Server meldet EMPLOYEE_OVERLAP_CONFLICT
   await page.getByTestId("button-save-appointment").click();
 
@@ -437,7 +440,10 @@ test("AF-09: Save-Review-Dialog mit mehreren Schritten – vollständiger Durchl
   await openAppointmentFormInWeekView(page, appointment.id, 9);
 
   // Datumswechsel zum belegten Datum → Ressourcen- und Notizschritt
-  await page.getByTestId("input-start-date").fill(week.weekSecondDate);
+  const startDateInput = page.getByTestId("input-start-date");
+  await expect(startDateInput).toHaveValue(week.weekStartDate);
+  await startDateInput.fill(week.weekSecondDate);
+  await expect(startDateInput).toHaveValue(week.weekSecondDate);
 
   const patchResponsePromise = page.waitForResponse(
     (response) =>
