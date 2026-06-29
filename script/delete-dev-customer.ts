@@ -31,6 +31,7 @@ type TargetSnapshot = {
 
 type DeleteCounts = {
   customers: number;
+  customerAddresses: number;
   projects: number;
   appointments: number;
   projectOrders: number;
@@ -57,6 +58,7 @@ type AttachmentCleanupResult = {
 
 const zeroCounts = (): DeleteCounts => ({
   customers: 0,
+  customerAddresses: 0,
   projects: 0,
   appointments: 0,
   projectOrders: 0,
@@ -371,6 +373,11 @@ async function countTargetRows(
     "select count(*) as count from customer_attachment where customer_id = ?",
     [customerId],
   );
+  counts.customerAddresses = await selectCount(
+    connection,
+    "select count(*) as count from customer_address where customer_id = ?",
+    [customerId],
+  );
 
   if (projectIds.length > 0) {
     const projectCondition = buildInCondition("project_id", projectIds);
@@ -529,6 +536,9 @@ async function deleteTargetRows(connection: Connection, target: TargetSnapshot):
   deleted.customerAttachments = await deleteWhere(connection, "customer_attachment", "customer_id = ?", [
     customer.id,
   ]);
+  deleted.customerAddresses = await deleteWhere(connection, "customer_address", "customer_id = ?", [
+    customer.id,
+  ]);
 
   if (deletableNoteIds.length > 0) {
     const condition = buildInCondition("id", deletableNoteIds);
@@ -574,6 +584,11 @@ async function verifyNoRemainingTargetRows(
   await addIfRemaining(
     "customer_attachment",
     "select count(*) as count from customer_attachment where customer_id = ?",
+    [target.customer.id],
+  );
+  await addIfRemaining(
+    "customer_address",
+    "select count(*) as count from customer_address where customer_id = ?",
     [target.customer.id],
   );
 
@@ -675,6 +690,7 @@ function printCounts(title: string, counts: DeleteCounts): void {
   console.log(title);
   console.table({
     Kunde: counts.customers,
+    Kundenadressen: counts.customerAddresses,
     Projekte: counts.projects,
     Termine: counts.appointments,
     "Projekt-Auftrag": counts.projectOrders,

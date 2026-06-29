@@ -7,7 +7,8 @@
  *   aufgeloest und erscheint in der Kalender-Aggregation; die Rechnungsadresse wird dabei
  *   nachweislich ausgeschlossen.
  * - Aenderung der Lieferadresse spiegelt sich im naechsten Kalenderabruf; Entfernen faellt
- *   auf die Rechnungsadresse zurueck.
+ *   auf die Rechnungsadresse zurueck und ist direkt auf der Adressliste nachweisbar
+ *   (Count + Identity: geloeschte Zeile weg, nur Rechnungsadresse bleibt).
  * - Die Rechnungsadress-Zeile ist pflegbar (Felder), behaelt aber ihre Rolle und ist nicht
  *   loeschbar; ihre Aenderungen werden in die flachen Kundenfelder gespiegelt.
  * - Der Kunden-Create-Contract nimmt keine flachen Adressfelder mehr als Quelle an (MS-68):
@@ -165,6 +166,14 @@ describe("FT09 integration: wirksame Lieferadresse und Adressverwaltung", () => 
       .delete(`/api/customers/${customer.id}/addresses/${addressId}`)
       .send({ version: version + 1 })
       .expect(204);
+
+    // Direkter Nachweis auf der Adressliste: die geloeschte Lieferadresse ist tatsaechlich
+    // verschwunden (Count + Identity), nur die systemgepflegte Rechnungsadresse bleibt uebrig.
+    const afterDelete = await listAddresses(admin, customer.id);
+    expect(afterDelete).toHaveLength(1);
+    expect(afterDelete.some((a) => a.id === addressId)).toBe(false);
+    expect(afterDelete[0]).toMatchObject({ roleKey: "BILLING", isSystemManaged: true });
+
     customerInCalendar = await calendarCustomer(admin, appointment.id);
     expect(customerInCalendar.postalCode).toBe("11111");
   });
