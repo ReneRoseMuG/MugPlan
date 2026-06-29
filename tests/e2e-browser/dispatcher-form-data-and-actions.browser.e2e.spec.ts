@@ -384,6 +384,59 @@ test.describe("Dispatcher form data and actions", () => {
     await expect(page.getByTestId(`card-employee-week-plan-${assignmentId}`)).toBeVisible();
   });
 
+  test("lets dispatchers delete historical appointments while the form stays read-only", async ({ page }) => {
+    const customer = await createCustomerFixture("DISPATCHER-HIST-DELETE-CUST");
+    const project = await createProjectFixtureWithOverrides({
+      prefix: "DISPATCHER-HIST-DELETE-PROJ",
+      customerId: customer.id,
+      name: "Dispatcher Historischer Loeschtermin",
+      orderNumber: "59901",
+    });
+    const appointmentId = await createRawAppointmentFixture({
+      projectId: project.id,
+      startDate: "2020-03-10",
+      title: "Dispatcher Historischer Loeschtermin Bestand",
+    });
+
+    await loginAsDispatcher(page);
+    await page.getByTestId("nav-termine").click();
+
+    const rows = page.getByTestId("table-appointments-list").locator("tbody tr");
+    await page.locator("#appointments-filter-project-title").fill(project.name);
+    await expect(rows).toHaveCount(1);
+
+    await rows.first().dblclick();
+
+    // Das Formular bleibt schreibgeschützt (kein Speichern), Löschen ist aber erlaubt.
+    await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+    const deleteButton = page.getByTestId("button-delete-appointment");
+    await expect(deleteButton).toBeVisible();
+    await expect(deleteButton).toBeEnabled();
+
+    await deleteButton.click();
+    const confirmDialog = page.getByRole("alertdialog");
+    await expect(confirmDialog).toBeVisible();
+    const deleteResponsePromise = page.waitForResponse((response) => (
+      response.request().method() === "DELETE"
+      && new URL(response.url()).pathname === `/api/appointments/${appointmentId}`
+    ));
+    await confirmDialog.getByRole("button", { name: "Termin löschen", exact: true }).click();
+    const deleteResponse = await deleteResponsePromise;
+    // 204 hat keinen Body, daher nur den Status prüfen (kein response.text()).
+    expect(deleteResponse.status()).toBe(204);
+
+    // Identitäts-/Count-Nachweis nach echtem Reload (frischer Server-Fetch, unabhängig
+    // vom React-Query-Cache): der historische Termin ist serverseitig verschwunden.
+    await page.reload();
+    await closeDispatcherLoginConflictsDialog(page);
+    await page.getByTestId("nav-termine").click();
+    await page.locator("#appointments-filter-project-title").fill(project.name);
+    // Der gelöschte Termin taucht nicht mehr auf; die Liste zeigt den Leer-Zustand.
+    // (Eine leere Tabelle rendert selbst eine Platzhalter-Zeile, daher identitätsbasiert filtern.)
+    await expect(rows.filter({ hasText: project.name })).toHaveCount(0);
+    await expect(page.getByTestId("table-appointments-list")).toContainText("Keine Treffer gefunden.");
+  });
+
   test("lets dispatchers use tour and week actions with visible existing data", async ({ page }) => {
     await applyTestSystemSeed();
     const week = resolveNextReadableWeek();

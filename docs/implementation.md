@@ -330,7 +330,7 @@ Ein Migrationslauf gilt erst dann als abgeschlossen, wenn anschliessend der jewe
 ## 11. Bekannte technische Hinweise
 
 - In mehreren Dateien sind Mojibake-Spuren sichtbar; Encoding-Konsistenz muss bei Änderungen aktiv beachtet werden.
-- Historische Terminmutationen sind im aktuellen Service-Code für `DISPONENT` gesperrt; `ADMIN` darf historische Termin-Mutationen ausführen. API- und UI-Verhalten müssen daran ausgerichtet bleiben.
+- Historische Termine sind im aktuellen Service-Code operationsabhängig geregelt: Löschen ist für `ADMIN` und `DISPONENT` erlaubt (`allowsHistoricalAppointmentDeletion`), Anlegen und Ändern bleiben `ADMIN`-only (`allowsHistoricalAppointmentMutation`). Stornierte Termine bleiben für alle Rollen unlöschbar. API- und UI-Verhalten müssen daran ausgerichtet bleiben.
 
 ## 12. Abgrenzung zu `architecture.md`
 
@@ -356,7 +356,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält bei Produktkategorien, Produkten, Komponentenkategorien und Komponenten in den Masterdata-Leseendpunkten ausschließlich aktive Einträge; `active=all` oder `active=inactive` wird serverseitig auf aktive Auswahlstammdaten begrenzt
 - erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
-- darf historische Termine nicht mutieren; die historische Sperre wird serverseitig durchgesetzt
+- darf historische Termine löschen; das Anlegen und Ändern historischer Termine bleibt gesperrt (`PAST_APPOINTMENT_READONLY`). Die jeweilige Sperre wird serverseitig durchgesetzt. Stornierte Termine bleiben auch beim Löschen geschützt
 - darf die laufende Tour-KW bearbeiten und blockieren oder freigeben
 - darf vergangene Tour-KWs nicht mutieren; die Tour-KW-Sperre wird serverseitig durchgesetzt
 - erhält keine aktive FT30-Abwesenheitsdomäne; frühere FT30-Reste sind im aktuellen Routing nicht registriert

@@ -1300,6 +1300,10 @@ export function AppointmentForm({
         : null;
   const isReadOnlyView = readOnlyReason !== null;
   const isMutationLocked = isReadOnlyView;
+  // Disponent und Admin dürfen historische (vergangene) Termine löschen, obwohl das
+  // Formular für Disponenten read-only bleibt. Stornierte Termine bleiben gesperrt.
+  const canDeleteHistoricalAppointment =
+    readOnlyReason === "historical" && !isCancelled && (isAdmin || userRole === "DISPATCHER");
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
   const isCustomerReadOnly = isMutationLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
   const closeAction = onBack ?? onCancel;
@@ -3026,11 +3030,11 @@ export function AppointmentForm({
                 </TabsList>
               </div>
             ) : null}
-            {!isReadOnlyView && ((isEditing && appointmentId) || canManageAppointmentTags) ? (
+            {(!isReadOnlyView || canDeleteHistoricalAppointment) && ((isEditing && appointmentId) || canManageAppointmentTags) ? (
               <div className="sub-panel space-y-3" data-testid="appointment-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
-                  {isEditing && appointmentId && !isCancelled ? (
+                  {!isReadOnlyView && isEditing && appointmentId && !isCancelled ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -3049,7 +3053,7 @@ export function AppointmentForm({
                       {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
                     </Button>
                   ) : null}
-                  {isEditing && appointmentId && !isCancelled && !isParked ? (
+                  {!isReadOnlyView && isEditing && appointmentId && !isCancelled && !isParked ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -3068,7 +3072,7 @@ export function AppointmentForm({
                       {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
                     </Button>
                   ) : null}
-                  {!isCancelled && canManageAppointmentTags ? (
+                  {!isReadOnlyView && !isCancelled && canManageAppointmentTags ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -3103,7 +3107,10 @@ export function AppointmentForm({
                         "--action-fg": "hsl(var(--destructive))",
                       } as React.CSSProperties}
                       onClick={() => setDeleteConfirmOpen(true)}
-                      disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+                      disabled={
+                        (isMutationLocked && !canDeleteHistoricalAppointment) ||
+                        deleteAppointmentMutation.isPending
+                      }
                       data-testid="button-delete-appointment"
                     >
                       <Trash2 className="w-4 h-4" />

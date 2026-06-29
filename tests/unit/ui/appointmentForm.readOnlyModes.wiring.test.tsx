@@ -2,13 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Historische Termine werden im Formular für Admin und Disponent als reine Schließansicht gerendert.
- * - Stornierte Termine werden im Formular für Admin und Disponent ebenfalls als reine Schließansicht gerendert.
+ * - Historische Termine bleiben für den Disponenten im Formular schreibgeschützt, der Löschen-Button ist jedoch verfügbar.
+ * - Stornierte Termine werden im Formular für Admin und Disponent als reine Schließansicht gerendert.
  * - Planung blockierte Termine werden im Formular für Admin und Disponent ebenfalls als reine Schließansicht gerendert.
  * - Das Formular reicht den Readonly-Modus an Dokumente, Tags, Notizen und Mitarbeiterbereich weiter.
  *
  * Fehlerfälle:
- * - Historische oder stornierte Termine zeigen weiterhin Speichern-, Storno-, Lösch- oder Zurück-Aktionen.
+ * - Stornierte Termine zeigen weiterhin Speichern-, Storno-, Lösch- oder Zurück-Aktionen.
+ * - Historische Termine erlauben dem Disponenten neben dem Löschen weitere Mutationen (Speichern, Stornieren, Parken).
  * - Einzelne Sidebar-Bereiche bleiben trotz Readonly-Vertrag editierbar.
  *
  * Ziel:
@@ -304,7 +305,6 @@ describe("FT01 UI: appointment form readonly modes", () => {
   });
 
   it.each([
-    ["DISPATCHER", "historical"],
     ["DISPATCHER", "cancelled"],
     ["ADMIN", "cancelled"],
   ] as const)(
@@ -326,17 +326,12 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(markup).not.toContain("Speichern");
       expect(markup).not.toContain("Termin stornieren");
       expect(markup).not.toContain("Termin löschen");
+      expect(markup).not.toContain("button-delete-appointment");
       expect(markup).not.toContain("button-back-appointment");
       expect(markup).not.toContain("Zurück");
       expect(markup).not.toContain("button-close-appointment");
       expect(markup).not.toContain("button-save-appointment");
-      if (mode === "historical") {
-        expect(markup).toContain("Termin gesperrt");
-        expect(markup).not.toContain("Termin storniert");
-        expect(markup).not.toContain("Planung blockiert");
-      } else {
-        expect(markup).toContain("Termin storniert");
-      }
+      expect(markup).toContain("Termin storniert");
 
       const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
       const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
@@ -350,6 +345,41 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(latestTagPickerCall?.canEdit).toBe(false);
     },
   );
+
+  it("shows the delete action for dispatchers on historical appointments while keeping the form readonly", () => {
+    currentRole = "DISPATCHER";
+    currentMode = "historical";
+
+    const markup = renderToStaticMarkup(
+      <AppointmentForm
+        appointmentId={77}
+        showBackButton
+        onBack={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    // Löschen ist erlaubt ...
+    expect(markup).toContain("button-delete-appointment");
+    expect(markup).toContain("Löschen");
+    // ... aber das Formular bleibt schreibgeschützt und alle übrigen Mutationen sind gesperrt.
+    expect(markup).toContain("Termin gesperrt");
+    expect(markup).not.toContain("Speichern");
+    expect(markup).not.toContain("button-save-appointment");
+    expect(markup).not.toContain("button-cancel-appointment");
+    expect(markup).not.toContain("button-park-appointment");
+
+    const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
+    const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
+    const latestNotesSectionCall = notesSectionCalls[notesSectionCalls.length - 1];
+    const latestTagPickerCall = tagPickerCalls[tagPickerCalls.length - 1];
+
+    expect(latestAttachmentPanelCall?.readOnly).toBe(true);
+    expect(latestEmployeeSlotCall?.readOnly).toBe(true);
+    expect(latestEmployeeSlotCall?.isLocked).toBe(true);
+    expect(latestNotesSectionCall?.readOnly).toBe(true);
+    expect(latestTagPickerCall?.canEdit).toBe(false);
+  });
 
   it("keeps historical appointments editable for admins", () => {
     currentRole = "ADMIN";

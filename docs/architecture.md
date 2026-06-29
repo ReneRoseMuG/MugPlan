@@ -161,7 +161,7 @@ Evidenz: `server/services/appointmentsService.ts`, Integrationstests `tests/inte
 
 Historische Termine werden serverseitig rollenabhängig blockiert (`PAST_APPOINTMENT_READONLY`).
 
-Ist-Stand: `DISPONENT` kann historische Termine nicht mutieren. `ADMIN` ist von dieser historischen Sperre ausgenommen und darf historische Termin-Mutationen ausführen, während die übrigen Terminregeln weiterhin greifen, insbesondere Relationspflicht, Versionsschutz, Mitarbeiter-Overlap, Storno-Sperre und blockierte Tourwochen.
+Ist-Stand: Das Löschen historischer Termine ist für `ADMIN` und `DISPONENT` erlaubt (`allowsHistoricalAppointmentDeletion`). Das Anlegen und Ändern historischer Termine bleibt dagegen `ADMIN`-only (`allowsHistoricalAppointmentMutation`); `DISPONENT` wird dort weiterhin mit `PAST_APPOINTMENT_READONLY` blockiert. Die übrigen Terminregeln greifen in allen Fällen weiter, insbesondere Relationspflicht, Versionsschutz, Mitarbeiter-Overlap, Storno-Sperre (stornierte Termine bleiben für alle Rollen unlöschbar) und blockierte Tourwochen.
 
 Für Tour-KW-Planungen gilt eine eigene rollenabhängige Sperre: Vergangene Tour-KWs sind für alle Rollen schreibgeschützt. Die laufende Tour-KW ist für `ADMIN` und `DISPONENT` editierbar, einschließlich Mitarbeiterplanung sowie Blockieren und Freigeben.
 
@@ -252,7 +252,7 @@ Neue Funktionalität folgt den bestehenden Pfaden:
 ## 11. Bekannte Risiken / Architekturhinweise
 
 - In einzelnen Dateien sind Mojibake-Spuren sichtbar (z. B. `Ungültig`, `Nächster`), also ein bestehendes Encoding-/Textkonsistenz-Risiko.
-- Historische Terminregeln enthalten eine Admin-Ausnahme; maßgeblich ist der aktuelle Service-Code.
+- Historische Terminregeln sind operationsabhängig: Löschen ist für Admin und Disponent erlaubt, Anlegen/Ändern bleiben Admin-only; maßgeblich ist der aktuelle Service-Code.
 
 ## 12. Nicht-Ziele dieses Dokuments
 

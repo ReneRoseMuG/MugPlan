@@ -4,9 +4,13 @@
  * Abgedeckte Regeln:
  * - Update- und Delete-Pfade halten die vorgesehenen Locking-Regeln ein.
  * - Appointment-Fehlercodes werden fuer Locking-Faelle konsistent gemappt.
+ * - Disponenten duerfen historische Termine loeschen, aber nicht aendern.
+ * - Stornierte historische Termine bleiben auch fuer Disponenten unloeschbar.
  *
  * Fehlerfaelle:
  * - Version- oder Delete-Konflikte werden falsch behandelt.
+ * - Disponent kann historischen Termin entgegen der Erlaubnis nicht loeschen.
+ * - Stornierter historischer Termin wird trotz Storno-Sperre geloescht.
  *
  * Ziel:
  * Die zentralen Locking-Regeln rund um Appointment-Mutationen absichern.
@@ -38,6 +42,7 @@ import {
   isAppointmentError,
   updateAppointment,
 } from "../../../server/services/appointmentsService";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "../../../shared/appointmentCancellation";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
 const toursRepoMock = vi.mocked(toursRepository);
@@ -87,7 +92,7 @@ describe("PKG-02 Invariant: locking rules", () => {
     expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("blocks delete for non-admin on locked appointment with deterministic PAST_APPOINTMENT_READONLY", async () => {
+  it("allows delete for dispatcher on locked appointment", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 202,
       version: 4,
@@ -102,16 +107,40 @@ describe("PKG-02 Invariant: locking rules", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
+    appointmentsRepoMock.deleteAppointmentWithVersionTx.mockResolvedValue({ kind: "deleted" });
+
+    await expect(deleteAppointment(202, 4, "DISPONENT")).resolves.toBeTruthy();
+    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).toHaveBeenCalled();
+  });
+
+  it("still blocks dispatcher delete for cancelled locked appointment with CANCELLED_APPOINTMENT_READONLY", async () => {
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
+      id: 207,
+      version: 9,
+      projectId: 301,
+      tourId: null,
+      title: "Existing cancelled",
+      description: null,
+      startDate: new Date("2000-01-02T00:00:00.000Z"),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(
+      new Map([[207, [{ name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME }]]]) as any,
+    );
 
     let error: unknown;
     try {
-      await deleteAppointment(202, 4, "DISPONENT");
+      await deleteAppointment(207, 9, "DISPONENT");
     } catch (err) {
       error = err;
     }
 
     expect(isAppointmentError(error)).toBe(true);
-    expect(error).toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
+    expect(error).toMatchObject({ status: 409, code: "CANCELLED_APPOINTMENT_READONLY" });
     expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 

@@ -324,6 +324,10 @@ function allowsHistoricalAppointmentMutation(roleKey: CanonicalRoleKey): boolean
   return roleKey === "ADMIN";
 }
 
+function allowsHistoricalAppointmentDeletion(roleKey: CanonicalRoleKey): boolean {
+  return roleKey === "ADMIN" || roleKey === "DISPONENT";
+}
+
 async function assertNoInactiveEmployeesTx(
   tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
   employeeIds: number[],
@@ -1952,7 +1956,7 @@ export async function deleteAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
+      allowHistorical: allowsHistoricalAppointmentDeletion(roleKey),
       historicalMessage: "Historische Termine können nicht gelöscht werden",
       cancelledMessage: "Stornierte Termine können nicht gelöscht werden",
     });
