@@ -16,7 +16,7 @@ Dieses Dokument beschreibt die konkrete technische Umsetzung des aktuellen Ist-S
 
 - `npm run dev` -> `cross-env NODE_ENV=development tsx server/index.ts`
 - `npm test` -> `cross-env NODE_ENV=test MUGPLAN_MODE=test vitest`
-- `npm start` -> `cross-env NODE_ENV=production node --env-file=../../shared/.env.prod dist/index.cjs`
+- `npm start` -> `cross-env NODE_ENV=production node --env-file=.env.prod dist/index.cjs`
 
 ### 1.2 Build/Checks
 
@@ -35,8 +35,8 @@ Dieses Dokument beschreibt die konkrete technische Umsetzung des aktuellen Ist-S
 
 `server/config/runtimeEnv.ts` erzwingt:
 
-- Dev: `../../shared/.env.dev` muss existieren
-- Test: `../../shared/.env.test` muss existieren
+- Dev: `.env.dev` muss existieren
+- Test: `.env.test` muss existieren
 - Prod: Werte aus Prozessumgebung
 
 Pflichtvariablen:

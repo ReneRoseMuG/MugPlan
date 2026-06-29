@@ -276,9 +276,9 @@ UI-Elemente darf Claude nur ändern oder ergänzen, wenn dies **explizit im Auft
 
 | Modus | Env-Datei |
 |---|---|
-| `development` | `../../shared/.env.dev` |
-| `test` | `../../shared/.env.test` |
-| `production` | `../../shared/.env.prod` (via `npm start`) |
+| `development` | `.env.dev` |
+| `test` | `.env.test` |
+| `production` | `.env.prod` (via `npm start`) |
 
 Kein Env-Datei-Fallback erlaubt. Fehlt die erwartete Env-Datei → fail fast.
 
@@ -286,7 +286,7 @@ Kein Env-Datei-Fallback erlaubt. Fehlt die erwartete Env-Datei → fail fast.
 
 - `npm run dev` → `cross-env NODE_ENV=development tsx server/index.ts`
 - `npm test` → `cross-env NODE_ENV=test MUGPLAN_MODE=test vitest`
-- `npm start` → `cross-env NODE_ENV=production node --env-file=../../shared/.env.prod dist/index.cjs`
+- `npm start` → `cross-env NODE_ENV=production node --env-file=.env.prod dist/index.cjs`
 
 ### DB Safety Model (Pflicht)
 

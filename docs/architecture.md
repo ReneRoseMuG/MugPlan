@@ -25,9 +25,9 @@ Die API wird unter `/api` bereitgestellt. Der Server startet in `server/index.ts
 
 Die Runtime wird zentral über `server/config/runtimeEnv.ts` aufgelöst:
 
-- `development` lädt zwingend `../../shared/.env.dev`
-- `test` lädt zwingend `../../shared/.env.test`
-- `production` nutzt Prozessumgebung (Start via `npm start` mit `--env-file=../../shared/.env.prod`)
+- `development` lädt zwingend `.env.dev`
+- `test` lädt zwingend `.env.test`
+- `production` nutzt Prozessumgebung (Start via `npm start` mit `--env-file=.env.prod`)
 
 Es gibt keinen Env-Fallback für `development`/`test`.
 
