@@ -12,6 +12,10 @@
  *   Schritt 1 Mitarbeiter-Abzug (Warn), Schritt 2 Wochenplanung (Select), Schritt 3 Notizen.
  * - Abbrechen bricht Verschiebung ab; Termin bleibt am Ursprungsort.
  * - Mitarbeiter-Abwahl in Schritt 2 wird in der DB persistiert.
+ * - D&D/Kalender-Move: Zurück-Navigation stellt den vorigen Schritt samt Inhalt wieder her;
+ *   in Schritt 1 existiert kein Zurück-Button; reine Navigation verändert den Termin nicht.
+ * - D&D/Kalender-Move: vollständige Bestätigung über alle drei Schritte (inkl. Notizen)
+ *   persistiert die Verschiebung (Zieldatum und Ziel-Tour) in der DB.
  *
  * Fehlerfälle:
  * - Dialog zeigt "Termin speichern" statt "Termin verschieben" bei D&D.
@@ -19,6 +23,9 @@
  * - "Alle wählen"/"Alle abwählen" sind noch sichtbar.
  * - Pflicht-Checkbox blockiert Speichern-Button im Notizen-Schritt.
  * - Abbrechen verschiebt Termin trotzdem.
+ * - Zurück-Button fehlt in Schritt 2 oder stellt den vorigen Schritt nicht wieder her.
+ * - Reine Schritt-Navigation (Weiter/Zurück) verändert den Termin bereits.
+ * - Bestätigen im Notizen-Schritt persistiert die Verschiebung nicht.
  *
  * Isolationsklasse: B · Baseline: seeded · Storage: none
  *
@@ -597,4 +604,131 @@ test("B-06: D&D Mitarbeiter-Abwahl in Schritt 2 wird in DB persistiert", async (
     tourId: targetTour.id,
     employeeIds: [weekEmployee1.id],
   });
+});
+
+test("B-07: D&D Zurück-Navigation – von Schritt 2 zurück zu Schritt 1, Inhalt wiederhergestellt, kein Speichern", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B07" });
+  const sourceTour = await createTourFixture("#668899");
+  const targetTour = await createTourFixture("#99aabb");
+  const removedEmployee = await createEmployeeFixture("DIAL-B07-REMOVED");
+  const weekEmployee = await createEmployeeFixture("DIAL-B07-WEEK");
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: targetTour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: weekEmployee.id,
+  });
+
+  const sourceDate = nextWeek.weekSecondDate;
+  const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
+
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: sourceDate,
+    tourId: sourceTour.id,
+    employeeIds: [removedEmployee.id],
+  });
+
+  await loginAsAdmin(page);
+  await navigateToWeekView(page);
+  await page.getByTestId("button-next").click();
+
+  const dropped = await dispatchWeekViewDrop(page, appointment.id, targetDate, targetTour.id);
+  expect(dropped).toBe(true);
+
+  const dialog = page.getByTestId("dialog-appointment-move");
+  await expect(dialog).toBeVisible();
+
+  // Schritt 1: Warn-Badge sichtbar, in Schritt 1 gibt es keinen Zurück-Button
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${removedEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Zurück" })).toHaveCount(0);
+
+  // Weiter zu Schritt 2: Wochenplanung sichtbar, Warn-Badge nicht mehr im DOM
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${removedEmployee.id}`)).toHaveCount(0);
+
+  // Zurück zu Schritt 1: Warn-Badge wieder sichtbar, Auswahlliste nicht mehr im DOM
+  await dialog.getByRole("button", { name: "Zurück" }).click();
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${removedEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId("appointment-move-selection-list")).toHaveCount(0);
+
+  // Reine Navigation darf den Termin nicht verändert haben
+  const response = await page.request.get(`/api/appointments/${appointment.id}`);
+  const body = await response.json() as { startDate: string; tourId: number };
+  expect(body.startDate).toBe(sourceDate);
+  expect(body.tourId).toBe(sourceTour.id);
+});
+
+test("B-08: D&D 3-Schritt vollständig bestätigen – Notizen-Schritt, Verschiebung in DB persistiert", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B08" });
+  const sourceTour = await createTourFixture("#77aa99");
+  const targetTour = await createTourFixture("#aa99cc");
+  const removedEmployee = await createEmployeeFixture("DIAL-B08-REMOVED");
+  const weekEmployee = await createEmployeeFixture("DIAL-B08-WEEK");
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: targetTour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: weekEmployee.id,
+  });
+
+  const sourceDate = nextWeek.weekSecondDate;
+  const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
+
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: sourceDate,
+    tourId: sourceTour.id,
+    employeeIds: [removedEmployee.id],
+  });
+  // Notiz erzwingt den dritten Schritt (Notizen) im Move-Dialog
+  await createAppointmentNote(appointment.id, "DIAL-B08-NOTE");
+
+  await loginAsAdmin(page);
+  await navigateToWeekView(page);
+  await page.getByTestId("button-next").click();
+
+  const patchResponsePromise = page.waitForResponse(
+    (r) => r.url().includes(`/api/appointments/${appointment.id}`) && r.request().method() === "PATCH",
+    { timeout: 15_000 },
+  );
+
+  const dropped = await dispatchWeekViewDrop(page, appointment.id, targetDate, targetTour.id);
+  expect(dropped).toBe(true);
+
+  const dialog = page.getByTestId("dialog-appointment-move");
+  await expect(dialog).toBeVisible();
+
+  // Schritt 1 Warn → Weiter
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${removedEmployee.id}`)).toBeVisible();
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+
+  // Schritt 2 Wochenplanung → Weiter
+  await expect(dialog.getByTestId(`appointment-move-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+
+  // Schritt 3 Notizen → Bestätigen (letzter Schritt)
+  await expect(dialog.getByTestId("appointment-move-step-notes")).toBeVisible();
+  await dialog.getByTestId("button-appointment-move-confirm").click();
+
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
+
+  // DB: Termin liegt jetzt am Zieldatum in der Ziel-Tour
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json() as { startDate: string; tourId: number };
+    return { startDate: body.startDate, tourId: body.tourId };
+  }).toEqual({ startDate: targetDate, tourId: targetTour.id });
 });
