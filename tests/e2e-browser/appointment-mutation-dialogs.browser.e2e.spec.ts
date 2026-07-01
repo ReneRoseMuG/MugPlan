@@ -16,6 +16,8 @@
  *   in Schritt 1 existiert kein Zurück-Button; reine Navigation verändert den Termin nicht.
  * - D&D/Kalender-Move: vollständige Bestätigung über alle drei Schritte (inkl. Notizen)
  *   persistiert die Verschiebung (Zieldatum und Ziel-Tour) in der DB.
+ * - Löschen-Dialog: Abbrechen lässt den Termin bestehen; Bestätigen löscht ihn dauerhaft
+ *   (danach nicht mehr auffindbar).
  *
  * Fehlerfälle:
  * - Dialog zeigt "Termin speichern" statt "Termin verschieben" bei D&D.
@@ -26,6 +28,7 @@
  * - Zurück-Button fehlt in Schritt 2 oder stellt den vorigen Schritt nicht wieder her.
  * - Reine Schritt-Navigation (Weiter/Zurück) verändert den Termin bereits.
  * - Bestätigen im Notizen-Schritt persistiert die Verschiebung nicht.
+ * - Abbrechen im Löschen-Dialog löscht den Termin dennoch, oder Bestätigen löscht ihn nicht.
  *
  * Isolationsklasse: B · Baseline: seeded · Storage: none
  *
@@ -731,4 +734,56 @@ test("B-08: D&D 3-Schritt vollständig bestätigen – Notizen-Schritt, Verschie
     const body = await response.json() as { startDate: string; tourId: number };
     return { startDate: body.startDate, tourId: body.tourId };
   }).toEqual({ startDate: targetDate, tourId: targetTour.id });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gruppe C – Löschen
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("C-01: Löschen-Dialog Abbrechen – Termin bleibt bestehen", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-C01" });
+  const tour = await createTourFixture("#884422");
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+
+  await page.getByTestId("button-delete-appointment").click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByRole("button", { name: "Termin löschen" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(page.getByRole("button", { name: "Termin löschen" })).toHaveCount(0);
+
+  // Termin existiert weiterhin
+  const response = await page.request.get(`/api/appointments/${appointment.id}`);
+  expect(response.status()).toBe(200);
+  // Formular weiter bearbeitbar, Löschen erneut auslösbar
+  await expect(page.getByTestId("button-delete-appointment")).toBeVisible();
+});
+
+test("C-02: Löschen-Dialog Bestätigen – Termin wird dauerhaft gelöscht", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-C02" });
+  const tour = await createTourFixture("#448822");
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+
+  await page.getByTestId("button-delete-appointment").click();
+  const dialog = page.getByRole("alertdialog");
+  await dialog.getByRole("button", { name: "Termin löschen" }).click();
+
+  // Termin ist danach dauerhaft gelöscht (nicht mehr auffindbar)
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    return response.status();
+  }).toBe(404);
 });
