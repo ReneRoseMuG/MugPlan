@@ -9,6 +9,7 @@
  * - Der Projektbetrag wird nach dem Storno im Projektformular auf 0.00 gesetzt.
  * - Die Vorlaufliste zeigt den stornierten Termin weiterhin mit Betrag 0 und sichtbarer Storno-Kennzeichnung.
  * - Der Produktionsplanung soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
+ * - Ein offener Storno-Dialog lässt sich abbrechen; der Termin bleibt aktiv (nicht storniert), Mitarbeiter bleiben erhalten.
  *
  * Fehlerfaelle:
  * - Der Termin verschwindet vor dem Storno oder traegt bereits vorher den Storniert-Tag.
@@ -16,6 +17,7 @@
  * - Planung blockierte Termine bleiben im Browser trotz Server-Guard editierbar.
  * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
  * - Der Produktionsplanung listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
+ * - Abbrechen im Storno-Dialog storniert den Termin dennoch.
  *
  * - Der Geparkt-Tag erscheint nicht im Termin-Tag-Picker (isPickerVisibleForDomain schließt ihn aus).
  *
@@ -34,6 +36,7 @@ import {
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -328,4 +331,54 @@ test("Geparkt-Tag erscheint nicht im Termin-Tag-Picker", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
 
   await expect(page.getByTestId(`appointment-tag-picker-add-tag-${geparktTag!.id}`)).toHaveCount(0);
+});
+
+test("Storno-Dialog Abbrechen – Termin bleibt aktiv und wird nicht storniert", async ({ page }) => {
+  const customer = await createCustomerFixture("FT28-CANCEL-ABORT-CUST");
+  const employee = await createEmployeeFixture("FT28-CANCEL-ABORT-EMP");
+  const tour = await createTourFixture("#3311aa");
+  const project = await createProjectFixture({
+    prefix: "FT28-CANCEL-ABORT",
+    customerId: customer.id,
+    name: "FT28 Storno-Abbruch Projekt",
+  });
+  const startDate = getRelativeBerlinDate(2);
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    tourId: tour.id,
+    startDate,
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+
+  const panel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(panel).toBeVisible();
+  await panel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+
+  // Storno-Dialog öffnen
+  await page.getByTestId("button-cancel-appointment").click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByRole("button", { name: "Termin stornieren" })).toBeVisible();
+
+  // Abbrechen: Storno wird nicht ausgeführt
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(page.getByRole("button", { name: "Termin stornieren" })).toHaveCount(0);
+
+  // Termin ist NICHT storniert, Mitarbeiter erhalten
+  const response = await page.request.get(`/api/appointments/${appointment.id}`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as {
+    isCancelled: boolean;
+    appointmentTags: Array<{ name: string }>;
+    employees: Array<{ id: number }>;
+  };
+  expect(body.isCancelled).toBe(false);
+  expect(body.appointmentTags.map((tag) => tag.name)).not.toContain("Storniert");
+  expect(body.employees.map((entry) => entry.id)).toEqual([employee.id]);
+
+  // Formular bleibt bearbeitbar, Storno erneut auslösbar
+  await expect(page.getByTestId("button-cancel-appointment")).toBeVisible();
 });

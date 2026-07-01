@@ -6,12 +6,14 @@
  * - Nach dem Parken trägt der Termin den Geparkt-Tag, hat keine Mitarbeiter mehr und liegt in der Parkplatz-Tour.
  * - Der Park-Button ist nach erfolgtem Parken nicht mehr sichtbar (Termin bereits geparkt).
  * - Der Geparkt-Tag-Badge ist auf der Wochenkalender-Terminkarte sichtbar.
+ * - Der Park-Dialog lässt sich abbrechen; der Termin bleibt in seiner Tour, ohne Geparkt-Tag, mit erhaltenen Mitarbeitern.
  *
  * Fehlerfälle:
  * - Der Park-Button bleibt nach dem Parken sichtbar.
  * - Der Geparkt-Tag fehlt auf dem Termin nach dem Parken.
  * - Mitarbeiter sind nach dem Parken noch zugewiesen.
  * - Die Tour wurde nicht auf Parkplatz geändert.
+ * - Abbrechen im Park-Dialog parkt den Termin dennoch.
  *
  * Ziel:
  * Den vollständigen Park-Workflow im Browser absichern: vom offenen Terminformular oder Kalender-Menü bis zum verifizierten Parkzustand in Kalender, Monitoring und API.
@@ -178,4 +180,53 @@ test("parks a future appointment via the calendar menu and refreshes monitoring 
 
   await page.getByTestId("nav-monitoring").click();
   await expect(page.getByRole("cell", { name: "Mindestzahl Mitarbeiter + Geparkt" }).first()).toBeVisible();
+});
+
+test("Park-Dialog Abbrechen – Termin bleibt in seiner Tour, wird nicht geparkt", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-PARK-ABORT-CUST");
+  const employee = await createEmployeeFixture("FT06-PARK-ABORT-EMP");
+  const tour = await createTourFixture("#00aa77");
+  const project = await createProjectFixture({
+    prefix: "FT06-PARK-ABORT",
+    customerId: customer.id,
+    name: "FT06 Park-Abbruch Projekt",
+  });
+  const startDate = getRelativeBerlinDate(2);
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    tourId: tour.id,
+    startDate,
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+
+  const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(appointmentPanel).toBeVisible();
+  await appointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId("button-park-appointment")).toBeVisible();
+
+  // Park-Dialog öffnen und abbrechen
+  await page.getByTestId("button-park-appointment").click();
+  const dialog = page.getByTestId("dialog-park-appointment");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(page.getByTestId("dialog-park-appointment")).toHaveCount(0);
+
+  // Termin ist NICHT geparkt: Tour unverändert, kein Geparkt-Tag, Mitarbeiter erhalten
+  const response = await page.request.get(`/api/appointments/${appointment.id}`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as {
+    tourId: number;
+    appointmentTags: Array<{ name: string }>;
+    employees: Array<{ id: number }>;
+  };
+  expect(body.tourId).toBe(tour.id);
+  expect(body.appointmentTags.map((tag) => tag.name)).not.toContain(RESERVED_VACANT_TAG_NAME);
+  expect(body.employees.map((entry) => entry.id)).toEqual([employee.id]);
+
+  // Formular bleibt bearbeitbar, Parken erneut auslösbar
+  await expect(page.getByTestId("button-park-appointment")).toBeVisible();
 });
