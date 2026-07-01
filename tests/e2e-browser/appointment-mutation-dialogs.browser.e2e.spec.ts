@@ -8,6 +8,8 @@
  *   Mitarbeiter-Abzug-Warnung mit Badges per ID; Schritt 2 zeigt Wochenplanung vorselektiert.
  * - Kein "Alle wählen"/"Alle abwählen" in keinem Mutations-Dialog.
  * - Terminformular Speichern: Notizen-Schritt ohne Pflicht-Checkbox, Button direkt aktiv.
+ * - Terminformular Speichern: vollständige Bestätigung des Save-Review-Dialogs persistiert die
+ *   Datumsänderung in der DB.
  * - D&D/Kalender-Move: Dialog immer "Termin verschieben", bis zu 3 isolierte Schritte:
  *   Schritt 1 Mitarbeiter-Abzug (Warn), Schritt 2 Wochenplanung (Select), Schritt 3 Notizen.
  * - Abbrechen bricht Verschiebung ab; Termin bleibt am Ursprungsort.
@@ -280,6 +282,58 @@ test("A-04: Terminformular Tour-Wechsel Abbrechen – Tourauswahl bleibt erhalte
 
   // Ziel-Tour-Badge noch im Formular sichtbar (Tour wurde vor Dialog ausgewählt)
   await expect(page.getByTestId("badge-tour")).toBeVisible();
+});
+
+test("A-05: Terminformular Speichern vollständig bestätigen – Datumsänderung wird persistiert", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const targetWeekStart = startOfISOWeek(addWeeks(parseISO(nextWeek.weekStartDate), 1));
+  const targetDate = format(addDays(targetWeekStart, 1), "yyyy-MM-dd");
+  const project = await createProjectFixture({ prefix: "DIAL-A05" });
+  const tour = await createTourFixture("#556677");
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+  });
+  // Notiz erzwingt den Notizen-Schritt im Save-Review-Dialog
+  await createAppointmentNote(appointment.id, "DIAL-A05-NOTE");
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+
+  await page.getByTestId("input-start-date").fill(targetDate);
+
+  const patchResponsePromise = page.waitForResponse(
+    (r) => r.url().includes(`/api/appointments/${appointment.id}`) && r.request().method() === "PATCH",
+    { timeout: 15_000 },
+  );
+
+  await page.getByTestId("button-save-appointment").click();
+
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+
+  // Bis zum letzten Schritt navigieren (ein etwaiger Wochenplanungs-Schritt geht voran),
+  // dann verbindlich speichern.
+  for (let i = 0; i < 3; i += 1) {
+    const nextVisible = await dialog
+      .getByTestId("button-appointment-save-review-next")
+      .isVisible()
+      .catch(() => false);
+    if (!nextVisible) break;
+    await dialog.getByTestId("button-appointment-save-review-next").click();
+  }
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
+
+  const patchResponse = await patchResponsePromise;
+  expect(patchResponse.status()).toBe(200);
+
+  // DB: Termin liegt am neuen Datum
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json() as { startDate: string };
+    return body.startDate;
+  }).toBe(targetDate);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
